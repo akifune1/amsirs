@@ -10,7 +10,7 @@ export async function submitSecureIncident(prevState: any, formData: FormData) {
   try {
     const cookieStore = await cookies();
     
-    // 1. Initialize Supabase Server Client to check the session
+    // This client is "Cookie-Aware"
     const serverSupabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,45 +26,40 @@ export async function submitSecureIncident(prevState: any, formData: FormData) {
       }
     );
 
-    // 2. Get the authenticated user's ID
+    // Grab the user
     const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
 
-    if (authError || !user) {
-      return { error: "Authentication failed. Please log in again." };
+    // DEBUG: Check this in your VS Code terminal
+    console.log("SERVER AUTH CHECK - User ID:", user?.id);
+
+    if (!user) {
+      return { error: "Security Session Expired. Please log in again." };
     }
 
-    // 3. Collect form data
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-    const location = formData.get('location') as string;
-    const severity = formData.get('severity') as string;
-    const description = formData.get('description') as string;
-
-    // 4. Encrypt the sensitive description
-    const encryptedDescription = encrypt(description);
-
-    // 5. Insert into Supabase with 'reported_by' linked to the User ID
-    const { error: dbError } = await supabase
+    // IMPORTANT: Perform the insert using 'serverSupabase', NOT the global 'supabase'
+    const { error: dbError } = await serverSupabase
       .from('incident_reports')
       .insert([
         {
-          first_name: firstName,
-          last_name: lastName,
-          location: location,
-          severity: severity,
-          description: encryptedDescription,
-          reported_by: user.id, // <--- This links the report to the logged-in user
+          first_name: formData.get('firstName'),
+          last_name: formData.get('lastName'),
+          location: formData.get('location'),
+          severity: formData.get('severity'),
+          description: encrypt(formData.get('description') as string),
+          reported_by: user.id, // This must match auth.uid() in the policy
           status: 'Pending'
         },
       ]);
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error("DATABASE ERROR:", dbError);
+      return { error: dbError.message };
+    }
 
     revalidatePath('/incident-reporting');
-    return { success: true, message: `Report successfully filed by Authorized User: ${user.email}` };
+    return { success: true, message: "Report Encrypted and Filed." };
 
   } catch (err) {
-    console.error("Critical System Error:", err);
-    return { error: "A security error occurred during transmission." };
+    return { error: "A transmission error occurred." };
   }
 }
