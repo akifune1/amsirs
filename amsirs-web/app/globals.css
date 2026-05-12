@@ -1,13 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  /* Cavite National High School Theme */
+  /* CNHS Light Mode Theme */
   --color-cavite-maroon: #800000;
-  --color-cavite-black: #121212;
-  --color-cavite-gray: #1e1e1e;
-  --color-cavite-white: #f8f9fa;
-  --color-cavite-red: #ff4d4d;
+  --color-cavite-black: #1a1a1a;
+  --color-cavite-gray: #f3f4f6;
+  --color-cavite-border: #e5e7eb;
+  --color-cavite-white: #ffffff;
   
-  /* Font */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
