@@ -2,7 +2,6 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
 
 export async function registerStudent(prevState: any, formData: FormData) {
   try {
@@ -18,45 +17,59 @@ export async function registerStudent(prevState: any, formData: FormData) {
       }
     );
 
-    // REMOVED: The auth.getUser() check. This is now a public endpoint.
-
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
     const studentId = formData.get('studentId') as string;
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
+
+    // ==========================================
+    // 1. CREATE SECURE ACCOUNT & TRIGGER EMAIL
+    // ==========================================
+    const { data: authData, error: authError } = await serverSupabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (authError) return { error: `Authentication Error: ${authError.message}` };
     
-    // 1. Handle Facial Recognition Photo Upload
+    // Grab the new user's unique ID
+    const newUserId = authData.user?.id;
+    if (!newUserId) return { error: "Failed to generate secure account ID." };
+
+    // ==========================================
+    // 2. PROCESS BIOMETRIC PHOTO
+    // ==========================================
     const photo = formData.get('facePhoto') as File | null;
     let facePhotoPath = null;
 
     if (photo && photo.size > 0) {
       const allowedMimeTypes = ['image/jpeg', 'image/png'];
-      if (!allowedMimeTypes.includes(photo.type)) {
-        return { error: "Photo must be standard JPG or PNG format." };
-      }
-      if (photo.size > 5 * 1024 * 1024) {
-        return { error: "Photo is too large. Maximum size is 5MB." };
-      }
+      if (!allowedMimeTypes.includes(photo.type)) return { error: "Photo must be standard JPG or PNG format." };
+      if (photo.size > 5 * 1024 * 1024) return { error: "Photo is too large. Maximum size is 5MB." };
 
       const fileExt = photo.name.split('.').pop();
-      // Grouping uploads by Student ID for easy tracking
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `self_enrollment/${studentId}/${fileName}`;
+      // We can now securely store it in a folder named after their new account ID
+      const fileName = `${newUserId}/face_ref.${fileExt}`;
 
       const { data: uploadData, error: uploadError } = await serverSupabase.storage
         .from('student_faces')
-        .upload(filePath, photo, { upsert: true });
+        .upload(fileName, photo);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) return { error: "Failed to upload biometric data." };
       facePhotoPath = uploadData.path;
     } else {
        return { error: "A clear facial reference photo is required." };
     }
 
-    // 2. Insert the Student Record
+    // ==========================================
+    // 3. SAVE STUDENT PROFILE
+    // ==========================================
     const { error: dbError } = await serverSupabase
       .from('students')
       .insert([
         {
+          account_id: newUserId, // Linking the profile to the login
           student_id: studentId,
           first_name: firstName,
           last_name: lastName,
@@ -66,19 +79,19 @@ export async function registerStudent(prevState: any, formData: FormData) {
         },
       ]);
 
-    // Handle duplicate LRNs gracefully
     if (dbError) {
-      if (dbError.code === '23505') {
-        return { error: `Student ID ${studentId} is already registered.` };
-      }
-      throw dbError;
+      if (dbError.code === '23505') return { error: `Student ID ${studentId} is already registered.` };
+      return { error: "Profile creation failed. Please contact IT support." };
     }
 
-    revalidatePath('/student-registration');
-    return { success: true, message: "Registration complete! Your data has been submitted." };
+    // Success! Tell them to check their email.
+    return { 
+      success: true, 
+      message: "Registration successful! Please check your email to confirm your account before logging in." 
+    };
 
   } catch (err) {
     console.error(err);
-    return { error: "A system error occurred. Please try again later." };
+    return { error: "A critical system error occurred. Please try again later." };
   }
 }

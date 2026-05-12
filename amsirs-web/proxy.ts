@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const path = request.nextUrl.pathname;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,33 +12,76 @@ export async function proxy(request: NextRequest) {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          // FIX: request.cookies.set only takes name and value
-          cookiesToSet.forEach(({ name, value }) => 
-            request.cookies.set(name, value)
-          )
-          
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          
-          // response.cookies.set can take the options
-          cookiesToSet.forEach(({ name, value, options }) => 
-            response.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
     }
   );
 
-  // This check verifies if a user is logged in
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protect the incident-reporting route
-  if (!user && request.nextUrl.pathname.startsWith('/incident-reporting')) {
+  // If not logged in, block all protected routes
+  const isProtected = path.startsWith('/incident-dashboard') || 
+                      path.startsWith('/admin-dashboard') || 
+                      path.startsWith('/incident-reporting');
+
+  if (isProtected && !user) {
     return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (user) {
+    // TIER 1: SYSTEM ADMIN CHECK
+    const { data: admin } = await supabase
+      .from('system_admins')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (admin) {
+      // Admins have "God Mode" — let them through everything
+      return response;
+    }
+
+    // TIER 2: STAFF CHECK (Guard/Guidance)
+    const { data: staff } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (staff) {
+      // Staff cannot enter the Admin Dashboard
+      if (path.startsWith('/admin-dashboard')) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+      return response;
+    }
+
+    // TIER 3: STUDENT CHECK
+    const { data: student } = await supabase
+      .from('students')
+      .select('is_approved')
+      .eq('account_id', user.id)
+      .maybeSingle();
+
+    if (student) {
+      // Force unapproved students to waiting room
+      if (!student.is_approved && path !== '/pending-approval') {
+        return NextResponse.redirect(new URL('/pending-approval', request.url));
+      }
+      // Approved students cannot see Staff or Admin dashboards
+      if (path.startsWith('/incident-dashboard') || path.startsWith('/admin-dashboard')) {
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+      return response;
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|pending-approval|unauthorized).*)'],
 }

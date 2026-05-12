@@ -65,7 +65,7 @@ export default function LoginPage() {
             disabled={isPending}
             className="w-full bg-cavite-maroon text-white font-bold py-4 rounded-lg hover:bg-[#600000] active:scale-[0.98] transition-all shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed uppercase tracking-widest"
           >
-            {isPending ? 'Verifying Identity...' : 'Authenticate'}
+            {isPending ? 'Verifying Identity...' : 'Login'}
           </button>
         </form>
 
