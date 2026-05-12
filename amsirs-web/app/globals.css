@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  /* Cavite National High School Theme */
+  --color-cavite-maroon: #800000;
+  --color-cavite-black: #121212;
+  --color-cavite-gray: #1e1e1e;
+  --color-cavite-white: #f8f9fa;
+  --color-cavite-red: #ff4d4d;
+  
+  /* Font */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
