@@ -9,3 +9,9 @@ Attendance Monitoring, Student Incident Reporting, Student Support (AMSIRS)
 npm install face-api.js
 
 npm install @supabase/supabase-js
+
+tiny_face_detector_model
+
+face_landmark_68_model
+
+face_recognition_model
