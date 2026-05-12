@@ -54,8 +54,40 @@ export default function StudentRegistrationPage() {
           <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-200 overflow-hidden">
             <form action={formAction} className="p-8 md:p-10 space-y-10">
               
+              {/* ALERTS / FEEDBACK */}
               {state?.success && (<div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg text-sm font-semibold animate-in fade-in slide-in-from-top-2">✓ {state.message}</div>)}
               {state?.error && (<div className="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-r-lg text-sm font-semibold animate-in fade-in slide-in-from-top-2">✕ ERROR: {state.error}</div>)}
+
+              {/* ACCOUNT CREDENTIALS */}
+              <div className="space-y-4 border-b border-gray-100 pb-8">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Account Credentials</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Email Address</label>
+                    <input 
+                      name="email" 
+                      type="email"
+                      required 
+                      placeholder="student@example.com" 
+                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Secure Password</label>
+                    <input 
+                      name="password" 
+                      type="password"
+                      required 
+                      minLength={6}
+                      placeholder="••••••••" 
+                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all" 
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-400 font-medium italic mt-2">
+                  A confirmation link will be sent to this email address. You must verify it before accessing the portal.
+                </p>
+              </div>
 
               {/* PERSONAL INFORMATION */}
               <div className="space-y-4 border-b border-gray-100 pb-8">
