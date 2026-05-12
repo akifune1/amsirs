@@ -1,49 +1,70 @@
 'use server';
 
-import { encrypt } from '@/lib/encryption'; // Adjust if your path alias is different
+import { encrypt } from '@/lib/encryption';
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function submitSecureIncident(prevState: any, formData: FormData) {
   try {
-    // 1. Collect form data
-    const studentId = formData.get('studentId') as string;
+    const cookieStore = await cookies();
+    
+    // 1. Initialize Supabase Server Client to check the session
+    const serverSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          },
+        },
+      }
+    );
+
+    // 2. Get the authenticated user's ID
+    const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return { error: "Authentication failed. Please log in again." };
+    }
+
+    // 3. Collect form data
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
     const location = formData.get('location') as string;
     const severity = formData.get('severity') as string;
     const description = formData.get('description') as string;
 
-    if (!description) {
-      return { error: "Description is required." };
-    }
-
-    // 2. Encrypt the sensitive description (AES-256-GCM)
-    // This happens ON THE SERVER, so the raw text never hits the database
+    // 4. Encrypt the sensitive description
     const encryptedDescription = encrypt(description);
 
-    // 3. Insert into Supabase
-    const { error } = await supabase
+    // 5. Insert into Supabase with 'reported_by' linked to the User ID
+    const { error: dbError } = await supabase
       .from('incident_reports')
       .insert([
         {
-          student_id: studentId,
+          first_name: firstName,
+          last_name: lastName,
           location: location,
           severity: severity,
-          description: encryptedDescription, // Saving the ciphertext
+          description: encryptedDescription,
+          reported_by: user.id, // <--- This links the report to the logged-in user
           status: 'Pending'
         },
       ]);
 
-    if (error) {
-      console.error("Supabase Insert Error:", error);
-      return { error: "Database connection failed. Please try again." };
-    }
+    if (dbError) throw dbError;
 
-    // 4. Success! Refresh the page data
     revalidatePath('/incident-reporting');
-    return { success: true, message: "Incident report encrypted and filed successfully." };
+    return { success: true, message: `Report successfully filed by Authorized User: ${user.email}` };
 
   } catch (err) {
-    console.error("Encryption Error:", err);
-    return { error: "An error occurred during secure data processing." };
+    console.error("Critical System Error:", err);
+    return { error: "A security error occurred during transmission." };
   }
 }
