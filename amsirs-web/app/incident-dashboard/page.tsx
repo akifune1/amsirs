@@ -94,17 +94,18 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* THE INCIDENT TABLE */}
-        <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-200 overflow-hidden">
+{/* THE INCIDENT TABLE - DECLUTTERED */}
+        <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/40 border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="p-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Date & Time</th>
-                  <th className="p-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Student Involved</th>
-                  <th className="p-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Location</th>
-                  <th className="p-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Severity</th>
-                  <th className="p-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
+                {/* Softer background, normal tracking, lighter gray for headers */}
+                <tr className="bg-gray-50/50 border-b border-gray-100">
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Date & Time</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Student Involved</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Location</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase">Severity</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -115,9 +116,9 @@ export default async function DashboardPage() {
                 ) : (
                   <tr>
                     <td colSpan={5} className="p-20 text-center">
-                      <div className="flex flex-col items-center opacity-30">
-                        <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
-                        <p className="text-lg font-bold uppercase tracking-widest">No reports found</p>
+                      <div className="flex flex-col items-center text-gray-400">
+                        <svg className="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
+                        <p className="text-sm font-medium">No reports found in the secure vault.</p>
                       </div>
                     </td>
                   </tr>

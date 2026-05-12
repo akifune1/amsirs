@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import Link from 'next/link'; // NEW: Import Next.js Link
 import { login } from './actions';
 
 export default function LoginPage() {
@@ -68,7 +69,17 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-10 pt-6 border-t border-gray-100 text-center">
+        {/* NEW: Link to the Student Registration Portal */}
+        <div className="mt-6 text-center">
+          <Link 
+            href="/register" 
+            className="text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-colors uppercase tracking-widest"
+          >
+            No Account Yet? Register Here
+          </Link>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
           <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-[0.2em]">
             Authorized Personnel Only • Secure Session
           </p>
