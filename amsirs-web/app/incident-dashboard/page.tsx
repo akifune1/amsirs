@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import IncidentRow from './incidentRow';
 import { logout } from '../auth/actions';
 
+// This forces the page to always fetch fresh data (no caching)
+export const revalidate = 0; 
+
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -19,15 +22,29 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // ==========================================
+  // UPDATED NESTED QUERY: 
+  // We are grabbing the report AND the linked students
+  // ==========================================
   const { data: reports } = await supabase
     .from('incident_reports')
-    .select('*')
+    .select(`
+      *,
+      incident_involvements (
+        id,
+        students ( 
+          id, 
+          student_id, 
+          first_name, 
+          last_name, 
+          grade_level 
+        )
+      )
+    `)
     .order('created_at', { ascending: false });
 
   return (
     <div className="min-h-screen font-sans">
-      
-      {/* SYNCED TOP NAVIGATION BAR */}
       <nav className="sys-navbar">
         <div className="flex items-center gap-3">
           <div className="badge-primary">AMSIRS</div>
@@ -55,8 +72,6 @@ export default async function DashboardPage() {
       </nav>
 
       <main className="sys-container">
-        
-        {/* DASHBOARD HEADER */}
         <div className="mb-10">
           <h2 className="text-3xl font-extrabold tracking-tight">Recent Incident Reports</h2>
           <p className="text-gray-500 font-medium mt-1">
@@ -64,7 +79,6 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* STATS SUMMARY */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="stat-card">
             <p className="sys-label">Total Reports</p>
@@ -82,7 +96,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* THE INCIDENT TABLE */}
         <div className="sys-card">
           <div className="sys-table-wrapper">
             <table className="sys-table">
