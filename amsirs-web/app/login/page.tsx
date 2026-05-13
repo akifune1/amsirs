@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import Link from 'next/link'; // NEW: Import Next.js Link
+import Link from 'next/link'; 
 import { login } from './actions';
 
 export default function LoginPage() {
@@ -11,29 +11,31 @@ export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(login, null);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white p-10 rounded-xl shadow-xl border-t-[6px] border-cavite-maroon">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      {/* Replaced heavy inline shadow/border classes with sys-card, 
+          but kept the specific max-width, padding, and top-border accent. */}
+      <div className="max-w-md w-full sys-card p-10 border-t-[6px] border-t-cavite-maroon">
         
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold tracking-tighter text-cavite-maroon uppercase">
+          <h1 className="sys-title">
             AMSIRS
           </h1>
-          <p className="text-sm font-medium text-gray-500 mt-2 tracking-wide">
+          <p className="sys-subtitle mt-2">
             Cavite National High School
           </p>
         </div>
 
         <form action={formAction} className="space-y-6">
           
-          {/* Display Error Message with high contrast for Light Mode */}
+          {/* Display Error Message using the new alert-error component */}
           {state?.error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg text-sm text-center font-medium">
+            <div className="alert-error text-center rounded-lg">
               {state.error}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-tight">
+            <label className="form-label">
               Institutional Email
             </label>
             <input 
@@ -41,13 +43,13 @@ export default function LoginPage() {
               type="email" 
               required
               disabled={isPending}
-              className="w-full bg-white border border-gray-300 rounded-lg p-3.5 text-black placeholder:text-gray-400 focus:outline-none focus:border-cavite-maroon focus:ring-2 focus:ring-cavite-maroon/10 transition-all disabled:bg-gray-100 disabled:text-gray-500"
+              className="input-field"
               placeholder="guard@amsirs.edu.ph"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-tight">
+            <label className="form-label">
               Password
             </label>
             <input 
@@ -55,32 +57,29 @@ export default function LoginPage() {
               type="password" 
               required
               disabled={isPending}
-              className="w-full bg-white border border-gray-300 rounded-lg p-3.5 text-black placeholder:text-gray-400 focus:outline-none focus:border-cavite-maroon focus:ring-2 focus:ring-cavite-maroon/10 transition-all disabled:bg-gray-100 disabled:text-gray-500"
+              className="input-field"
               placeholder="••••••••"
             />
           </div>
 
+          {/* Replaced heavy inline button classes with btn-primary */}
           <button 
             type="submit"
             disabled={isPending}
-            className="w-full bg-cavite-maroon text-white font-bold py-4 rounded-lg hover:bg-[#600000] active:scale-[0.98] transition-all shadow-md hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed uppercase tracking-widest"
+            className="btn-primary mt-2"
           >
             {isPending ? 'Verifying Identity...' : 'Login'}
           </button>
         </form>
 
-        {/* NEW: Link to the Student Registration Portal */}
-        <div className="mt-6 text-center">
-          <Link 
-            href="/register" 
-            className="text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-colors uppercase tracking-widest"
-          >
+        <div className="mt-6 flex justify-center">
+          <Link href="/register" className="btn-text">
             No Account Yet? Register Here
           </Link>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-          <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-[0.2em]">
+        <div className="mt-8 pt-6 border-t border-cavite-border text-center">
+          <p className="sys-label">
             Authorized Personnel Only • Secure Session
           </p>
         </div>
