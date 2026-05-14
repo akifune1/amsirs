@@ -7,8 +7,6 @@ Attendance Monitoring, Student Incident Reporting, Student Support (AMSIRS)
 
 > *"Security is the result of architectural intent, not a happy accident."*
 
-A high-security, minimalist campus management portal designed for **Mapúa University – Makati**. CIS focuses on student welfare and incident reporting through a **Cybersecurity-first** lens, utilizing tiered data isolation and manual identity provisioning.
-
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![Supabase](https://img.shields.io/badge/Supabase-SSR-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
