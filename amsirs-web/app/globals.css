@@ -10,3 +10,146 @@
   
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* =========================================
+   1. BASE LAYER: Global Document Setup
+========================================= */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased min-h-screen selection:bg-cavite-maroon selection:text-white;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+}
+
+/* =========================================
+   2. COMPONENTS LAYER: UI Design System
+========================================= */
+@layer components {
+
+  /* --- Layout & Structure --- */
+  .sys-navbar {
+    @apply bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50;
+  }
+
+  .sys-container {
+    @apply p-6 md:p-12 max-w-7xl mx-auto;
+  }
+
+  .sys-card {
+    @apply bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-cavite-border overflow-hidden;
+  }
+
+  .sys-card-header {
+    @apply bg-cavite-gray border-b border-cavite-border px-8 py-4 flex justify-between items-center;
+  }
+
+  /* --- Typography --- */
+  .sys-title {
+    @apply text-3xl md:text-4xl font-extrabold text-cavite-maroon tracking-tighter uppercase;
+  }
+
+  .sys-subtitle {
+    @apply text-gray-500 text-sm font-medium mt-1 uppercase tracking-widest;
+  }
+
+  .sys-label {
+    @apply text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none;
+  }
+
+  /* --- Forms & Inputs --- */
+  .form-label {
+    @apply block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider;
+  }
+
+  .input-field {
+    @apply w-full bg-white border border-gray-300 rounded-lg p-3.5 text-cavite-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all disabled:bg-gray-100 disabled:text-gray-500 placeholder:text-gray-400;
+  }
+
+  /* Used for dynamic blocks to visually separate them from the white card */
+  .input-field-alt {
+    @apply w-full bg-cavite-gray border border-gray-300 rounded-lg p-3 text-cavite-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all placeholder:text-gray-400;
+  }
+
+  /* --- Buttons --- */
+  .btn-primary {
+    @apply w-full bg-cavite-maroon hover:bg-[#600000] text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-cavite-maroon/10 hover:shadow-cavite-maroon/20 active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed uppercase tracking-widest text-sm;
+  }
+
+  .btn-ghost {
+    @apply flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-cavite-gray px-4 py-2 rounded-full border border-cavite-border hover:border-cavite-maroon/20 cursor-pointer;
+  }
+
+  .btn-text {
+    @apply text-xs font-bold text-cavite-maroon hover:text-[#600000] uppercase tracking-widest flex items-center gap-1 transition-colors;
+  }
+
+  .btn-icon-danger {
+    @apply absolute bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all z-10;
+  }
+
+  /* --- Badges & Alerts --- */
+  .badge-primary {
+    @apply bg-cavite-maroon text-white px-3 py-1.5 rounded-lg font-black text-lg shadow-sm;
+  }
+
+  .badge-outline {
+    @apply text-[10px] font-black bg-cavite-maroon/10 text-cavite-maroon px-2 py-0.5 rounded border border-cavite-maroon/20 uppercase tracking-tighter;
+  }
+
+  .alert-success {
+    @apply bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg text-sm font-semibold;
+  }
+
+  .alert-error {
+    @apply bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-r-lg text-sm font-semibold;
+  }
+
+  /* --- Data Tables --- */
+  .table-th {
+    @apply py-4 px-6 text-xs font-semibold text-gray-500 uppercase;
+  }
+}
+
+/* --- Dashboard Stats --- */
+  .stat-card {
+    @apply bg-white p-6 rounded-xl border border-cavite-border shadow-sm flex flex-col justify-center;
+  }
+
+  .stat-value {
+    @apply text-3xl font-black text-cavite-black mt-1;
+  }
+  
+  .stat-value-danger {
+    @apply text-3xl font-black text-red-600 mt-1;
+  }
+  
+  .stat-value-success {
+    @apply text-3xl font-black text-green-600 mt-1;
+  }
+
+  /* --- Tables --- */
+  .sys-table-wrapper {
+    @apply w-full overflow-x-auto;
+  }
+
+  .sys-table {
+    @apply w-full text-left border-collapse min-w-[600px];
+  }
+
+  .table-header-row {
+    @apply bg-cavite-gray/80 border-b border-cavite-border;
+  }
+
+  /* Note: .table-th is already in your globals.css */
+
+  .table-td {
+    @apply py-4 px-6 text-sm font-medium border-b border-cavite-border/50 text-gray-700 bg-white;
+  }
+
+  /* --- Layout Utilities --- */
+  .layout-center {
+    @apply min-h-screen flex items-center justify-center px-4;
+  }

@@ -23,9 +23,9 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // If not logged in, block all protected routes
-  const isProtected = path.startsWith('/incident-dashboard') || 
-                      path.startsWith('/admin-dashboard') || 
-                      path.startsWith('/incident-reporting');
+  const isProtected = path.startsWith('/incident-dashboard') ||
+    path.startsWith('/admin-dashboard') ||
+    path.startsWith('/incident-reporting');
 
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/login', request.url));
@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
       .maybeSingle();
 
     if (admin) {
-      // Admins have "God Mode" — let them through everything
+      // Admins have god mode
       return response;
     }
 

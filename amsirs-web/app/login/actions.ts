@@ -66,7 +66,8 @@ export async function login(prevState: any, formData: FormData) {
 
   if (student) {
     if (!student.is_approved) redirect('/pending-approval');
-    redirect('/incident-reporting');
+    // ✅ This is the only line that needed changing
+    redirect('/student-portal');
   }
 
   redirect('/unauthorized');
