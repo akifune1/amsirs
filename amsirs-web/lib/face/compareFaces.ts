@@ -5,17 +5,24 @@ export function compareFaces(
   currentDescriptor: Float32Array
 ) {
   return faceapi.euclideanDistance(
-    savedDescriptor,
+    new Float32Array(savedDescriptor),
     currentDescriptor
   );
 }
 
-export function getMatchPercentage(distance: number) {
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round((1 - distance / 0.6) * 100)
-    )
-  );
+export function getMatchPercentage(
+  distance: number
+) {
+  const percentage =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          (1 - distance / 0.75) * 100
+        )
+      )
+    );
+
+  return percentage;
 }
