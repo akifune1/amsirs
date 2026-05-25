@@ -1,0 +1,193 @@
+'use client';
+
+import React, { useState } from 'react';
+import { X } from 'lucide-react';
+
+interface CounselingModalProps {
+  isOpen: boolean;
+  studentName: string;
+  onClose: () => void;
+  onSave: (data: CounselingSessionData) => void;
+  isLoading?: boolean;
+}
+
+export interface CounselingSessionData {
+  sessionDate: string;
+  interventionType: string;
+  notes: string;
+  followUpDate: string;
+  caseStatus: string;
+}
+
+export default function CounselingModal({
+  isOpen,
+  studentName,
+  onClose,
+  onSave,
+  isLoading = false,
+}: CounselingModalProps) {
+  const [formData, setFormData] = useState<CounselingSessionData>({
+    sessionDate: new Date().toISOString().split('T')[0],
+    interventionType: 'Initial Counseling',
+    notes: '',
+    followUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    caseStatus: 'Active',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
+          {/* Header */}
+          <div className="sys-card-header sticky top-0 z-10 flex justify-between items-center">
+            <div className="flex-1">
+              <p className="sys-label">NEW SESSION</p>
+              <h2 className="text-lg font-bold text-cavite-black mt-1">{studentName}</h2>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isLoading}
+              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-8 md:p-10 space-y-6">
+            {/* Session Date */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="form-label">Session Date</label>
+                <input
+                  type="date"
+                  name="sessionDate"
+                  value={formData.sessionDate}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                />
+              </div>
+
+              {/* Intervention Type */}
+              <div className="space-y-2">
+                <label className="form-label">Intervention Type</label>
+                <select
+                  name="interventionType"
+                  value={formData.interventionType}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                >
+                  <option value="Initial Counseling">Initial Counseling</option>
+                  <option value="Follow-up Session">Follow-up Session</option>
+                  <option value="Crisis Intervention">Crisis Intervention</option>
+                  <option value="Academic Support">Academic Support</option>
+                  <option value="Behavioral Intervention">Behavioral Intervention</option>
+                  <option value="Parent Conference">Parent Conference</option>
+                  <option value="Referral to External Services">Referral to External Services</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Counseling Notes */}
+            <div className="space-y-2">
+              <label className="form-label">Counseling Notes</label>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Record observations, key concerns, recommendations, and student response..."
+                required
+                rows={5}
+                className="w-full bg-white border border-gray-300 rounded-lg p-3.5 text-cavite-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all disabled:bg-gray-100 disabled:text-gray-500 placeholder:text-gray-400 resize-vertical"
+              />
+            </div>
+
+            {/* Follow-up & Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="form-label">Follow-up Date</label>
+                <input
+                  type="date"
+                  name="followUpDate"
+                  value={formData.followUpDate}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="form-label">Case Status</label>
+                <select
+                  name="caseStatus"
+                  value={formData.caseStatus}
+                  onChange={handleChange}
+                  required
+                  className="input-field"
+                >
+                  <option value="Active">Active - Ongoing Support</option>
+                  <option value="Pending Review">Pending Review</option>
+                  <option value="Resolved">Resolved - Case Closed</option>
+                  <option value="Escalated">Escalated - Requires Admin</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-6 border-t border-cavite-border">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Saving Session...' : 'Save Session'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, caseStatus: 'Resolved' });
+                  // Would need to handle this differently, but for now just update the state
+                }}
+                disabled={isLoading}
+                className="flex-1 bg-green-100 hover:bg-green-200 border border-green-300 text-green-700 font-black py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
+              >
+                Resolve Case
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
+  );
+}
