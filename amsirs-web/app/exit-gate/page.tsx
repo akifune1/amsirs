@@ -14,7 +14,7 @@ import {
   getMatchPercentage,
 } from "@/lib/face/compareFaces";
 
-export default function AccessGatePage() {
+export default function ExitGatePage() {
 
   const videoRef =
     useRef<HTMLVideoElement>(null);
@@ -27,7 +27,7 @@ export default function AccessGatePage() {
 
   const [message, setMessage] =
     useState(
-      "INITIALIZING SYSTEM..."
+      "INITIALIZING EXIT SYSTEM..."
     );
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function AccessGatePage() {
       await startCamera();
 
       setMessage(
-        "SYSTEM READY\n\nWaiting for face..."
+        "EXIT GATE READY\n\nWaiting for face..."
       );
 
       startAutoScan();
@@ -313,7 +313,7 @@ export default function AccessGatePage() {
         ) {
 
           const fileName =
-            `scan-${Date.now()}.jpg`;
+            `exit-${Date.now()}.jpg`;
 
           const {
             error:
@@ -352,7 +352,7 @@ export default function AccessGatePage() {
           )
           .eq(
             "action",
-            "ENTRY"
+            "EXIT"
           )
           .order(
             "created_at",
@@ -386,7 +386,7 @@ export default function AccessGatePage() {
           ) {
 
             setMessage(
-              `WELCOME BACK\n\n${studentData.first_name} ${studentData.last_name}\n\nAlready Scanned`
+              `EXIT ALREADY RECORDED\n\n${studentData.first_name} ${studentData.last_name}`
             );
 
             return;
@@ -394,7 +394,7 @@ export default function AccessGatePage() {
         }
 
         // =====================
-        // SAVE LOG
+        // SAVE EXIT LOG
         // =====================
 
         await supabase
@@ -415,7 +415,7 @@ export default function AccessGatePage() {
               snapshotPath,
 
             action:
-              "ENTRY",
+              "EXIT",
           });
 
         // =====================
@@ -423,7 +423,7 @@ export default function AccessGatePage() {
         // =====================
 
         setMessage(
-          `ACCESS GRANTED\n\n${studentData.first_name} ${studentData.last_name}\n\nStudent ID:\n${studentData.student_id}\n\nMatch:\n${matchPercentage}%`
+          `EXIT RECORDED\n\n${studentData.first_name} ${studentData.last_name}\n\nStudent ID:\n${studentData.student_id}\n\nMatch:\n${matchPercentage}%`
         );
 
       } else {
@@ -470,43 +470,41 @@ export default function AccessGatePage() {
 
         </div>
 
-        {/* ========================= */}
-        {/* NAVIGATION LINKS */}
-        {/* ========================= */}
+        {/* NAV LINKS */}
 
         <div className="flex items-center gap-3 flex-wrap">
 
           <Link
             href="/access-gate"
-            className="bg-cavite-maroon text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-sm"
+            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
           >
             Entry Gate
           </Link>
 
           <Link
             href="/exit-gate"
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all"
+            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-cavite-maroon text-white shadow-lg"
           >
             Exit Gate
           </Link>
 
           <Link
             href="/access-logs"
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all"
+            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
           >
             Access Logs
           </Link>
 
           <Link
             href="/campus-status"
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all"
+            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
           >
             Campus Status
           </Link>
 
           <Link
             href="/incident-dashboard"
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all"
+            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
           >
             Incident Logs
           </Link>
@@ -524,11 +522,11 @@ export default function AccessGatePage() {
         <div className="mb-8">
 
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
-            Facial Recognition Entry Scanner
+            Facial Recognition Exit Scanner
           </h1>
 
           <p className="text-gray-500 font-medium mt-2">
-            Real-time biometric campus entry verification powered by AI facial recognition.
+            Real-time biometric campus exit verification powered by AI facial recognition.
           </p>
 
         </div>
@@ -552,7 +550,7 @@ export default function AccessGatePage() {
                   </p>
 
                   <h2 className="text-xl font-bold text-gray-900 mt-1">
-                    Entry Gate Camera
+                    Exit Gate Camera
                   </h2>
 
                 </div>
@@ -561,7 +559,7 @@ export default function AccessGatePage() {
 
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
 
-                  LIVE
+                  EXIT ACTIVE
 
                 </div>
 
@@ -598,7 +596,7 @@ export default function AccessGatePage() {
                 </p>
 
                 <h2 className="text-xl font-bold text-gray-900 mt-1">
-                  AI Monitoring
+                  Exit Scanner
                 </h2>
 
               </div>
@@ -642,7 +640,7 @@ export default function AccessGatePage() {
                 </p>
 
                 <h2 className="text-xl font-bold text-gray-900 mt-1">
-                  Access Verification
+                  Exit Verification
                 </h2>
 
               </div>
@@ -671,17 +669,17 @@ export default function AccessGatePage() {
 
               <div className="p-6">
 
-                <p className="text-xs font-black tracking-[0.2em] uppercase text-red-200">
+                <p className="text-xs font-black tracking-[0.2em] uppercase text-red-100">
                   AMSIRS SECURITY
                 </p>
 
                 <h2 className="text-2xl font-black mt-2">
-                  Facial Recognition Active
+                  Exit Recognition Active
                 </h2>
 
-                <p className="text-sm text-red-100 mt-3 leading-relaxed">
-                  Every successful facial scan is securely recorded with timestamp,
-                  and biometric snapshot for campus monitoring.
+                <p className="text-sm text-gray-100/90 mt-3 leading-relaxed">
+                  Every successful exit scan is securely recorded with timestamp,
+                  and biometric snapshot for campus movement monitoring.
                 </p>
 
               </div>
