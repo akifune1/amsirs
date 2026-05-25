@@ -19,18 +19,14 @@ export default function CampusStatusPage() {
 
   }, []);
 
-  async function loadCampusStatus() {
-
+async function loadCampusStatus() {
     try {
+      console.log("[DEBUG] Starting loadCampusStatus fetch...");
 
       // =========================
       // LOAD ACCESS LOGS
       // =========================
-
-      const {
-        data: logs,
-        error,
-      } = await supabase
+      const { data: logs, error } = await supabase
         .from("access_logs")
         .select(`
           *,
@@ -42,68 +38,59 @@ export default function CampusStatusPage() {
             section
           )
         `)
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        );
+        .order("created_at", { ascending: false });
 
-      if (
-        error ||
-        !logs
-      ) {
+      // DEBUG: The Raw Response
+      console.log("[DEBUG] Raw Supabase Response:", { logs, error });
 
-        console.error(error);
-
+      if (error) {
+        console.error("[RLS/DB ERROR] Failed to fetch access_logs:", error);
         return;
+      }
+
+      if (!logs) {
+        console.warn("[DEBUG] Logs array is null or undefined.");
+        return;
+      }
+
+      // RLS CHECK: Silent filtering
+      if (logs.length === 0) {
+        console.warn(
+          "[RLS CHECK] Supabase returned an empty array []. If you know data exists in the database, your SELECT policy on 'access_logs' or 'students' is blocking this user from reading it."
+        );
       }
 
       // =========================
       // GET LATEST ACTION
       // =========================
-
-      const latestLogs =
-        new Map();
+      const latestLogs = new Map();
 
       for (const log of logs) {
+        // Quick check in case the foreign key join failed due to RLS on the 'students' table
+        if (!log.students) {
+          console.warn(`[RLS CHECK] Log ${log.id} returned null for 'students'. Check SELECT policy on 'students' table.`);
+        }
 
-        if (
-          !latestLogs.has(
-            log.student_id
-          )
-        ) {
-
-          latestLogs.set(
-            log.student_id,
-            log
-          );
+        if (!latestLogs.has(log.student_id)) {
+          latestLogs.set(log.student_id, log);
         }
       }
+
+      console.log(`[DEBUG] Processed unique students count: ${latestLogs.size}`);
 
       // =========================
       // FILTER ENTRY ONLY
       // =========================
-
-      const insideCampus =
-        Array.from(
-          latestLogs.values()
-        ).filter(
-          (log: any) =>
-            log.action ===
-            "ENTRY"
-        );
-
-      setStudents(
-        insideCampus
+      const insideCampus = Array.from(latestLogs.values()).filter(
+        (log: any) => log.action === "ENTRY"
       );
 
+      console.log("[DEBUG] Final 'insideCampus' array being set to state:", insideCampus);
+
+      setStudents(insideCampus);
     } catch (error) {
-
-      console.error(error);
-
+      console.error("[DEBUG] Caught system error in loadCampusStatus:", error);
     } finally {
-
       setLoading(false);
     }
   }
