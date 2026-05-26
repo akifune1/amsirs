@@ -55,7 +55,13 @@ export async function login(prevState: any, formData: FormData) {
     .eq('id', userId)
     .maybeSingle();
 
-  if (staff) redirect('/incident-dashboard');
+  if (staff) {
+    if (staff.role === 'guidance') {
+      redirect('/student-support');
+    } else {
+      redirect('/incident-dashboard'); // Defaults to guards
+    }
+  }
 
   // 3. Student
   const { data: student } = await supabase

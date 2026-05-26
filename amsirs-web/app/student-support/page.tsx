@@ -6,7 +6,13 @@ import SupportStats from './components/SupportStats';
 import StudentTable from './components/StudentTable';
 import CounselingModal, { CounselingSessionData } from './components/CounselingModal';
 import StudentCaseCard from './components/StudentCaseCard';
-import { getDashboardStats, getFlaggedStudents, createIntervention, getStudentCaseDetails } from './actions';
+import { 
+  getDashboardStats, 
+  getFlaggedStudents, 
+  createIntervention, 
+  getStudentCaseDetails,
+  getCurrentUserProfile // <-- New Import
+} from './actions';
 
 interface StudentRecord {
   id: string;
@@ -53,11 +59,13 @@ export default function StudentSupportPage() {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [pageView, setPageView] = useState<PageView>('dashboard');
   
+  // --- NEW: User Profile State ---
+  const [userProfile, setUserProfile] = useState({ name: 'Loading...', roleLabel: 'Counselor Portal' });
+
   const [counselingModal, setCounselingModal] = useState(false);
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<StudentRecord | null>(null);
   const [submittingSession, setSubmittingSession] = useState(false);
 
-  // Load data on mount
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -65,13 +73,19 @@ export default function StudentSupportPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch stats
+      // 1. Fetch current logged-in user profile
+      const profileResponse = await getCurrentUserProfile();
+      if (profileResponse.success && profileResponse.data) {
+        setUserProfile(profileResponse.data);
+      }
+
+      // 2. Fetch stats
       const statsResponse = await getDashboardStats();
       if (statsResponse.success && statsResponse.data) {
         setStats(statsResponse.data);
       }
 
-      // Fetch flagged students
+      // 3. Fetch flagged students
       const studentsResponse = await getFlaggedStudents();
       if (studentsResponse.success && studentsResponse.data) {
         setStudents(studentsResponse.data);
@@ -97,46 +111,6 @@ export default function StudentSupportPage() {
       }
     } catch (error) {
       console.error('Error loading case details:', error);
-      // Show mock case details
-      const student = students.find(s => s.id === studentId);
-      if (student) {
-        setCaseDetails({
-          studentName: student.name,
-          studentId: student.studentId,
-          gradeSection: student.gradeSection,
-          guardianContact: 'guardian@email.com',
-          riskLevel: student.riskLevel,
-          attendanceStats: {
-            totalAbsences: student.absenceCount,
-            lateRecords: Math.floor(student.absenceCount * 0.3),
-            attendancePercentage: Math.max(75, 100 - Math.floor(student.absenceCount * 2)),
-          },
-          recentIncidents: [
-            {
-              date: '2024-05-15',
-              title: 'Excessive absences from classes',
-              severity: 'High' as const,
-              reporter: 'Ms. Garcia',
-            },
-            {
-              date: '2024-05-10',
-              title: 'Late arrival multiple times',
-              severity: 'Medium' as const,
-              reporter: 'Mr. Santos',
-            },
-          ],
-          counselingHistory: [
-            {
-              date: '2024-05-20',
-              type: 'Initial Counseling',
-              notes: 'Student discussed family circumstances and academic stress. Recommended study group participation.',
-              counselor: 'Ms. Cruz',
-            },
-          ],
-        });
-        setSelectedStudent(studentId);
-        setPageView('case-details');
-      }
     } finally {
       setLoading(false);
     }
@@ -155,17 +129,17 @@ export default function StudentSupportPage() {
 
     setSubmittingSession(true);
     try {
-      const response = await createCounselingSession(selectedStudentForModal.id, {
-        interventionType: data.interventionType,
-        notes: data.notes,
-        followUpDate: data.followUpDate,
-        caseStatus: data.caseStatus,
-      });
+      // Fixed Typo: Using createIntervention instead of createCounselingSession
+      const response = await createIntervention(
+        selectedStudentForModal.id, 
+        data.interventionType,
+        data.notes,
+        data.followUpDate
+      );
 
       if (response.success) {
         setCounselingModal(false);
         setSelectedStudentForModal(null);
-        // Refresh data
         await loadDashboardData();
       }
     } catch (error) {
@@ -192,6 +166,13 @@ export default function StudentSupportPage() {
               <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">
                 Student Support System
               </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="text-right hidden sm:block">
+              <p className="sys-label text-gray-400">{userProfile.roleLabel}</p>
+              <p className="text-xs font-bold text-cavite-maroon mt-0.5">{userProfile.name}</p>
             </div>
           </div>
         </nav>
@@ -224,8 +205,8 @@ export default function StudentSupportPage() {
 
         <div className="flex items-center gap-6">
           <div className="text-right hidden sm:block">
-            <p className="sys-label text-gray-400">Counselor Portal</p>
-            <p className="text-xs font-bold text-cavite-maroon mt-0.5">Guidance Counseling</p>
+            <p className="sys-label text-gray-400">{userProfile.roleLabel}</p>
+            <p className="text-xs font-bold text-cavite-maroon mt-0.5">{userProfile.name}</p>
           </div>
 
           <form action={logout}>

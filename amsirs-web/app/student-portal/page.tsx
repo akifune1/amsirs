@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { logout } from '../auth/actions';
-import IncidentClientLogs from './IncidentClientLogs';
+import IncidentClientLogs from './IncidentClientLogs'; // Imports your untouched table component
 import { decrypt } from '@/lib/encryption'; 
 
 export default async function StudentPortal() {
@@ -37,7 +37,15 @@ export default async function StudentPortal() {
     );
   }
 
-  // --- PHOTO FIX: Generate Signed URL ---
+  // 3. FETCH AUTOMATED FLAGGING STATUS
+  // This checks the table populated by our SQL trigger
+  const { data: flagRecord } = await supabase
+    .from('student_flags')
+    .select('is_flagged')
+    .eq('student_id', student.id)
+    .maybeSingle();
+
+  // 4. Generate Signed URL for Profile Photo
   let photoUrl = null;
   if (student.face_photo_path) {
     const { data: photoData } = await supabase.storage
@@ -47,7 +55,7 @@ export default async function StudentPortal() {
     if (photoData) photoUrl = photoData.signedUrl;
   }
 
-  // 3. Fetch Linked Incidents
+  // 5. Fetch Linked Incidents
   const { data: involvements } = await supabase
     .from('incident_involvements')
     .select(`
@@ -58,7 +66,7 @@ export default async function StudentPortal() {
     .eq('student_id', student.id)
     .order('created_at', { ascending: false });
 
-  // 4. Decrypt & Format
+  // 6. Decrypt & Format
   const processedInvolvements = involvements ? await Promise.all(
     involvements.map(async (record) => {
       const incident = record.incident_reports as any;
@@ -133,6 +141,30 @@ export default async function StudentPortal() {
           <p className="sys-subtitle">Personal Information & Involvement Records</p>
         </div>
 
+        {/* --- SYSTEM FLAG BANNER (ONLY SHOWS IF FLAGGED) --- */}
+        {flagRecord?.is_flagged && (
+          <div className="bg-cavite-maroon text-white rounded-2xl shadow-xl overflow-hidden mb-8 animate-in slide-in-from-top-4 duration-300">
+            <div className="p-6 md:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="w-16 h-16 shrink-0 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-200 mb-1">Mandatory Action Required</p>
+                <h2 className="text-xl font-bold mb-2">Guidance Intervention Notice</h2>
+                <p className="text-sm text-red-100 font-medium leading-relaxed">
+                  The Campus Integrated System has flagged your profile due to your involvement in multiple or severe incidents. 
+                  <strong> You must report to the Guidance Counselor's office immediately </strong> 
+                  to resolve this status.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* LEFT COLUMN: IDENTITY DETAILS */}
@@ -192,6 +224,7 @@ export default async function StudentPortal() {
                 <span className="sys-label">Involvement Logs</span>
                 <span className="badge-outline">Encrypted</span>
               </div>
+              {/* This references your untouched IncidentClientLogs.tsx file! */}
               <IncidentClientLogs involvements={processedInvolvements} />
             </div>
           </section>

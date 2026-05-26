@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import * as faceapi from 'face-api.js';
+import { supabase } from '@/lib/supabase';
 import { 
   getDecryptedDescription, 
   getSecureImageUrl,
@@ -9,11 +11,10 @@ import {
   linkStudentToIncident,
   unlinkStudentFromIncident
 } from './actions';
+import { loadModels } from '@/lib/face/loadModels';
+import { compareFaces, getMatchPercentage } from '@/lib/face/compareFaces'; 
 
 export default function IncidentRow({ report }: { report: any }) {
-  // DEBUG LOG
-  console.log("💎 RAW REPORT DATA:", JSON.stringify(report, null, 2));
-  
   // 🔒 Security State
   const [decryptedText, setDecryptedText] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -25,19 +26,28 @@ export default function IncidentRow({ report }: { report: any }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  // 🔄 NEW: Local Sync State
-  // This ensures the UI updates when the server revalidates data
   const [involvements, setInvolvements] = useState(report.incident_involvements || []);
+
+  // 🤖 AI Scanning State
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [isScanningStatus, setIsScanningStatus] = useState<string | null>(null);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  
+  // Guard reference to prevent double-scanning
+  const hasScannedRef = useRef(false);
 
   useEffect(() => setMounted(true), []);
 
-  // CRITICAL: This effect listens for the server sending a new "report" prop
   useEffect(() => {
     setInvolvements(report.incident_involvements || []);
   }, [report.incident_involvements]);
 
-  // Handle the live search for linking students
+  // Load existing AI recommendations if any exist for this incident
+  useEffect(() => {
+    if (decryptedText) fetchRecommendations();
+  }, [decryptedText]);
+
+  // Handle live search for manual linking
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length >= 2) {
@@ -52,11 +62,17 @@ export default function IncidentRow({ report }: { report: any }) {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
+  const fetchRecommendations = async () => {
+    const { data } = await supabase
+      .from('incident_ai_matches')
+      .select(`*, students(id, first_name, last_name, student_id)`)
+      .eq('incident_id', report.id);
+    if (data) setAiRecommendations(data);
+  };
+
   const handleLink = async (studentId: string) => {
     setSearchQuery('');
     setSearchResults([]);
-    // The server action will trigger revalidatePath, 
-    // which triggers our useEffect above to update the UI.
     await linkStudentToIncident(report.id, studentId);
   };
 
@@ -64,15 +80,92 @@ export default function IncidentRow({ report }: { report: any }) {
     await unlinkStudentFromIncident(involvementId);
   };
 
-  // Safe split for legacy reporter string inputs
-  const firstNames = (report.first_name || '').split(' & ').filter(Boolean);
-  const lastNames = (report.last_name || '').split(' & ').filter(Boolean);
-  const locations = (report.location || '').split(' & ').filter(Boolean);
+  // 🧠 CORE FEATURE: Auto-Scan Evidence Picture
+  const runAIAnalysis = async () => {
+    // Guard clause: Only run if image exists and we haven't scanned yet
+    if (!imageRef.current || hasScannedRef.current) return;
+    hasScannedRef.current = true; // Lock the scanner for this session
+    
+    try {
+      setIsScanningStatus('LOADING AI MODELS...');
+      await loadModels();
+
+      setIsScanningStatus('EXTRACTING FACES FROM EVIDENCE...');
+      const detections = await faceapi
+        .detectAllFaces(imageRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      if (detections.length === 0) {
+        setIsScanningStatus('NO FACES DETECTED IN EVIDENCE.');
+        setTimeout(() => setIsScanningStatus(null), 3000);
+        return;
+      }
+
+      setIsScanningStatus(`FOUND ${detections.length} FACE(S). CROSS-REFERENCING DB...`);
+      
+      const { data: embeddings } = await supabase.from('face_embeddings').select('*');
+      if (!embeddings) throw new Error("Could not load database embeddings");
+
+      let newMatches = [];
+
+      for (const detection of detections) {
+        let bestMatch = null;
+        let lowestDistance = 999;
+
+        for (const face of embeddings) {
+          const distance = compareFaces(face.descriptor, detection.descriptor);
+          if (distance < lowestDistance) {
+            lowestDistance = distance;
+            bestMatch = face;
+          }
+        }
+
+        if (bestMatch && lowestDistance < 0.6) {
+          const matchPercentage = getMatchPercentage(lowestDistance);
+          
+          const { data: savedMatch } = await supabase
+            .from('incident_ai_matches')
+            .insert({
+              incident_id: report.id,
+              student_id: bestMatch.student_id,
+              match_percentage: matchPercentage
+            })
+            .select(`*, students(id, first_name, last_name, student_id)`)
+            .single();
+            
+          if (savedMatch) newMatches.push(savedMatch);
+        }
+      }
+
+      if (newMatches.length > 0) {
+        setAiRecommendations(prev => {
+          // Prevent UI duplicates if DB already had them
+          const existingIds = new Set(prev.map(r => r.student_id));
+          const uniqueNew = newMatches.filter(m => !existingIds.has(m.student_id));
+          return [...prev, ...uniqueNew];
+        });
+        setIsScanningStatus('ANALYSIS COMPLETE. MATCHES FOUND.');
+      } else {
+        setIsScanningStatus('NO DB MATCHES FOUND FOR DETECTED FACES.');
+      }
+
+      setTimeout(() => setIsScanningStatus(null), 4000);
+
+    } catch (err) {
+      console.error(err);
+      setIsScanningStatus('SYSTEM ERROR DURING SCAN.');
+      setTimeout(() => setIsScanningStatus(null), 3000);
+    }
+  };
 
   const handleToggleDetails = async () => {
     if (decryptedText) {
       setDecryptedText(null);
       setImageUrl(null);
+      // Reset the scanner lock and recommendations when closing
+      hasScannedRef.current = false;
+      setAiRecommendations([]); 
       return;
     }
 
@@ -90,6 +183,10 @@ export default function IncidentRow({ report }: { report: any }) {
       setLoading(false);
     }
   };
+
+  const firstNames = (report.first_name || '').split(' & ').filter(Boolean);
+  const lastNames = (report.last_name || '').split(' & ').filter(Boolean);
+  const locations = (report.location || '').split(' & ').filter(Boolean);
 
   const severityColors: any = {
     Low: "bg-green-100 text-green-700",
@@ -131,7 +228,6 @@ export default function IncidentRow({ report }: { report: any }) {
               </div>
             )) : <span className="text-gray-400 italic text-sm">Unknown</span>}
             
-            {/* UPDATED: Uses local involvements state */}
             {involvements.length > 0 && (
               <span className="mt-1 bg-cavite-maroon/10 text-cavite-maroon text-[9px] font-black uppercase px-2 py-0.5 rounded w-max tracking-widest border border-cavite-maroon/20">
                 {involvements.length} Verified Linked
@@ -180,12 +276,25 @@ export default function IncidentRow({ report }: { report: any }) {
 
                 <div className="bg-white rounded-xl border border-cavite-border shadow-sm p-6">
                   <h4 className="sys-label mb-4">Evidence Attachment</h4>
+                  
+                  {isScanningStatus && (
+                    <div className="mb-4 bg-cavite-gray border border-cavite-border p-3 rounded text-[10px] font-bold text-gray-500 tracking-widest uppercase animate-pulse">
+                      {">"} {isScanningStatus}
+                    </div>
+                  )}
+
                   {imageUrl ? (
-                    <button onClick={() => setIsModalOpen(true)} className="block w-full cursor-zoom-in group text-left focus:outline-none focus:ring-2 focus:ring-cavite-maroon/50 rounded-lg">
-                      <div className="relative rounded-lg overflow-hidden border border-cavite-border shadow-sm transition-transform group-hover:scale-[1.01]">
-                        <img src={imageUrl} alt="Incident Evidence Thumbnail" className="w-full h-64 object-cover" />
-                      </div>
-                    </button>
+                    <div className="relative rounded-lg overflow-hidden border border-cavite-border shadow-sm">
+                      <img 
+                        ref={imageRef} 
+                        src={imageUrl} 
+                        crossOrigin="anonymous" 
+                        alt="Evidence" 
+                        className="w-full h-auto max-h-96 object-cover cursor-zoom-in" 
+                        onClick={() => setIsModalOpen(true)}
+                        onLoad={runAIAnalysis}
+                      />
+                    </div>
                   ) : (
                     <div className="w-full h-32 rounded-lg border-2 border-dashed border-cavite-border flex flex-col items-center justify-center text-gray-400 bg-gray-50">
                       <span className="text-xs font-medium uppercase tracking-widest">No visual evidence</span>
@@ -196,10 +305,39 @@ export default function IncidentRow({ report }: { report: any }) {
 
               {/* IDENTITY VERIFICATION SECTION */}
               <div className="bg-white rounded-xl border border-cavite-border shadow-sm p-6 flex flex-col">
+                
+                {aiRecommendations.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="sys-label text-orange-600 border-b border-orange-200 pb-2 mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                      AI Suggested Matches
+                    </h4>
+                    <div className="space-y-2">
+                      {aiRecommendations.map((rec, idx) => (
+                        <div key={idx} className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 flex justify-between items-center group">
+                          <div>
+                            <p className="text-[10px] font-bold text-orange-700/70 uppercase tracking-widest leading-none mb-1">
+                              {rec.students.student_id} • {rec.match_percentage}% MATCH
+                            </p>
+                            <p className="text-xs font-bold text-orange-900 leading-none">
+                              {rec.students.last_name}, {rec.students.first_name}
+                            </p>
+                          </div>
+                          <button 
+                            onClick={() => handleLink(rec.students.id)}
+                            className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-colors"
+                          >
+                            Link
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <h4 className="sys-label border-b border-cavite-border pb-2 mb-4">Verified Identities</h4>
                 
                 <div className="space-y-2 flex-1">
-                  {/* UPDATED: Mapping from involvements state */}
                   {involvements.map((inv: any) => (
                     <div key={inv.id} className="bg-cavite-gray border border-cavite-border rounded-lg px-3 py-2 flex justify-between items-center group">
                       <div>
@@ -244,7 +382,6 @@ export default function IncidentRow({ report }: { report: any }) {
                     </div>
                   )}
 
-                  {/* Dropdown Results */}
                   {searchResults.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-cavite-border rounded-lg shadow-2xl overflow-hidden max-h-48 overflow-y-auto bottom-full mb-1">
                       {searchResults.map((student) => (
