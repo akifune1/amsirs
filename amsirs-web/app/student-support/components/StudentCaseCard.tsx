@@ -1,14 +1,18 @@
 'use client';
 
-import React from 'react';
-import { Calendar, User, FileText, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, User, FileText, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import RiskBadge from './RiskBadge';
 
 interface IncidentRecord {
+  id: string; // Added ID for toggle tracking
   date: string;
   title: string;
   severity: 'Low' | 'Medium' | 'High';
   reporter: string;
+  status: string;
+  description: string;
+  imageUrl: string | null;
 }
 
 interface CounselingRecord {
@@ -16,6 +20,8 @@ interface CounselingRecord {
   type: string;
   notes: string;
   counselor: string;
+  followUpDate: string;
+  caseStatus: string;
 }
 
 interface StudentCaseCardProps {
@@ -45,19 +51,30 @@ export default function StudentCaseCard({
   counselingHistory,
   onStartIntervention,
 }: StudentCaseCardProps) {
+  // NEW: State to track which incident is expanded
+  const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
+
+  const toggleIncident = (id: string) => {
+    if (expandedIncident === id) {
+      setExpandedIncident(null);
+    } else {
+      setExpandedIncident(id);
+    }
+  };
+
   const getSeverityColor = (severity: 'Low' | 'Medium' | 'High') => {
     switch (severity) {
       case 'Low':
         return 'bg-green-100 text-green-700 border border-green-300';
       case 'Medium':
-        return 'bg-yellow-100 text-yellow-700 border border-yellow-300';
+        return 'bg-orange-100 text-orange-700 border border-orange-300';
       case 'High':
         return 'bg-red-100 text-red-700 border border-red-300';
     }
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl animate-in slide-in-from-right-4 duration-300">
       {/* Student Header Card */}
       <div className="sys-card">
         <div className="sys-card-header">
@@ -89,17 +106,17 @@ export default function StudentCaseCard({
         <div className="p-8">
           <h3 className="sys-label mb-4">ATTENDANCE SUMMARY</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-cavite-gray/50 p-4 rounded-lg">
+            <div className="bg-cavite-gray/50 p-4 rounded-lg border border-cavite-border/50">
               <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Total Absences</p>
               <p className="text-3xl font-black text-cavite-black">{attendanceStats.totalAbsences}</p>
             </div>
 
-            <div className="bg-cavite-gray/50 p-4 rounded-lg">
+            <div className="bg-cavite-gray/50 p-4 rounded-lg border border-cavite-border/50">
               <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Late Records</p>
               <p className="text-3xl font-black text-cavite-black">{attendanceStats.lateRecords}</p>
             </div>
 
-            <div className="bg-cavite-gray/50 p-4 rounded-lg">
+            <div className="bg-cavite-gray/50 p-4 rounded-lg border border-cavite-border/50">
               <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Attendance %</p>
               <div className="flex items-baseline gap-2">
                 <p className="text-3xl font-black text-green-600">{attendanceStats.attendancePercentage}%</p>
@@ -109,7 +126,7 @@ export default function StudentCaseCard({
         </div>
       </div>
 
-      {/* Incident History */}
+      {/* Incident History with Expandable Details */}
       <div className="sys-card">
         <div className="sys-card-header">
           <h3 className="sys-label">INCIDENT HISTORY</h3>
@@ -117,27 +134,72 @@ export default function StudentCaseCard({
 
         <div className="divide-y divide-cavite-border">
           {recentIncidents.length > 0 ? (
-            recentIncidents.map((incident, idx) => (
-              <div key={idx} className="p-6 hover:bg-cavite-gray/20 transition-colors">
-                <div className="flex items-start justify-between gap-4">
+            recentIncidents.map((incident) => (
+              <div key={incident.id} className="hover:bg-cavite-gray/20 transition-colors">
+                
+                {/* Clickable Header Row */}
+                <div 
+                  className="p-6 cursor-pointer flex items-center justify-between gap-4"
+                  onClick={() => toggleIncident(incident.id)}
+                >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <AlertCircle className="w-4 h-4 text-gray-400" />
                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded border uppercase tracking-tighter ${getSeverityColor(incident.severity)}`}>
-                        {incident.severity} Severity
+                        {incident.severity}
+                      </span>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 py-0.5 bg-gray-100 rounded">
+                        {incident.status}
                       </span>
                     </div>
                     <p className="font-bold text-cavite-black mb-1">{incident.title}</p>
-                    <p className="text-sm text-gray-600">Reported by: {incident.reporter}</p>
+                    <p className="text-sm text-gray-600">Reported by: {incident.reporter.substring(0,8)}...</p>
                   </div>
-                  <p className="text-xs font-bold text-gray-500 whitespace-nowrap">
-                    {new Date(incident.date).toLocaleDateString('en-PH', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </p>
+                  
+                  <div className="flex flex-col items-end gap-2">
+                    <p className="text-xs font-bold text-gray-500 whitespace-nowrap">
+                      {new Date(incident.date).toLocaleDateString('en-PH', {
+                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                    <button className="text-[10px] font-black uppercase tracking-widest text-cavite-maroon hover:text-red-700 flex items-center gap-1 transition-colors">
+                      {expandedIncident === incident.id ? 'Close Brief' : 'Open Brief'}
+                      {expandedIncident === incident.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Expanded Details Section */}
+                {expandedIncident === incident.id && (
+                  <div className="px-6 pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="p-5 bg-gray-50 border border-cavite-border shadow-inner rounded-xl space-y-5">
+                      
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-2 h-2 bg-cavite-maroon rounded-full animate-pulse"></span>
+                          <p className="sys-label !mb-0">Decrypted Official Report</p>
+                        </div>
+                        <p className="text-sm text-gray-800 font-medium leading-relaxed whitespace-pre-wrap bg-white p-4 border border-cavite-border rounded-lg shadow-sm">
+                          {incident.description}
+                        </p>
+                      </div>
+
+                      {incident.imageUrl && (
+                        <div>
+                          <p className="sys-label mb-2">Photographic Evidence</p>
+                          <div className="bg-white p-2 border border-cavite-border rounded-lg shadow-sm inline-block">
+                            <img 
+                              src={incident.imageUrl} 
+                              alt="Incident Evidence" 
+                              className="max-h-64 object-contain rounded" 
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           ) : (
@@ -169,17 +231,25 @@ export default function StudentCaseCard({
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <p className="font-bold text-cavite-black text-sm">{session.type}</p>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border tracking-widest ${
+                      session.caseStatus === 'ongoing' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      session.caseStatus === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' :
+                      'bg-gray-100 text-gray-600 border-gray-200'
+                    }`}>
+                      {session.caseStatus}
+                    </span>
                   </div>
                   <p className="text-xs font-bold text-gray-500">
                     {new Date(session.date).toLocaleDateString('en-PH', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
+                      year: 'numeric', month: 'short', day: 'numeric'
                     })}
                   </p>
                 </div>
-                <p className="text-sm text-gray-700 mb-2 ml-6">{session.notes}</p>
-                <p className="text-xs text-gray-500 ml-6">Counselor: {session.counselor}</p>
+                <p className="text-sm text-gray-700 mb-2 ml-6 font-medium whitespace-pre-wrap">{session.notes}</p>
+                
+                <div className="ml-6 flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3">
+                  <p>Follow-up: {new Date(session.followUpDate).toLocaleDateString()}</p>
+                </div>
               </div>
             ))
           ) : (

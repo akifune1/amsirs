@@ -3,6 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { decrypt } from '@/lib/encryption'; // Add this at the top!
 
 import type {
   StudentRecord,
@@ -74,7 +75,7 @@ export async function getCurrentUserProfile(): Promise<ActionResponse<{ name: st
     console.log("\n=== 👤 PROFILE FETCH START ===");
     const { supabase, auth } = await verifyStudentSupportAccess();
     console.log("1. Access Verified. Found Role:", auth.role);
-    
+
     // If it's an admin, they don't have a name in user_profiles
     if (auth.role === 'admin') {
       console.log("2. Admin detected. Returning default admin profile.");
@@ -95,8 +96,8 @@ export async function getCurrentUserProfile(): Promise<ActionResponse<{ name: st
 
     console.log("3. DB Profile Data Found:", profile);
 
-    const name = (profile?.first_name && profile?.last_name) 
-      ? `${profile.first_name} ${profile.last_name}` 
+    const name = (profile?.first_name && profile?.last_name)
+      ? `${profile.first_name} ${profile.last_name}`
       : 'Guidance Counselor';
 
     console.log("4. Final Name Resolved:", name);
@@ -161,7 +162,7 @@ export async function getFlaggedStudents(
     // 1. Fetch from the table 
     // NOTE: Make sure your table in Supabase is actually named 'student_flags'
     const { data: flaggedData, error } = await supabase
-      .from('student_flags') 
+      .from('student_flags')
       .select(`
         total_score,
         is_flagged,
@@ -184,7 +185,7 @@ export async function getFlaggedStudents(
 
     // PRINT THE RAW DATA SO WE CAN SEE WHAT SUPABASE SEES
     console.log("📥 Raw Data from Supabase:", JSON.stringify(flaggedData, null, 2));
-    
+
     if (!flaggedData || flaggedData.length === 0) {
       console.log("⚠️ No flagged students found in the database. Returning empty array.");
       return { success: true, data: [] };
@@ -201,14 +202,14 @@ export async function getFlaggedStudents(
     // 3. Map into the StudentRecord format your UI expects
     let students: StudentRecord[] = flaggedData.map((flag: any) => {
       const studentInfo = flag.students;
-      
+
       if (!studentInfo) {
         console.error(`⚠️ Missing student data for flag record: ${flag.student_id} (Foreign Key Issue)`);
       }
-      
+
       // Find the latest intervention for this student
       const latestIntervention = interventions?.find((i: any) => i.student_id === flag.student_id);
-      
+
       let cStatus: 'Active' | 'Pending' | 'Resolved' | 'Not Started' = 'Not Started';
       if (latestIntervention) {
         const dbStatus = latestIntervention.case_status?.toLowerCase();
@@ -222,8 +223,8 @@ export async function getFlaggedStudents(
         studentId: studentInfo?.student_id || 'UNKNOWN',
         name: studentInfo ? `${studentInfo.first_name} ${studentInfo.last_name}` : 'Unknown Student',
         gradeSection: studentInfo ? `${studentInfo.grade_level} - ${studentInfo.section}` : 'Unknown',
-        attendanceConcern: false, 
-        absenceCount: 0, 
+        attendanceConcern: false,
+        absenceCount: 0,
         // FIXED: Using array length instead of the flaky PostgREST count syntax
         incidentCount: studentInfo?.incident_involvements?.length || 0,
         riskLevel: getRiskLevelFromScore(flag.total_score),
@@ -233,8 +234,8 @@ export async function getFlaggedStudents(
 
     // 4. Sort High Risk to the top naturally
     students.sort((a, b) => {
-       const riskWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
-       return riskWeight[b.riskLevel] - riskWeight[a.riskLevel];
+      const riskWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
+      return riskWeight[b.riskLevel] - riskWeight[a.riskLevel];
     });
 
     // 5. Apply In-Memory Filters (Search & Risk Level)
@@ -243,8 +244,8 @@ export async function getFlaggedStudents(
     }
     if (search && search.trim()) {
       const term = search.toLowerCase().trim();
-      students = students.filter(s => 
-        s.name.toLowerCase().includes(term) || 
+      students = students.filter(s =>
+        s.name.toLowerCase().includes(term) ||
         s.studentId.toLowerCase().includes(term)
       );
     }
@@ -277,7 +278,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
     const { supabase } = await verifyStudentSupportAccess();
     if (!studentId) throw new Error('Invalid input: student_id is required');
 
-    // Fetch student with relations
+    // 1. Fetch student with relations
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select(`
@@ -286,46 +287,68 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
         first_name,
         last_name,
         grade_level,
-        guardian_email,
-        attendance_records (id, is_absent, is_late, created_at),
+        section,
         incident_involvements (
           id,
           incident_id,
-          incident_reports (id, location, severity, description, status, created_at, reporting_staff)
+          incident_reports (id, location, severity, description, status, created_at, reported_by, image_path)
         )
       `)
       .eq('id', studentId)
       .maybeSingle();
 
-    if (studentError) throw new Error(studentError.message);
+    if (studentError) {
+      console.error("❌ Case Details Query Error:", studentError.message);
+      throw new Error(studentError.message);
+    }
     if (!student) throw new Error('Not found: Student not found');
 
-    // Fetch the mathematical flag score
+    // 2. Fetch the mathematical flag score
     const { data: flagRecord } = await supabase
       .from('student_flags')
       .select('total_score')
       .eq('student_id', studentId)
       .maybeSingle();
 
-    // Calculate attendance stats
-    const totalAbsences = student.attendance_records?.filter((a: any) => a.is_absent).length || 0;
-    const lateRecords = student.attendance_records?.filter((a: any) => a.is_late).length || 0;
-    const totalRecords = student.attendance_records?.length || 1;
-    const attendancePercentage = Math.round(((totalRecords - totalAbsences) / totalRecords) * 100);
-
-    // Transform incident data
-    const incidentRecords = (student.incident_involvements || []).map((inv: any) => {
+    // 3. Transform incident data securely (ADDED DECRYPTION AND IMAGE URLS)
+    const incidentRecords = await Promise.all((student.incident_involvements || []).map(async (inv: any) => {
       const report = inv.incident_reports;
+
+      let incidentImageUrl = null;
+      if (report?.image_path) {
+        const { data: imgData } = await supabase.storage
+          .from('incident_attachments')
+          .createSignedUrl(report.image_path, 3600);
+        if (imgData) incidentImageUrl = imgData.signedUrl;
+      }
+
+      let decryptedDescription = 'No description provided.';
+      if (report?.description) {
+        try {
+          decryptedDescription = report.description.includes(':')
+            ? decrypt(report.description)
+            : report.description;
+        } catch (error) {
+          decryptedDescription = "⚠️ [SYSTEM ERROR]: Payload decryption failed.";
+        }
+      }
+
       return {
         id: inv.id,
         date: report?.created_at || new Date().toISOString(),
         title: report?.location || 'Incident',
         severity: report?.severity || 'Low',
-        reporter: report?.reporting_staff || 'Unknown',
+        reporter: report?.reported_by || 'Staff',
+        status: report?.status || 'Unknown',
+        description: decryptedDescription,
+        imageUrl: incidentImageUrl
       };
-    });
+    }));
 
-    // Fetch counseling history
+    // Sort incidents to show the newest first
+    incidentRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // 4. Fetch counseling history
     const { data: counselingSessions, error: counselingError } = await supabase
       .from('support_interventions')
       .select('*')
@@ -334,7 +357,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
 
     if (counselingError) throw new Error(counselingError.message);
 
-    const counselingRecords = (counselingSessions || []).map((session: SupportIntervention) => ({
+    const counselingRecords = (counselingSessions || []).map((session: any) => ({
       date: session.created_at,
       type: session.intervention_type,
       notes: session.notes,
@@ -347,21 +370,22 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
       success: true,
       data: {
         studentName: `${student.first_name} ${student.last_name}`,
-        studentId: student.id,
-        gradeSection: student.grade_level,
-        guardianContact: student.guardian_email || 'Not provided',
+        studentId: student.student_id,
+        gradeSection: `${student.grade_level} - ${student.section}`,
+        guardianContact: 'Pending Update',
         riskLevel: flagRecord ? getRiskLevelFromScore(flagRecord.total_score) : 'Low',
         attendanceStats: {
-          totalAbsences,
-          lateRecords,
-          attendancePercentage,
+          totalAbsences: 0,
+          lateRecords: 0,
+          attendancePercentage: 100,
         },
-        recentIncidents: incidentRecords.slice(0, 5),
-        counselingHistory: counselingRecords.slice(0, 10),
+        recentIncidents: incidentRecords, // Return all incidents for the case file
+        counselingHistory: counselingRecords,
       },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch student case details';
+    console.error("❌ Action Caught Error:", message);
     return { success: false, error: message };
   }
 }

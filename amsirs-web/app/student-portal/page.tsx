@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { logout } from '../auth/actions';
 import IncidentClientLogs from './IncidentClientLogs'; // Imports your untouched table component
 import { decrypt } from '@/lib/encryption'; 
@@ -38,7 +39,6 @@ export default async function StudentPortal() {
   }
 
   // 3. FETCH AUTOMATED FLAGGING STATUS
-  // This checks the table populated by our SQL trigger
   const { data: flagRecord } = await supabase
     .from('student_flags')
     .select('is_flagged')
@@ -115,13 +115,22 @@ export default async function StudentPortal() {
           </div>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <div className="text-right hidden sm:block">
             <p className="sys-label text-gray-400">Clearance Status</p>
             <p className={`text-xs font-bold mt-0.5 ${student.is_approved ? 'text-green-600' : 'text-orange-500'}`}>
               {student.is_approved ? 'VERIFIED' : 'PENDING'}
             </p>
           </div>
+          
+          {/* NEW: Incident Reporting Link */}
+          <Link 
+            href="/incident-reporting" 
+            className="hidden sm:flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-full border border-gray-200 hover:border-cavite-maroon/20"
+          >
+            File Report
+          </Link>
+
           <form action={logout}>
             <button type="submit" className="btn-ghost">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -136,12 +145,21 @@ export default async function StudentPortal() {
       {/* MAIN CONTAINER */}
       <main className="sys-container">
         
-        <div className="mb-10 text-center md:text-left">
-          <h1 className="sys-title">STUDENT PORTAL</h1>
-          <p className="sys-subtitle">Personal Information & Involvement Records</p>
+        <div className="mb-10 text-center md:text-left flex flex-col md:flex-row justify-between items-start md:items-end">
+          <div>
+            <h1 className="sys-title">STUDENT PORTAL</h1>
+            <p className="sys-subtitle">Personal Information & Involvement Records</p>
+          </div>
+          {/* Mobile Only Report Button */}
+          <Link 
+            href="/incident-reporting" 
+            className="sm:hidden mt-4 w-full justify-center flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-gray-50 px-4 py-3 rounded-xl border border-gray-200 hover:border-cavite-maroon/20"
+          >
+            File a New Report
+          </Link>
         </div>
 
-        {/* --- SYSTEM FLAG BANNER (ONLY SHOWS IF FLAGGED) --- */}
+        {/* --- SYSTEM FLAG BANNER --- */}
         {flagRecord?.is_flagged && (
           <div className="bg-cavite-maroon text-white rounded-2xl shadow-xl overflow-hidden mb-8 animate-in slide-in-from-top-4 duration-300">
             <div className="p-6 md:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
@@ -191,6 +209,7 @@ export default async function StudentPortal() {
                   </div>
                 </div>
 
+                {/* NAME */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">First Name</label>
@@ -202,7 +221,30 @@ export default async function StudentPortal() {
                   </div>
                 </div>
 
+                {/* DEMOGRAPHICS (NEW) */}
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="form-label">Gender</label>
+                    <div className="input-field-alt text-sm">{student.gender || 'Not specified'}</div>
+                  </div>
+                  <div>
+                    <label className="form-label">Date of Birth</label>
+                    <div className="input-field-alt text-sm">
+                      {student.birthday ? new Date(student.birthday).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Not specified'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ADDRESS (NEW) */}
+                <div>
+                  <label className="form-label">Complete Address</label>
+                  <div className="input-field-alt text-sm min-h-[60px] whitespace-pre-wrap leading-relaxed">
+                    {student.address || 'Not specified'}
+                  </div>
+                </div>
+
+                {/* ACADEMICS */}
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-cavite-border">
                   <div>
                     <label className="form-label">Level</label>
                     <div className="input-field-alt text-sm">{student.grade_level}</div>
@@ -224,7 +266,6 @@ export default async function StudentPortal() {
                 <span className="sys-label">Involvement Logs</span>
                 <span className="badge-outline">Encrypted</span>
               </div>
-              {/* This references your untouched IncidentClientLogs.tsx file! */}
               <IncidentClientLogs involvements={processedInvolvements} />
             </div>
           </section>

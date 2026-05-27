@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { updateStudent, updateStaff } from './actions';
 import { logout } from '../auth/actions';
+import CreateStaffModal from './CreateStaffModal'; // <-- NEW IMPORT
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
@@ -91,7 +92,11 @@ export default async function AdminDashboard() {
               STAFF SECTION 
               ========================================== */}
           <section className="space-y-4">
-            <h2 className="sys-label text-gray-400">Institutional Staff</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="sys-label text-gray-400">Institutional Staff</h2>
+              {/* NEW: The Create Button */}
+              <CreateStaffModal /> 
+            </div>
             <div className="sys-card">
               <div className="sys-table-wrapper">
                 <table className="sys-table">
@@ -164,7 +169,7 @@ export default async function AdminDashboard() {
           </section>
 
           {/* ==========================================
-              STUDENT SECTION 
+              STUDENT SECTION (UNCHANGED)
               ========================================== */}
           <section className="space-y-4">
             <h2 className="sys-label text-gray-400">Student Body</h2>

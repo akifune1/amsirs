@@ -6,9 +6,7 @@ const IV_LENGTH = 12; // 12 bytes is standard for GCM
 const AUTH_TAG_LENGTH = 16;
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
-/**
- * Encrypts plain text using AES-256-GCM
- */
+
 export function encrypt(text: string): string {
   if (!ENCRYPTION_KEY) {
     throw new Error('ENCRYPTION_KEY is not defined in environment variables');
