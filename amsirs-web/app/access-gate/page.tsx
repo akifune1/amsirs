@@ -242,22 +242,7 @@ export default function AccessGatePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
-      <nav className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="bg-cavite-maroon text-white px-3 py-1.5 rounded-lg font-black text-lg shadow-sm">AMSIRS</div>
-          <div className="hidden md:block">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Access Monitoring System</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link href="/access-gate" className="bg-cavite-maroon text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-sm">Entry Gate</Link>
-          <Link href="/exit-gate" className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all">Exit Gate</Link>
-          <Link href="/access-logs" className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all">Access Logs</Link>
-          <Link href="/campus-status" className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all">Campus Status</Link>
-          <Link href="/incident-dashboard" className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full border border-gray-200 transition-all">Incident Logs</Link>
-        </div>
-      </nav>
+      
 
       <main className="p-6 md:p-10">
         <div className="mb-8">

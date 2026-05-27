@@ -2,12 +2,15 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import IncidentRow from './incidentRow';
+import SearchBar from '../components/SearchBar';
+import Pagination from '../components/Pagination';
 import { logout } from '../auth/actions';
 
 // This forces the page to always fetch fresh data (no caching)
 export const revalidate = 0; 
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,31 +48,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen font-sans">
-      <nav className="sys-navbar">
-        <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
-          <div className="hidden md:block">
-            <p className="sys-label leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Management Dashboard</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          <div className="text-right hidden sm:block">
-            <p className="sys-label text-gray-400">Active Personnel</p>
-            <p className="text-xs font-bold text-cavite-maroon mt-0.5">{user.email}</p>
-          </div>
-
-          <form action={logout}>
-            <button type="submit" className="btn-ghost">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              Logout
-            </button>
-          </form>
-        </div>
-      </nav>
+      
 
       <main className="sys-container">
         <div className="mb-10">

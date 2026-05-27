@@ -10,8 +10,23 @@ export default function CampusStatusPage() {
   const [students, setStudents] =
     useState<any[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
+
+  const filteredStudents = students.filter(log => 
+    log.students?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    log.students?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.students?.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
 
@@ -38,7 +53,8 @@ async function loadCampusStatus() {
             section
           )
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(2000);
 
       // DEBUG: The Raw Response
       console.log("[DEBUG] Raw Supabase Response:", { logs, error });
@@ -276,7 +292,7 @@ async function loadCampusStatus() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-            {students.map(
+            {paginatedStudents.map(
               (log: any) => (
 
                 <div

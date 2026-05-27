@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { logout } from '../auth/actions';
 import SupportStats from './components/SupportStats';
 import StudentTable from './components/StudentTable';
@@ -65,6 +66,22 @@ export default function StudentSupportPage() {
   const [counselingModal, setCounselingModal] = useState(false);
   const [selectedStudentForModal, setSelectedStudentForModal] = useState<StudentRecord | null>(null);
   const [submittingSession, setSubmittingSession] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // Search & Pagination Logic
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    s.studentId?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
+  const paginatedStudents = filteredStudents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   useEffect(() => {
     loadDashboardData();
@@ -158,24 +175,7 @@ export default function StudentSupportPage() {
   if (loading && pageView === 'dashboard') {
     return (
       <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-        <nav className="sys-navbar">
-          <div className="flex items-center gap-3">
-            <div className="badge-primary">AMSIRS</div>
-            <div className="hidden md:block">
-              <p className="sys-label leading-none">Cavite National High School</p>
-              <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">
-                Student Support System
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="text-right hidden sm:block">
-              <p className="sys-label text-gray-400">{userProfile.roleLabel}</p>
-              <p className="text-xs font-bold text-cavite-maroon mt-0.5">{userProfile.name}</p>
-            </div>
-          </div>
-        </nav>
+        
 
         <main className="sys-container">
           <div className="flex items-center justify-center py-20">
@@ -191,47 +191,6 @@ export default function StudentSupportPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-      {/* TOP NAVIGATION BAR */}
-      <nav className="sys-navbar">
-        <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
-          <div className="hidden md:block">
-            <p className="sys-label leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">
-              Student Support & Intervention
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="text-right hidden sm:block">
-            <p className="sys-label text-gray-400">{userProfile.roleLabel}</p>
-            <p className="text-xs font-bold text-cavite-maroon mt-0.5">{userProfile.name}</p>
-          </div>
-
-          <form action={logout}>
-            <button type="submit" className="btn-ghost">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              Logout
-            </button>
-          </form>
-        </div>
-      </nav>
-
       <main className="sys-container">
         {pageView === 'dashboard' ? (
           <>

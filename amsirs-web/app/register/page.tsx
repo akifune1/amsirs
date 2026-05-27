@@ -78,28 +78,7 @@ export default function StudentRegistrationPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
       {/* STUDENT NAVIGATION BAR */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="bg-cavite-maroon text-white px-3 py-1.5 rounded-lg font-black text-lg shadow-sm">
-            CNHS
-          </div>
-          <div className="hidden md:block">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none">
-              Cavite National High School
-            </p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">
-              Student Portal
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href="/login"
-          className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-full border border-gray-200 hover:border-cavite-maroon/20"
-        >
-          Return to Home
-        </Link>
-      </nav>
+      
 
       <main className="p-6 md:p-12">
         <div className="max-w-3xl mx-auto">

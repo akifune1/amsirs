@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { useFormStatus } from 'react-dom';
 import { submitSecureIncident } from './actions';
 import { logout } from '../auth/actions';
@@ -21,6 +22,14 @@ function SubmitButton() {
 export default function IncidentReportingPage() {
   const [state, formAction] = useActionState(submitSecureIncident, null);
   
+  useEffect(() => {
+    if (state?.success) {
+      toast.success(state.message);
+    } else if (state?.error) {
+      toast.error(state.error);
+    }
+  }, [state]);
+  
   // State arrays to handle dynamic fields
   const [students, setStudents] = useState([{ id: crypto.randomUUID() }]);
   const [locations, setLocations] = useState([{ id: crypto.randomUUID() }]);
@@ -35,21 +44,7 @@ export default function IncidentReportingPage() {
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
       
       {/* TOP NAVIGATION BAR */}
-      <nav className="sys-navbar">
-        <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
-          <div className="hidden md:block">
-            <p className="sys-label leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Security Infrastructure</p>
-          </div>
-        </div>
-        <form action={logout}>
-          <button type="submit" className="btn-ghost">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Logout Session
-          </button>
-        </form>
-      </nav>
+      
 
       <main className="sys-container max-w-4xl">
         <div className="mb-10 text-center md:text-left">

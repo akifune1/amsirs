@@ -106,41 +106,7 @@ export default async function StudentPortal() {
   return (
     <div className="min-h-screen">
       {/* GLOBAL NAVBAR */}
-      <nav className="sys-navbar">
-        <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
-          <div className="hidden md:block">
-            <p className="sys-label leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Student Portal</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4 sm:gap-6">
-          <div className="text-right hidden sm:block">
-            <p className="sys-label text-gray-400">Clearance Status</p>
-            <p className={`text-xs font-bold mt-0.5 ${student.is_approved ? 'text-green-600' : 'text-orange-500'}`}>
-              {student.is_approved ? 'VERIFIED' : 'PENDING'}
-            </p>
-          </div>
-          
-          {/* NEW: Incident Reporting Link */}
-          <Link 
-            href="/incident-reporting" 
-            className="hidden sm:flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-full border border-gray-200 hover:border-cavite-maroon/20"
-          >
-            File Report
-          </Link>
-
-          <form action={logout}>
-            <button type="submit" className="btn-ghost">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              Logout
-            </button>
-          </form>
-        </div>
-      </nav>
+      
 
       {/* MAIN CONTAINER */}
       <main className="sys-container">

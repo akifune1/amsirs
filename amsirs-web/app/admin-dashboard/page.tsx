@@ -3,9 +3,13 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { updateStudent, updateStaff } from './actions';
 import { logout } from '../auth/actions';
-import CreateStaffModal from './CreateStaffModal'; // <-- NEW IMPORT
+import CreateStaffModal from './CreateStaffModal';
+import SearchBar from '../components/SearchBar';
+import Pagination from '../components/Pagination';
+import ActionForm from '../components/ActionForm'; // <-- NEW IMPORT
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!, 
@@ -52,31 +56,7 @@ export default async function AdminDashboard() {
     <div className="flex flex-col min-h-screen">
       
       {/* GLOBAL TOP NAVIGATION BAR */}
-      <nav className="sys-navbar">
-        <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
-          <div className="hidden md:block">
-            <p className="sys-label leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Root Control</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          <div className="text-right hidden sm:block">
-            <p className="sys-label text-gray-400">Admin Session</p>
-            <p className="text-xs font-bold text-cavite-maroon mt-0.5">{user?.email}</p>
-          </div>
-
-          <form action={logout}>
-            <button type="submit" className="btn-ghost">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              Logout
-            </button>
-          </form>
-        </div>
-      </nav>
+      
 
       {/* MAIN DASHBOARD CONTENT */}
       <main className="sys-container w-full">

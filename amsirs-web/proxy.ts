@@ -73,8 +73,15 @@ export async function proxy(request: NextRequest) {
          return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
       
-      if (staff.role === 'guidance' && (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting'))) {
-         console.log("🛑 Action: Redirecting to /unauthorized (Guidance cannot access Guard tools)");
+      // Guidance can access incident-dashboard but NOT incident-reporting
+      if (staff.role === 'guidance' && path.startsWith('/incident-reporting')) {
+         console.log("🛑 Action: Redirecting to /unauthorized (Guidance cannot access reporting form)");
+         return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+
+      // Guard can access incident-dashboard but NOT incident-reporting
+      if (staff.role === 'guard' && path.startsWith('/incident-reporting')) {
+         console.log("🛑 Action: Redirecting to /unauthorized (Guard cannot access reporting form)");
          return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
@@ -107,7 +114,9 @@ export async function proxy(request: NextRequest) {
         console.log("🛑 Action: Redirecting to /pending-approval (Not approved)");
         return NextResponse.redirect(new URL('/pending-approval', request.url));
       }
-      if (isProtected) {
+      
+      // Students can access their portal and incident-reporting
+      if (isProtected && !path.startsWith('/incident-reporting')) {
         console.log(`🛑 Action: Redirecting to /unauthorized (Student tried accessing protected route: ${path})`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
