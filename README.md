@@ -1,9 +1,6 @@
-# amsirs
-Attendance Monitoring, Student Incident Reporting, Student Support (AMSIRS)
+# AMSIRS — Campus Integrated System
 
-
-
-# 🛡️ Campus Integrated System (CIS)
+**Attendance Monitoring, Student Incident Reporting, and Student Support**
 
 > *"Security is the result of architectural intent, not a happy accident."*
 
@@ -16,26 +13,27 @@ Attendance Monitoring, Student Incident Reporting, Student Support (AMSIRS)
 
 ## 📖 System Philosophy
 
-Unlike standard management systems, **CIS** rejects the vulnerability of "auto-approved" accounts. It implements a **Manual Vetting Workflow**:
+AMSIRS rejects the vulnerability of "auto-approved" accounts. It implements a **Manual Vetting Workflow**:
 
 1. **Students** register but land in a restricted *Pending Approval* state.
 2. **Administrators** verify credentials via a separate *Root Control* tier.
 3. **Access** is granted only after manual administrative confirmation.
 
-This architecture ensures that no user can self-elevate privileges or bypass institutional review — security is baked into the registration flow itself.
+This architecture ensures no user can self-elevate privileges or bypass institutional review — security is baked into the registration flow itself.
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16.2 (App Router) |
-| UI Library | React 19.2 |
+| Layer           | Technology                            |
+| --------------- | ------------------------------------- |
+| Framework       | Next.js 16.2 (App Router)             |
+| UI Library      | React 19.2                            |
 | Auth & Database | Supabase SSR (Server-Side Auth + RLS) |
-| Styling | Tailwind CSS 4.3 |
-| Icons | Lucide React |
-| Type Safety | TypeScript 5.9 |
+| Styling         | Tailwind CSS 4.3                      |
+| Icons           | Lucide React                          |
+| Type Safety     | TypeScript 5.9                        |
+| Face Detection  | face-api.js                           |
 
 ---
 
@@ -50,23 +48,23 @@ This architecture ensures that no user can self-elevate privileges or bypass ins
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/amsirs-web.git
+git clone https://github.com/akifune1/amsirs.git
 
-# Navigate to the project directory
-cd amsirs-web
+# Navigate to the web app directory
+cd amsirs/amsirs-web
 
 # Install dependencies
 npm install
 ```
 
-> **Note:** Since this project uses React 19 and Next.js 16, some older packages may throw peer dependency warnings. Use `--legacy-peer-deps` or `--force` if needed:
+> **Note:** Since this project uses React 19 and Next.js 16, some older packages may throw peer dependency warnings. Use `--legacy-peer-deps` if needed:
 > ```bash
 > npm install <package-name> --legacy-peer-deps
 > ```
 
 ### 2. Environment Variables
 
-Create a `.env.local` file in the root directory and add your Supabase credentials:
+Create a `.env.local` file in the `amsirs-web` directory with your Supabase credentials:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
@@ -115,32 +113,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔐 Identity & Access Management (IAM)
 
-CIS uses an intelligent **Traffic Controller** logic during login to route users based on their relational data:
+AMSIRS uses an intelligent **Traffic Controller** logic during login to route users based on their relational data:
 
-| User Role | Database Source | Landing Zone |
-|---|---|---|
-| Root Admin | `system_admins` | `/admin-dashboard` |
-| Staff (Guard / Guidance) | `user_profiles` | `/incident-dashboard` |
-| Approved Student | `students` (`is_approved: true`) | `/incident-reporting` |
-| Pending Student | `students` (`is_approved: false`) | `/pending-approval` |
+| User Role                | Database Source                   | Landing Zone          |
+| ------------------------ | --------------------------------- | --------------------- |
+| Root Admin               | `system_admins`                   | `/admin-dashboard`    |
+| Staff (Guard / Guidance) | `user_profiles`                   | `/incident-dashboard` |
+| Approved Student         | `students` (`is_approved: true`)  | `/incident-reporting` |
+| Pending Student          | `students` (`is_approved: false`) | `/pending-approval`   |
 
 No role self-selects. Access is determined entirely by server-side data lookups after authentication.
 
----
-
 ## 📄 License
 
-This project is intended for academic and institutional use at Mapúa University – Makati.
-
----
-
-# Facial Recognition module
-npm install face-api.js
-
-npm install @supabase/supabase-js
-
-tiny_face_detector_model
-
-face_landmark_68_model
-
-face_recognition_model
+This project is intended for academic and institutional use at **Mapúa University – Makati**.
