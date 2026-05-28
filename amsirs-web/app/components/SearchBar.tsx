@@ -33,7 +33,7 @@ export default function SearchBar({ placeholder = "Search...", paramName = "q" }
         Search
       </label>
       <input
-        className="peer block w-full rounded-xl border border-cavite-border py-2 pl-10 text-sm outline-none placeholder:text-gray-500 focus:border-cavite-maroon focus:ring-2 focus:ring-cavite-maroon/20 transition-all bg-white text-cavite-black"
+        className="peer block w-full rounded-md border border-cavite-border py-2 pl-9 text-sm outline-none placeholder:text-zinc-400 focus:border-cavite-maroon focus:ring-1 focus:ring-cavite-maroon transition-all bg-white text-cavite-black shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
         placeholder={placeholder}
         onChange={(e) => {
           handleSearch(e.target.value);
@@ -41,7 +41,7 @@ export default function SearchBar({ placeholder = "Search...", paramName = "q" }
         defaultValue={searchParams.get(paramName)?.toString()}
       />
       <svg
-        className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400 peer-focus:text-cavite-maroon transition-colors"
+        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 peer-focus:text-cavite-maroon transition-colors"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

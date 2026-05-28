@@ -60,15 +60,13 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen font-sans">
-      
-
+    <>
       <main className="sys-container">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
           <div>
-            <h2 className="text-3xl font-extrabold tracking-tight">Recent Incident Reports</h2>
-            <p className="text-gray-500 font-medium mt-1">
-              Official security logs for Cavite National High School. All descriptions are stored with <span className="text-cavite-maroon font-bold">AES-256 Encryption</span>.
+            <h2 className="sys-title">Recent Incident Reports</h2>
+            <p className="sys-subtitle mt-1">
+              Official security logs for Cavite National High School. All descriptions are stored with <span className="font-semibold text-cavite-maroon">AES-256 Encryption</span>.
             </p>
           </div>
           <div className="w-full sm:w-72">
@@ -77,19 +75,25 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="stat-card">
-            <p className="sys-label">Total Reports</p>
-            <p className="stat-value">{reports?.length || 0}</p>
+          {/* Total Reports - Primary Gradient */}
+          <div className="stat-card-primary">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl z-0"></div>
+            <p className="stat-label-light">Total Reports</p>
+            <p className="stat-value-light">{reports?.length || 0}</p>
           </div>
-          <div className="stat-card">
-            <p className="sys-label">High Severity</p>
-            <p className="stat-value-danger">
+          
+          {/* High Severity - Orange Gradient */}
+          <div className="stat-card-orange">
+            <p className="stat-label-light">High Severity</p>
+            <p className="stat-value-light">
               {reports?.filter(r => r.severity === 'High').length || 0}
             </p>
           </div>
+          
+          {/* Status - Standard Soft Card */}
           <div className="stat-card">
-            <p className="sys-label">Status</p>
-            <p className="stat-value-success">System Secure</p>
+            <p className="stat-label">Status</p>
+            <p className="stat-value text-green-500">Secure</p>
           </div>
         </div>
 
@@ -105,16 +109,16 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
                   <th className="table-th text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-cavite-border/50">
+              <tbody className="divide-y divide-gray-50">
                 {reports && reports.length > 0 ? (
                   reports.map((report) => (
                     <IncidentRow key={report.id} report={report} />
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="p-20 text-center bg-white">
-                      <div className="flex flex-col items-center text-gray-400">
-                        <svg className="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
+                    <td colSpan={5} className="p-16 text-center bg-white border-b-0">
+                      <div className="flex flex-col items-center text-zinc-400">
+                        <svg className="w-8 h-8 mb-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
                         <p className="text-sm font-medium">No reports found in the secure vault.</p>
                       </div>
                     </td>
@@ -126,12 +130,12 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
           <Pagination totalPages={totalPages} />
         </div>
 
-        <footer className="mt-12 text-center">
+        <footer className="mt-12 text-center pb-12">
           <p className="sys-label tracking-[0.4em]">
             AMSIRS Security Intelligence Interface
           </p>
         </footer>
       </main>
-    </div>
+    </>
   );
 }

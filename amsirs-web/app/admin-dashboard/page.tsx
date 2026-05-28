@@ -89,11 +89,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      
-      {/* GLOBAL TOP NAVIGATION BAR */}
-      
-
+    <>
       {/* MAIN DASHBOARD CONTENT */}
       <main className="sys-container w-full">
         
@@ -102,25 +98,24 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
           <p className="sys-subtitle">Administrative Tier Isolation Active</p>
         </div>
 
-        
         {/* TAB NAVIGATION */}
-        <div className="flex items-center gap-4 border-b border-cavite-border mb-8">
+        <div className="flex items-center gap-1 mb-8 bg-gray-100 p-2 rounded-2xl w-fit border border-transparent">
           <Link 
             href="?tab=staff"
-            className={`pb-4 px-2 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
               activeTab === 'staff' 
-                ? 'border-cavite-maroon text-cavite-maroon' 
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
             }`}
           >
             Institutional Staff
           </Link>
           <Link 
             href="?tab=students"
-            className={`pb-4 px-2 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
               activeTab === 'students' 
-                ? 'border-cavite-maroon text-cavite-maroon' 
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
             }`}
           >
             Student Body
@@ -133,11 +128,11 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
               STAFF SECTION 
               ========================================== */}
           {activeTab === 'staff' && (
-          <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <h2 className="sys-label text-gray-400">Institutional Staff</h2>
+              <h2 className="sys-label">Institutional Staff Directory</h2>
               <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="w-full sm:w-64">
+                <div className="w-full sm:w-72">
                   <SearchBar paramName="staffQ" placeholder="Search staff..." />
                 </div>
                 <CreateStaffModal /> 
@@ -156,16 +151,16 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                       <th className="table-th text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-cavite-border/50">
+                  <tbody className="divide-y divide-gray-50">
                     {(staff || []).map((member) => {
                       const formId = `staff-form-${member.id}`;
                       return (
-                        <tr key={member.id} className="group hover:bg-cavite-gray/50 transition-colors">
+                        <tr key={member.id} className="hover:bg-gray-50 group transition-colors">
                           
                           {/* ID Column */}
                           <td className="table-td">
-                            <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
-                              #{member.internal_id}
+                            <span className="text-zinc-500 font-mono text-xs">
+                              {member.internal_id}
                             </span>
                           </td>
 
@@ -178,22 +173,22 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
                           {/* Last Name */}
                           <td className="table-td">
-                            <input form={formId} name="lastName" defaultValue={member.last_name} className="bg-transparent font-bold focus:ring-2 focus:ring-cavite-maroon/20 rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                            <input form={formId} name="lastName" defaultValue={member.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* First Name */}
                           <td className="table-td">
-                            <input form={formId} name="firstName" defaultValue={member.first_name} className="bg-transparent font-bold focus:ring-2 focus:ring-cavite-maroon/20 rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                            <input form={formId} name="firstName" defaultValue={member.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* Created At */}
-                          <td className="table-td text-xs text-gray-500 font-medium">
+                          <td className="table-td text-zinc-500 text-sm">
                             {formatDate(member.created_at)}
                           </td>
 
                           {/* Role */}
                           <td className="table-td">
-                            <select form={formId} name="role" defaultValue={member.role} className="bg-cavite-gray text-xs font-bold px-3 py-1.5 rounded border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 cursor-pointer w-full max-w-[120px]">
+                            <select form={formId} name="role" defaultValue={member.role} className="bg-zinc-50 text-xs font-medium px-2.5 py-1.5 rounded-md border border-cavite-border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer w-full max-w-[120px]">
                               <option value="guard">Guard</option>
                               <option value="guidance">Guidance</option>
                             </select>
@@ -201,7 +196,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
                           {/* Actions */}
                           <td className="table-td text-right">
-                            <button form={formId} type="submit" className="text-[10px] font-black text-green-600 uppercase opacity-0 group-hover:opacity-100 transition-opacity underline decoration-2 underline-offset-4 hover:text-green-800 cursor-pointer">
+                            <button form={formId} type="submit" className="text-xs font-semibold text-cavite-maroon opacity-0 group-hover:opacity-100 transition-opacity hover:text-cavite-hover cursor-pointer">
                               Save
                             </button>
                           </td>
@@ -217,12 +212,12 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
           )}
 
           {/* ==========================================
-              STUDENT SECTION (UNCHANGED)
+              STUDENT SECTION
               ========================================== */}
           {activeTab === 'students' && (
-          <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-              <h2 className="sys-label text-gray-400">Student Body</h2>
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <h2 className="sys-label">Student Body Database</h2>
               <div className="w-full sm:w-80">
                 <SearchBar paramName="studentQ" placeholder="Search by name or ID..." />
               </div>
@@ -241,15 +236,15 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                       <th className="table-th text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-cavite-border/50">
+                  <tbody className="divide-y divide-gray-50">
                     {(students || []).map((student) => {
                       const formId = `student-form-${student.id}`;
                       return (
-                        <tr key={student.id} className="group hover:bg-cavite-gray/50 transition-colors">
+                        <tr key={student.id} className="hover:bg-gray-50 group transition-colors">
                           
                           {/* Student ID */}
                           <td className="table-td">
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">
+                            <span className="text-zinc-500 font-mono text-xs">
                               {student.student_id}
                             </span>
                           </td>
@@ -263,27 +258,27 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
                           {/* Last Name */}
                           <td className="table-td">
-                            <input form={formId} name="lastName" defaultValue={student.last_name} className="bg-transparent font-bold focus:ring-2 focus:ring-cavite-maroon/20 rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                            <input form={formId} name="lastName" defaultValue={student.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* First Name */}
                           <td className="table-td">
-                            <input form={formId} name="firstName" defaultValue={student.first_name} className="bg-transparent font-bold focus:ring-2 focus:ring-cavite-maroon/20 rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                            <input form={formId} name="firstName" defaultValue={student.first_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* Created At */}
-                          <td className="table-td text-xs text-gray-500 font-medium">
+                          <td className="table-td text-zinc-500 text-sm">
                             {formatDate(student.created_at)}
                           </td>
 
                           {/* Placement (Grade + Section) */}
                           <td className="table-td">
-                            <div className="flex flex-col gap-1">
-                              <select form={formId} name="gradeLevel" defaultValue={student.grade_level} className="bg-transparent text-xs font-bold outline-none px-1 focus:ring-2 focus:ring-cavite-maroon/20 rounded cursor-pointer w-full max-w-[100px]">
+                            <div className="flex flex-col gap-1.5">
+                              <select form={formId} name="gradeLevel" defaultValue={student.grade_level} className="bg-transparent text-xs font-medium outline-none px-1 py-0.5 hover:bg-zinc-100 focus:ring-1 focus:ring-cavite-maroon rounded border border-transparent hover:border-cavite-border cursor-pointer w-full max-w-[100px] transition-all">
                                 <option value="Grade 11">Grade 11</option>
                                 <option value="Grade 12">Grade 12</option>
                               </select>
-                              <input form={formId} name="section" defaultValue={student.section} className="bg-transparent text-[10px] font-black text-gray-400 uppercase outline-none px-1 hover:border-cavite-border border border-transparent rounded focus:ring-2 focus:ring-cavite-maroon/20 transition-all w-full max-w-[100px]" placeholder="SECTION" />
+                              <input form={formId} name="section" defaultValue={student.section} className="bg-transparent text-xs text-zinc-500 outline-none px-1 py-0.5 hover:bg-zinc-100 hover:text-cavite-black border border-transparent hover:border-cavite-border rounded focus:ring-1 focus:ring-cavite-maroon transition-all w-full max-w-[100px]" placeholder="SECTION" />
                             </div>
                           </td>
 
@@ -293,8 +288,8 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                               form={formId}
                               name="isApproved" 
                               defaultValue={String(student.is_approved)} 
-                              className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-lg border outline-none focus:ring-2 focus:ring-cavite-maroon/20 cursor-pointer transition-all ${
-                                student.is_approved ? 'bg-green-50 text-green-700 border-green-200' : 'bg-orange-50 text-orange-700 border-orange-200'
+                              className={`text-xs font-medium px-2.5 py-1.5 rounded-full border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer transition-all ${
+                                student.is_approved ? 'bg-success-bg text-success-text border-success-border' : 'bg-warning-bg text-warning-text border-warning-border'
                               }`}
                             >
                               <option value="true">Approved</option>
@@ -304,7 +299,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
                           {/* Actions */}
                           <td className="table-td text-right">
-                            <button form={formId} type="submit" className="text-[10px] font-black text-green-600 uppercase opacity-0 group-hover:opacity-100 transition-opacity underline decoration-2 underline-offset-4 hover:text-green-800 cursor-pointer">
+                            <button form={formId} type="submit" className="text-xs font-semibold text-cavite-maroon opacity-0 group-hover:opacity-100 transition-opacity hover:text-cavite-hover cursor-pointer">
                               Apply
                             </button>
                           </td>
@@ -320,6 +315,6 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
           )}
         </div>
       </main>
-    </div>
+    </>
   );
 }

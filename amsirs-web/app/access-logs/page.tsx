@@ -52,19 +52,13 @@ export default function AccessLogsPage() {
       setTotalLogs(count || 0);
 
     } catch (error) {
-
       console.error(error);
-
     } finally {
-
       setLoading(false);
     }
   }
 
-  function getSnapshotUrl(
-    path: string
-  ) {
-
+  function getSnapshotUrl(path: string) {
     return supabase.storage
       .from("access-snapshots")
       .getPublicUrl(path)
@@ -72,47 +66,34 @@ export default function AccessLogsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
-
-      {/* NAVBAR */}
-
-      
-
+    <>
       {/* MAIN */}
-
-      <main className="p-6 md:p-10">
-
-        <div className="mb-8">
-
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
+      <main className="sys-container">
+        <div className="mb-10">
+          <h1 className="sys-title">
             Access Logs
           </h1>
-
-          <p className="text-gray-500 font-medium mt-2">
+          <p className="sys-subtitle mt-1">
             Real-time campus biometric access records.
           </p>
-
         </div>
 
         {/* TABLE CARD */}
+        <div className="sys-card">
 
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-
-          <div className="border-b border-gray-100 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="sys-card-header flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">
-                Security Records
-              </p>
-              <h2 className="text-xl font-bold text-gray-900 mt-1">
+              <p className="sys-label">Security Records</p>
+              <h2 className="text-lg font-bold text-cavite-black mt-1">
                 Student Entry & Exit Logs
               </h2>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-sm font-bold text-gray-500 uppercase tracking-widest">Filter:</label>
+              <label className="text-sm font-semibold text-zinc-500">Filter:</label>
               <select 
                 value={actionFilter} 
                 onChange={(e) => { setActionFilter(e.target.value); setCurrentPage(1); }}
-                className="bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-cavite-maroon focus:border-cavite-maroon block w-full p-2.5 outline-none cursor-pointer"
+                className="input-field py-1.5"
               >
                 <option value="All">All Actions</option>
                 <option value="Entry">Entry</option>
@@ -121,144 +102,76 @@ export default function AccessLogsPage() {
             </div>
           </div>
 
-          <div className="overflow-auto">
+          <div className="sys-table-wrapper">
 
-            <table className="w-full">
-
-              <thead className="bg-gray-50 border-b border-gray-200">
-
-                <tr>
-
-                  <th className="text-left p-5 text-xs font-black uppercase tracking-wider text-gray-500">
-                    Snapshot
-                  </th>
-
-                  <th className="text-left p-5 text-xs font-black uppercase tracking-wider text-gray-500">
-                    Student
-                  </th>
-
-                  <th className="text-left p-5 text-xs font-black uppercase tracking-wider text-gray-500">
-                    Student ID
-                  </th>
-
-                  <th className="text-left p-5 text-xs font-black uppercase tracking-wider text-gray-500">
-                    Action
-                  </th>
-
-                  <th className="text-left p-5 text-xs font-black uppercase tracking-wider text-gray-500">
-                    Match
-                  </th>
-
-                  <th className="text-left p-5 text-xs font-black uppercase tracking-wider text-gray-500">
-                    Timestamp
-                  </th>
-
+            <table className="sys-table">
+              <thead>
+                <tr className="table-header-row">
+                  <th className="table-th">Snapshot</th>
+                  <th className="table-th">Student</th>
+                  <th className="table-th">Student ID</th>
+                  <th className="table-th">Action</th>
+                  <th className="table-th">Match</th>
+                  <th className="table-th">Timestamp</th>
                 </tr>
-
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-gray-50">
 
                 {loading ? (
-
                   <tr>
-
-                    <td
-                      colSpan={6}
-                      className="p-10 text-center text-gray-500 font-semibold"
-                    >
+                    <td colSpan={6} className="table-td text-center py-10 text-zinc-400 font-medium text-sm">
                       Loading access logs...
                     </td>
-
                   </tr>
-
                 ) : logs.length === 0 ? (
-
                   <tr>
-
-                    <td
-                      colSpan={6}
-                      className="p-10 text-center text-gray-500 font-semibold"
-                    >
+                    <td colSpan={6} className="table-td text-center py-10 text-zinc-400 font-medium text-sm">
                       No access logs found.
                     </td>
-
                   </tr>
-
                 ) : (
-
                   logs.map((log) => (
-
                     <tr
                       key={log.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-all"
+                      className="hover:bg-gray-50 transition-colors"
                     >
-
-                      <td className="p-5">
-
+                      <td className="table-td">
                         {log.snapshot_path ? (
-
                           <img
                             src={getSnapshotUrl(log.snapshot_path)}
                             alt="snapshot"
-                            className="w-20 h-20 object-cover rounded-2xl border border-gray-200"
+                            className="w-16 h-16 object-cover rounded-xl"
                           />
-
                         ) : (
-
-                          <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400">
+                          <div className="w-16 h-16 rounded-md bg-zinc-100 flex items-center justify-center text-xs font-semibold text-zinc-400">
                             NO IMAGE
                           </div>
-
                         )}
-
                       </td>
-
-                      <td className="p-5 font-bold text-gray-800">
-
-                        {log.students?.first_name}{" "}
-                        {log.students?.last_name}
-
+                      <td className="table-td font-semibold text-cavite-black">
+                        {log.students?.first_name} {log.students?.last_name}
                       </td>
-
-                      <td className="p-5 font-semibold text-gray-600">
-
+                      <td className="table-td text-zinc-500 font-mono text-sm">
                         {log.students?.student_id}
-
                       </td>
-
-                      <td className="p-5">
-
+                      <td className="table-td">
                         <span
-                          className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider ${
-                            log.action === "ENTRY"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                          className={`badge-primary ${
+                            log.action === "ENTRY" ? "badge-success" : "badge-danger"
                           }`}
                         >
                           {log.action}
                         </span>
-
                       </td>
-
-                      <td className="p-5 font-bold text-gray-800">
-
+                      <td className="table-td font-semibold text-cavite-black">
                         {log.match_percentage}%
-
                       </td>
-
-                      <td className="p-5 text-gray-600 font-medium">
-
-                        {new Date(
-                          log.created_at
-                        ).toLocaleString()}
-
+                      <td className="table-td text-zinc-500 text-sm">
+                        {new Date(log.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </td>
-
                     </tr>
-
                   ))
-
                 )}
 
               </tbody>
@@ -266,23 +179,23 @@ export default function AccessLogsPage() {
             </table>
           </div>
           
-          <div className="flex items-center justify-between border-t border-gray-100 bg-white px-6 py-4">
-            <p className="text-sm text-gray-500 font-medium">
-              Showing <span className="font-bold text-gray-900">{logs.length}</span> logs 
-              (Total: <span className="font-bold text-gray-900">{totalLogs}</span>)
+          <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 bg-white px-8 py-6 gap-4">
+            <p className="text-sm text-zinc-500 font-medium">
+              Showing <span className="font-semibold text-cavite-black">{logs.length}</span> logs 
+              (Total: <span className="font-semibold text-cavite-black">{totalLogs}</span>)
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 text-sm font-bold bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors uppercase tracking-widest"
+                className="btn-outline px-4 py-1.5 text-sm disabled:opacity-50"
               >
-                Prev
+                Previous
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalLogs / ITEMS_PER_PAGE), p + 1))}
                 disabled={currentPage >= Math.ceil(totalLogs / ITEMS_PER_PAGE)}
-                className="px-4 py-2 text-sm font-bold bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors uppercase tracking-widest"
+                className="btn-outline px-4 py-1.5 text-sm disabled:opacity-50"
               >
                 Next
               </button>
@@ -293,6 +206,6 @@ export default function AccessLogsPage() {
 
       </main>
 
-    </div>
+    </>
   );
 }

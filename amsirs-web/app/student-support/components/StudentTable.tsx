@@ -58,15 +58,14 @@ export default function StudentTable({
   const getCounselingStatusColor = (status: string) => {
     switch (status) {
       case 'Active':
-        return 'bg-blue-100 text-blue-700 border border-blue-300';
+        return 'badge-primary';
       case 'Pending':
-        return 'bg-yellow-100 text-yellow-700 border border-yellow-300';
+        return 'badge-warning';
       case 'Resolved':
-        return 'bg-green-100 text-green-700 border border-green-300';
+        return 'badge-success';
       case 'Not Started':
-        return 'bg-gray-100 text-gray-700 border border-gray-300';
       default:
-        return 'bg-gray-100 text-gray-700 border border-gray-300';
+        return 'bg-zinc-100 text-zinc-600 border border-cavite-border';
     }
   };
 
@@ -89,10 +88,10 @@ export default function StudentTable({
             <button
               key={level}
               onClick={() => setFilterRisk(level)}
-              className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 filterRisk === level
-                  ? 'bg-cavite-maroon text-white shadow-lg'
-                  : 'bg-cavite-gray border border-cavite-border text-gray-700 hover:border-cavite-maroon/30'
+                  ? 'bg-cavite-maroon text-white border border-cavite-maroon shadow-sm'
+                  : 'bg-white border border-cavite-border text-zinc-600 hover:bg-zinc-50'
               }`}
             >
               {level}
@@ -116,60 +115,60 @@ export default function StudentTable({
                 <th className="table-th">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {paginatedStudents.length > 0 ? (
                 paginatedStudents.map((student) => (
                   <tr
                     key={student.id}
-                    className="table-td hover:bg-cavite-gray/30 transition-colors border-b border-cavite-border/50 last:border-b-0"
+                    className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="table-td">
                       <div className="flex flex-col">
-                        <span className="font-bold text-cavite-black">{student.name}</span>
-                        <span className="text-xs text-gray-500">ID: {student.studentId}</span>
+                        <span className="font-semibold text-cavite-black">{student.name}</span>
+                        <span className="text-xs text-zinc-500 font-mono">ID: {student.studentId}</span>
                       </div>
                     </td>
-                    <td className="table-td">{student.gradeSection}</td>
+                    <td className="table-td text-zinc-600 text-sm">{student.gradeSection}</td>
                     <td className="table-td">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold">{student.absenceCount}</span>
+                        <span className="font-semibold text-cavite-black">{student.absenceCount}</span>
                         {student.attendanceConcern && (
-                          <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded border border-orange-300 font-bold">
+                          <span className="badge-warning">
                             FLAGGED
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="table-td">
-                      <span className="font-bold">{student.incidentCount}</span>
+                      <span className="font-semibold text-cavite-black">{student.incidentCount}</span>
                     </td>
                     <td className="table-td">
                       <RiskBadge level={student.riskLevel} />
                     </td>
                     <td className="table-td">
                       <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded border uppercase tracking-tighter inline-block ${getCounselingStatusColor(
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-md inline-block ${getCounselingStatusColor(
                           student.counselingStatus
                         )}`}
                       >
                         {student.counselingStatus}
                       </span>
                     </td>
-                    <td className="table-td">
-                      <div className="flex items-center gap-2">
+                    <td className="table-td text-right pr-6">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => onViewCase(student.id)}
-                          className="btn-text flex items-center gap-1 hover:text-cavite-maroon transition-colors"
+                          className="btn-text"
                         >
-                          <Eye className="w-4 h-4" />
-                          <span className="hidden sm:inline">View</span>
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
                         </button>
                         <button
                           onClick={() => onStartIntervention(student.id)}
-                          className="btn-text text-green-600 hover:text-green-700 transition-colors flex items-center gap-1"
+                          className="btn-primary flex items-center"
                         >
-                          <ChevronRight className="w-4 h-4" />
-                          <span className="hidden sm:inline">Start</span>
+                          <ChevronRight className="w-4 h-4 mr-1" />
+                          Start
                         </button>
                       </div>
                     </td>
@@ -177,8 +176,8 @@ export default function StudentTable({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="table-td text-center py-8 text-gray-500">
-                    <p className="font-medium">No students found matching your criteria</p>
+                  <td colSpan={7} className="table-td text-center py-16">
+                    <p className="text-zinc-400 text-sm font-medium">No students found matching your criteria</p>
                   </td>
                 </tr>
               )}
@@ -189,9 +188,9 @@ export default function StudentTable({
 
       {/* Results Info */}
       <div className="flex justify-between items-center text-sm">
-        <p className="text-gray-500 font-medium">
-          Showing <span className="font-bold text-cavite-maroon">{filteredStudents.length}</span> of{' '}
-          <span className="font-bold text-cavite-maroon">{students.length}</span> flagged students
+        <p className="text-zinc-500 font-medium">
+          Showing <span className="font-semibold text-cavite-black">{filteredStudents.length}</span> of{' '}
+          <span className="font-semibold text-cavite-black">{students.length}</span> flagged students
         </p>
         
         {totalPages > 1 && (
@@ -199,17 +198,17 @@ export default function StudentTable({
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm font-bold bg-white border border-cavite-border rounded text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+              className="btn-outline px-3 py-1 text-sm disabled:opacity-50"
             >
               Previous
             </button>
-            <span className="text-sm font-bold text-gray-500">
+            <span className="text-sm font-semibold text-zinc-500">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm font-bold bg-white border border-cavite-border rounded text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+              className="btn-outline px-3 py-1 text-sm disabled:opacity-50"
             >
               Next
             </button>

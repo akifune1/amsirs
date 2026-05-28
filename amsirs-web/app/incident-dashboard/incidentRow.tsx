@@ -216,20 +216,20 @@ export default function IncidentRow({ report }: { report: any }) {
 
   return (
     <>
-      <tr className={`group hover:bg-cavite-gray/50 transition-colors align-top ${decryptedText ? 'bg-cavite-gray/30' : ''}`}>
+      <tr className={`group hover:bg-zinc-50 transition-colors align-top ${decryptedText ? 'bg-zinc-50' : ''}`}>
         <td className="table-td text-gray-500 whitespace-nowrap">{formattedDate}</td>
         
         <td className="table-td">
           <div className="flex flex-col gap-1">
             {lastNames.length > 0 ? lastNames.map((ln: string, i: number) => (
-              <div key={i} className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+              <div key={i} className="text-sm font-semibold text-cavite-black flex items-center gap-2">
+                <span className="w-1 h-1 bg-zinc-300 rounded-full"></span>
                 {ln}, {firstNames[i]}
               </div>
-            )) : <span className="text-gray-400 italic text-sm">Unknown</span>}
+            )) : <span className="text-zinc-400 italic text-sm">Unknown</span>}
             
             {involvements.length > 0 && (
-              <span className="mt-1 bg-cavite-maroon/10 text-cavite-maroon text-[9px] font-black uppercase px-2 py-0.5 rounded w-max tracking-widest border border-cavite-maroon/20">
+              <span className="mt-1 badge-primary w-max">
                 {involvements.length} Verified Linked
               </span>
             )}
@@ -239,22 +239,22 @@ export default function IncidentRow({ report }: { report: any }) {
         <td className="table-td">
           <div className="flex flex-col gap-1">
             {locations.length > 0 ? locations.map((loc: string, i: number) => (
-              <div key={i} className="text-sm text-gray-500 flex items-center gap-2">
-                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <div key={i} className="text-sm text-zinc-500 flex items-center gap-2">
+                <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 {loc}
               </div>
-            )) : <span className="text-gray-400 italic text-sm">Unknown</span>}
+            )) : <span className="text-zinc-400 italic text-sm">Unknown</span>}
           </div>
         </td>
 
         <td className="table-td">
-          <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wide ${severityColors[report.severity]}`}>
+          <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${severityColors[report.severity]}`}>
             {report.severity}
           </span>
         </td>
         
         <td className="table-td text-right">
-          <button onClick={handleToggleDetails} disabled={loading} className={`text-sm font-bold uppercase tracking-widest transition-all ${decryptedText ? 'text-gray-400 hover:text-gray-600' : 'text-cavite-maroon hover:text-[#600000]'}`}>
+          <button onClick={handleToggleDetails} disabled={loading} className={`text-xs font-semibold transition-all ${decryptedText ? 'text-zinc-400 hover:text-cavite-black' : 'text-cavite-maroon hover:text-cavite-hover'}`}>
             {loading ? 'Decrypting...' : decryptedText ? 'Close Brief' : 'Open Brief'}
           </button>
         </td>
@@ -262,23 +262,23 @@ export default function IncidentRow({ report }: { report: any }) {
       
       {decryptedText && (
         <tr>
-          <td colSpan={5} className="p-0 bg-gray-50 border-b border-cavite-border shadow-inner">
+          <td colSpan={5} className="p-0 bg-zinc-50 border-b border-cavite-border shadow-inner">
             <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
               
               <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white rounded-xl border border-cavite-border shadow-sm p-6">
+                <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="w-2 h-2 bg-cavite-maroon rounded-full animate-pulse"></span>
                     <h4 className="sys-label">Decrypted Security Log</h4>
                   </div>
-                  <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap font-medium">{decryptedText}</p>
+                  <p className="text-cavite-black text-sm leading-relaxed whitespace-pre-wrap font-medium">{decryptedText}</p>
                 </div>
 
-                <div className="bg-white rounded-xl border border-cavite-border shadow-sm p-6">
+                <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6">
                   <h4 className="sys-label mb-4">Evidence Attachment</h4>
                   
                   {isScanningStatus && (
-                    <div className="mb-4 bg-cavite-gray border border-cavite-border p-3 rounded text-[10px] font-bold text-gray-500 tracking-widest uppercase animate-pulse">
+                    <div className="mb-4 bg-zinc-100 border border-cavite-border p-3 rounded-md text-xs font-semibold text-zinc-500 tracking-wider animate-pulse">
                       {">"} {isScanningStatus}
                     </div>
                   )}
@@ -296,30 +296,30 @@ export default function IncidentRow({ report }: { report: any }) {
                       />
                     </div>
                   ) : (
-                    <div className="w-full h-32 rounded-lg border-2 border-dashed border-cavite-border flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                      <span className="text-xs font-medium uppercase tracking-widest">No visual evidence</span>
+                    <div className="w-full h-32 rounded-lg border border-dashed border-cavite-border flex flex-col items-center justify-center text-zinc-400 bg-zinc-50">
+                      <span className="text-sm font-medium">No visual evidence</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* IDENTITY VERIFICATION SECTION */}
-              <div className="bg-white rounded-xl border border-cavite-border shadow-sm p-6 flex flex-col">
+              <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6 flex flex-col">
                 
                 {aiRecommendations.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="sys-label text-orange-600 border-b border-orange-200 pb-2 mb-4 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                    <h4 className="text-sm font-semibold text-warning-text border-b border-warning-border pb-2 mb-4 flex items-center gap-2 tracking-tight">
+                      <span className="w-2 h-2 bg-warning-text rounded-full animate-pulse"></span>
                       AI Suggested Matches
                     </h4>
                     <div className="space-y-2">
                       {aiRecommendations.map((rec, idx) => (
-                        <div key={idx} className="bg-orange-50 border border-orange-200 rounded-lg px-3 py-2 flex justify-between items-center group">
+                        <div key={idx} className="bg-warning-bg border border-warning-border rounded-md px-3 py-2 flex justify-between items-center group">
                           <div>
-                            <p className="text-[10px] font-bold text-orange-700/70 uppercase tracking-widest leading-none mb-1">
+                            <p className="text-xs font-semibold text-warning-text leading-none mb-1">
                               {rec.students.student_id} • {rec.match_percentage}% MATCH
                             </p>
-                            <p className="text-xs font-bold text-orange-900 leading-none">
+                            <p className="text-sm font-semibold text-cavite-black leading-none">
                               {rec.students.last_name}, {rec.students.first_name}
                             </p>
                           </div>
@@ -339,18 +339,18 @@ export default function IncidentRow({ report }: { report: any }) {
                 
                 <div className="space-y-2 flex-1">
                   {involvements.map((inv: any) => (
-                    <div key={inv.id} className="bg-cavite-gray border border-cavite-border rounded-lg px-3 py-2 flex justify-between items-center group">
+                    <div key={inv.id} className="bg-zinc-100 border border-cavite-border rounded-md px-3 py-2 flex justify-between items-center group">
                       <div>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-1">
+                        <p className="text-xs font-mono text-zinc-500 leading-none mb-1">
                           {inv.students.student_id}
                         </p>
-                        <p className="text-xs font-bold text-cavite-black leading-none">
+                        <p className="text-sm font-semibold text-cavite-black leading-none">
                           {inv.students.last_name}, {inv.students.first_name}
                         </p>
                       </div>
                       <button 
                         onClick={() => handleUnlink(inv.id)}
-                        className="text-[10px] font-black text-gray-400 hover:text-red-600 uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100"
+                        className="text-xs font-semibold text-zinc-400 hover:text-danger-text transition-colors opacity-0 group-hover:opacity-100"
                       >
                         Unlink
                       </button>
@@ -358,8 +358,8 @@ export default function IncidentRow({ report }: { report: any }) {
                   ))}
                   
                   {involvements.length === 0 && (
-                    <div className="text-center py-6 text-gray-400 border border-dashed border-cavite-border rounded-lg bg-gray-50">
-                      <p className="text-[10px] font-bold uppercase tracking-widest">No Database Link</p>
+                    <div className="text-center py-6 text-zinc-400 border border-dashed border-cavite-border rounded-md bg-zinc-50">
+                      <p className="text-sm font-semibold">No Database Link</p>
                       <p className="text-xs font-medium mt-1">Search below to verify.</p>
                     </div>
                   )}
@@ -367,34 +367,34 @@ export default function IncidentRow({ report }: { report: any }) {
 
                 {/* Smart Search Input */}
                 <div className="pt-4 mt-4 border-t border-cavite-border relative">
-                  <label className="form-label !text-[10px] text-gray-400">Link Database Record</label>
+                  <label className="block text-sm font-medium text-cavite-black mb-1.5">Link Database Record</label>
                   <input 
                     type="text" 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by ID or Last Name..." 
-                    className="input-field-alt !py-2.5 !text-xs"
+                    className="w-full bg-white border border-cavite-border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
                   />
                   
                   {isSearching && (
-                    <div className="absolute right-3 top-[34px]">
+                    <div className="absolute right-3 top-[38px]">
                       <div className="w-3 h-3 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin"></div>
                     </div>
                   )}
 
                   {searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-cavite-border rounded-lg shadow-2xl overflow-hidden max-h-48 overflow-y-auto bottom-full mb-1">
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-cavite-border rounded-md shadow-lg overflow-hidden max-h-48 overflow-y-auto bottom-full mb-1">
                       {searchResults.map((student) => (
                         <button 
                           key={student.id}
                           onClick={() => handleLink(student.id)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-cavite-gray flex items-center justify-between transition-colors border-b border-cavite-border/50 last:border-0 group"
+                          className="w-full text-left px-3 py-2.5 hover:bg-zinc-50 flex items-center justify-between transition-colors border-b border-cavite-border/50 last:border-0 group"
                         >
                           <div>
-                            <p className="text-xs font-bold text-gray-900 leading-none mb-1">{student.last_name}, {student.first_name}</p>
-                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">{student.student_id} • {student.grade_level}</p>
+                            <p className="text-sm font-semibold text-cavite-black leading-none mb-1">{student.last_name}, {student.first_name}</p>
+                            <p className="text-xs font-mono text-zinc-500 leading-none">{student.student_id} • {student.grade_level}</p>
                           </div>
-                          <span className="text-[10px] font-black text-cavite-maroon opacity-0 group-hover:opacity-100 uppercase tracking-widest">+ Link</span>
+                          <span className="text-xs font-semibold text-cavite-maroon opacity-0 group-hover:opacity-100">+ Link</span>
                         </button>
                       ))}
                     </div>

@@ -65,11 +65,11 @@ export default function StudentCaseCard({
   const getSeverityColor = (severity: 'Low' | 'Medium' | 'High') => {
     switch (severity) {
       case 'Low':
-        return 'bg-green-100 text-green-700 border border-green-300';
+        return 'badge-success';
       case 'Medium':
-        return 'bg-orange-100 text-orange-700 border border-orange-300';
+        return 'badge-warning';
       case 'High':
-        return 'bg-red-100 text-red-700 border border-red-300';
+        return 'badge-danger';
     }
   };
 
@@ -106,20 +106,20 @@ export default function StudentCaseCard({
         <div className="p-8">
           <h3 className="sys-label mb-4">ATTENDANCE SUMMARY</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-cavite-gray/50 p-4 rounded-lg border border-cavite-border/50">
-              <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Total Absences</p>
-              <p className="text-3xl font-black text-cavite-black">{attendanceStats.totalAbsences}</p>
+            <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
+              <p className="sys-label !mb-2">Total Absences</p>
+              <p className="text-3xl font-semibold text-cavite-black">{attendanceStats.totalAbsences}</p>
             </div>
 
-            <div className="bg-cavite-gray/50 p-4 rounded-lg border border-cavite-border/50">
-              <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Late Records</p>
-              <p className="text-3xl font-black text-cavite-black">{attendanceStats.lateRecords}</p>
+            <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
+              <p className="sys-label !mb-2">Late Records</p>
+              <p className="text-3xl font-semibold text-cavite-black">{attendanceStats.lateRecords}</p>
             </div>
 
-            <div className="bg-cavite-gray/50 p-4 rounded-lg border border-cavite-border/50">
-              <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Attendance %</p>
+            <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
+              <p className="sys-label !mb-2">Attendance %</p>
               <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-black text-green-600">{attendanceStats.attendancePercentage}%</p>
+                <p className="text-3xl font-semibold text-green-600">{attendanceStats.attendancePercentage}%</p>
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function StudentCaseCard({
         <div className="divide-y divide-cavite-border">
           {recentIncidents.length > 0 ? (
             recentIncidents.map((incident) => (
-              <div key={incident.id} className="hover:bg-cavite-gray/20 transition-colors">
+              <div key={incident.id} className="hover:bg-zinc-50 transition-colors">
                 
                 {/* Clickable Header Row */}
                 <div 
@@ -144,27 +144,27 @@ export default function StudentCaseCard({
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <AlertCircle className="w-4 h-4 text-gray-400" />
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded border uppercase tracking-tighter ${getSeverityColor(incident.severity)}`}>
+                      <AlertCircle className="w-4 h-4 text-zinc-400" />
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${getSeverityColor(incident.severity)}`}>
                         {incident.severity}
                       </span>
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2 py-0.5 bg-gray-100 rounded">
+                      <span className="text-[10px] font-semibold text-zinc-500 uppercase px-2 py-0.5 bg-zinc-100 rounded-md">
                         {incident.status}
                       </span>
                     </div>
-                    <p className="font-bold text-cavite-black mb-1">{incident.title}</p>
-                    <p className="text-sm text-gray-600">Reported by: {incident.reporter.substring(0,8)}...</p>
+                    <p className="font-semibold text-cavite-black mb-1">{incident.title}</p>
+                    <p className="text-sm text-zinc-500">Reported by: {incident.reporter.substring(0,8)}...</p>
                   </div>
                   
                   <div className="flex flex-col items-end gap-2">
-                    <p className="text-xs font-bold text-gray-500 whitespace-nowrap">
+                    <p className="text-xs font-semibold text-zinc-500 whitespace-nowrap">
                       {new Date(incident.date).toLocaleDateString('en-PH', {
                         year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
                     </p>
-                    <button className="text-[10px] font-black uppercase tracking-widest text-cavite-maroon hover:text-red-700 flex items-center gap-1 transition-colors">
+                    <button className="text-xs font-semibold text-cavite-maroon hover:text-cavite-hover flex items-center gap-1 transition-colors">
                       {expandedIncident === incident.id ? 'Close Brief' : 'Open Brief'}
-                      {expandedIncident === incident.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      {expandedIncident === incident.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
@@ -172,14 +172,14 @@ export default function StudentCaseCard({
                 {/* Expanded Details Section */}
                 {expandedIncident === incident.id && (
                   <div className="px-6 pb-6 pt-0 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="p-5 bg-gray-50 border border-cavite-border shadow-inner rounded-xl space-y-5">
+                    <div className="p-5 bg-zinc-50 border border-cavite-border shadow-inner rounded-md space-y-5">
                       
                       <div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="w-2 h-2 bg-cavite-maroon rounded-full animate-pulse"></span>
                           <p className="sys-label !mb-0">Decrypted Official Report</p>
                         </div>
-                        <p className="text-sm text-gray-800 font-medium leading-relaxed whitespace-pre-wrap bg-white p-4 border border-cavite-border rounded-lg shadow-sm">
+                        <p className="text-sm text-cavite-black font-medium leading-relaxed whitespace-pre-wrap bg-white p-4 border border-cavite-border rounded-md shadow-sm">
                           {incident.description}
                         </p>
                       </div>
@@ -187,11 +187,11 @@ export default function StudentCaseCard({
                       {incident.imageUrl && (
                         <div>
                           <p className="sys-label mb-2">Photographic Evidence</p>
-                          <div className="bg-white p-2 border border-cavite-border rounded-lg shadow-sm inline-block">
+                          <div className="bg-white p-2 border border-cavite-border rounded-md shadow-sm inline-block">
                             <img 
                               src={incident.imageUrl} 
                               alt="Incident Evidence" 
-                              className="max-h-64 object-contain rounded" 
+                              className="max-h-64 object-contain rounded-sm" 
                             />
                           </div>
                         </div>
@@ -203,8 +203,8 @@ export default function StudentCaseCard({
               </div>
             ))
           ) : (
-            <div className="p-8 text-center text-gray-500">
-              <p className="font-medium">No incident records</p>
+            <div className="p-8 text-center text-zinc-500">
+              <p className="font-medium text-sm">No incident records</p>
             </div>
           )}
         </div>
@@ -226,35 +226,35 @@ export default function StudentCaseCard({
         <div className="divide-y divide-cavite-border">
           {counselingHistory.length > 0 ? (
             counselingHistory.map((session, idx) => (
-              <div key={idx} className="p-6 hover:bg-cavite-gray/20 transition-colors">
+              <div key={idx} className="p-6 hover:bg-zinc-50 transition-colors">
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <p className="font-bold text-cavite-black text-sm">{session.type}</p>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border tracking-widest ${
-                      session.caseStatus === 'ongoing' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      session.caseStatus === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' :
-                      'bg-gray-100 text-gray-600 border-gray-200'
+                    <Calendar className="w-4 h-4 text-zinc-400" />
+                    <p className="font-semibold text-cavite-black text-sm">{session.type}</p>
+                    <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md ${
+                      session.caseStatus === 'ongoing' ? 'bg-blue-50 text-blue-700' :
+                      session.caseStatus === 'resolved' ? 'bg-green-50 text-green-700' :
+                      'bg-zinc-100 text-zinc-600'
                     }`}>
                       {session.caseStatus}
                     </span>
                   </div>
-                  <p className="text-xs font-bold text-gray-500">
+                  <p className="text-xs font-semibold text-zinc-500">
                     {new Date(session.date).toLocaleDateString('en-PH', {
                       year: 'numeric', month: 'short', day: 'numeric'
                     })}
                   </p>
                 </div>
-                <p className="text-sm text-gray-700 mb-2 ml-6 font-medium whitespace-pre-wrap">{session.notes}</p>
+                <p className="text-sm text-zinc-600 mb-2 ml-6 font-medium whitespace-pre-wrap">{session.notes}</p>
                 
-                <div className="ml-6 flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3">
+                <div className="ml-6 flex items-center gap-4 text-xs font-semibold text-zinc-400 mt-3">
                   <p>Follow-up: {new Date(session.followUpDate).toLocaleDateString()}</p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="p-8 text-center text-gray-500">
-              <p className="font-medium">No counseling sessions yet</p>
+            <div className="p-8 text-center text-zinc-500">
+              <p className="font-medium text-sm">No counseling sessions yet</p>
             </div>
           )}
         </div>

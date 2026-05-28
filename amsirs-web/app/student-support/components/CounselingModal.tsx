@@ -57,11 +57,10 @@ export default function CounselingModal({
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-300">
-          {/* Header */}
           <div className="sys-card-header sticky top-0 z-10 flex justify-between items-center">
             <div className="flex-1">
               <p className="sys-label">NEW SESSION</p>
-              <h2 className="text-lg font-bold text-cavite-black mt-1">{studentName}</h2>
+              <h2 className="sys-title">{studentName}</h2>
             </div>
             <button
               onClick={onClose}
@@ -111,7 +110,7 @@ export default function CounselingModal({
 
             {/* Counseling Notes */}
             <div className="space-y-2">
-              <label className="form-label">Counseling Notes</label>
+                <label className="form-label">Counseling Notes</label>
               <textarea
                 name="notes"
                 value={formData.notes}
@@ -119,7 +118,7 @@ export default function CounselingModal({
                 placeholder="Record observations, key concerns, recommendations, and student response..."
                 required
                 rows={5}
-                className="w-full bg-white border border-gray-300 rounded-lg p-3.5 text-cavite-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all disabled:bg-gray-100 disabled:text-gray-500 placeholder:text-gray-400 resize-vertical"
+                className="input-field resize-vertical"
               />
             </div>
 
@@ -160,7 +159,7 @@ export default function CounselingModal({
                 type="button"
                 onClick={onClose}
                 disabled={isLoading}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
+                className="flex-1 btn-outline"
               >
                 Cancel
               </button>
@@ -168,7 +167,7 @@ export default function CounselingModal({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 btn-primary"
               >
                 {isLoading ? 'Saving Session...' : 'Save Session'}
               </button>
@@ -180,7 +179,7 @@ export default function CounselingModal({
                   // Would need to handle this differently, but for now just update the state
                 }}
                 disabled={isLoading}
-                className="flex-1 bg-green-100 hover:bg-green-200 border border-green-300 text-green-700 font-black py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
+                className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-semibold py-2.5 rounded-md transition-all disabled:opacity-50 text-sm"
               >
                 Resolve Case
               </button>

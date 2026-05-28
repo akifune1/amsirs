@@ -174,30 +174,28 @@ export default function StudentSupportPage() {
 
   if (loading && pageView === 'dashboard') {
     return (
-      <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-        
-
+      <>
         <main className="sys-container">
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-cavite-gray border-t-cavite-maroon rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-500 font-medium">Loading Student Support Dashboard...</p>
+              <div className="w-10 h-10 border-4 border-zinc-200 border-t-cavite-maroon rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-zinc-500 font-medium">Loading Student Support Dashboard...</p>
             </div>
           </div>
         </main>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <>
       <main className="sys-container">
         {pageView === 'dashboard' ? (
           <>
             {/* Page Header */}
             <div className="mb-10">
-              <h2 className="text-3xl font-extrabold tracking-tight">Student Support Dashboard</h2>
-              <p className="text-gray-500 font-medium mt-1">
+              <h2 className="sys-title">Student Support Dashboard</h2>
+              <p className="sys-subtitle mt-1">
                 Monitor and manage student interventions, counseling sessions, and case follow-ups.
               </p>
             </div>
@@ -208,8 +206,8 @@ export default function StudentSupportPage() {
             {/* Main Content: Flagged Students Table */}
             <div className="space-y-6">
               <div className="border-b border-cavite-border pb-4">
-                <h3 className="text-lg font-bold text-cavite-black">Flagged Students</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <h3 className="sys-label">Flagged Students</h3>
+                <p className="text-sm text-zinc-500 mt-1">
                   Students requiring intervention based on attendance and incident records
                 </p>
               </div>
@@ -273,6 +271,6 @@ export default function StudentSupportPage() {
         onSave={handleSaveSession}
         isLoading={submittingSession}
       />
-    </div>
+    </>
   );
 }

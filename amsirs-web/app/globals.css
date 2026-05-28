@@ -1,14 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  /* CNHS Light Mode Theme */
-  --color-cavite-maroon: #800000;
-  --color-cavite-black: #1a1a1a;
-  --color-cavite-gray: #f3f4f6;
-  --color-cavite-border: #e5e7eb;
-  --color-cavite-white: #ffffff;
+  /* CNHS Light Mode Vercel/Linear Theme -> Premium Soft UI (V2) */
+  --color-cavite-maroon: #7A191B;
+  --color-cavite-hover: #902022;
+  --color-cavite-light: #F8E8E8;
+  --color-cavite-black: #09090B;
+  --color-cavite-gray: #F4F4F5;
+  --color-cavite-border: #E4E4E7;
+  --color-cavite-white: #FFFFFF;
   
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --color-ui-bg: #F3F5F8;
+  --color-ui-card: #FFFFFF;
+  --color-ui-text: #2D3748;
+  --color-ui-muted: #A0AEC0;
+  
+  --color-success-bg: #DCFCE7;
+  --color-success-text: #166534;
+  --color-success-border: #BBF7D0;
+  
+  --color-warning-bg: #FEF9C3;
+  --color-warning-text: #854D0E;
+  --color-warning-border: #FEF08A;
+  
+  --color-danger-bg: #FEE2E2;
+  --color-danger-text: #991B1B;
+  --color-danger-border: #FECACA;
+
+  --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.05);
+  --shadow-colored: 0 10px 25px -5px rgba(122, 25, 27, 0.3);
+
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* =========================================
@@ -16,121 +38,163 @@
 ========================================= */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased min-h-screen selection:bg-cavite-maroon selection:text-white;
+    @apply bg-ui-bg text-ui-text font-sans antialiased min-h-screen selection:bg-cavite-maroon selection:text-white;
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight;
   }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* =========================================
-   2. COMPONENTS LAYER: UI Design System
+   2. COMPONENTS LAYER: UI Design System (Premium V2)
 ========================================= */
 @layer components {
 
   /* --- Layout & Structure --- */
-  .sys-navbar {
-    @apply bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50;
-  }
-
   .sys-container {
-    @apply p-6 md:p-12 max-w-7xl mx-auto;
+    @apply p-6 lg:p-10 w-full mx-auto max-w-[1400px];
   }
 
   .sys-card {
-    @apply bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-cavite-border overflow-hidden;
+    @apply bg-white rounded-3xl border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] overflow-hidden;
   }
 
   .sys-card-header {
-    @apply bg-cavite-gray border-b border-cavite-border px-8 py-4 flex justify-between items-center;
+    @apply px-8 py-6 flex justify-between items-center border-b border-gray-100;
   }
 
   /* --- Typography --- */
   .sys-title {
-    @apply text-3xl md:text-4xl font-extrabold text-cavite-maroon tracking-tighter uppercase;
+    @apply text-3xl font-extrabold text-gray-900 tracking-tight mb-1;
   }
 
   .sys-subtitle {
-    @apply text-gray-500 text-sm font-medium mt-1 uppercase tracking-widest;
+    @apply text-gray-500 text-sm font-medium;
   }
 
   .sys-label {
-    @apply text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none;
+    @apply text-xs font-semibold text-gray-400 uppercase tracking-wider;
   }
 
   /* --- Forms & Inputs --- */
   .form-label {
-    @apply block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider;
+    @apply block text-sm font-medium text-gray-700 mb-2;
   }
 
   .input-field {
-    @apply w-full bg-white border border-gray-300 rounded-lg p-3.5 text-cavite-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all disabled:bg-gray-100 disabled:text-gray-500 placeholder:text-gray-400;
+    @apply w-full bg-white border border-gray-200 rounded-2xl p-3.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all shadow-sm disabled:bg-zinc-100 disabled:text-zinc-500 placeholder:text-gray-400;
   }
 
-  /* Used for dynamic blocks to visually separate them from the white card */
   .input-field-alt {
-    @apply w-full bg-cavite-gray border border-gray-300 rounded-lg p-3 text-cavite-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all placeholder:text-gray-400;
+    @apply w-full bg-gray-50 border border-transparent rounded-2xl p-3.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon focus:bg-white transition-all placeholder:text-gray-400;
   }
 
   /* --- Buttons --- */
   .btn-primary {
-    @apply w-full bg-cavite-maroon hover:bg-[#600000] text-white font-black py-4 rounded-xl transition-all shadow-xl shadow-cavite-maroon/10 hover:shadow-cavite-maroon/20 active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed uppercase tracking-widest text-sm;
+    @apply bg-cavite-maroon text-white px-6 py-3 font-semibold text-sm rounded-2xl cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-[0_10px_25px_-5px_rgba(122,25,27,0.3)] w-fit disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none;
+  }
+
+  .btn-outline {
+    @apply border-2 border-gray-100 text-gray-600 px-6 py-3 font-semibold text-sm rounded-2xl cursor-pointer transition-all hover:bg-gray-50 hover:text-gray-900 hover:border-gray-200 w-fit;
   }
 
   .btn-ghost {
-    @apply flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-cavite-gray px-4 py-2 rounded-full border border-cavite-border hover:border-cavite-maroon/20 cursor-pointer;
+    @apply flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-cavite-maroon hover:bg-cavite-light px-4 py-2 rounded-2xl transition-all cursor-pointer;
   }
 
   .btn-text {
-    @apply text-xs font-bold text-cavite-maroon hover:text-[#600000] uppercase tracking-widest flex items-center gap-1 transition-colors;
+    @apply text-sm font-semibold text-cavite-maroon hover:text-cavite-hover transition-colors;
   }
 
   .btn-icon-danger {
-    @apply absolute bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all z-10;
+    @apply absolute bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all z-10;
   }
 
   /* --- Badges & Alerts --- */
   .badge-primary {
-    @apply bg-cavite-maroon text-white px-3 py-1.5 rounded-lg font-black text-lg shadow-sm;
+    @apply bg-gray-100 text-gray-800 px-3 py-1 rounded-xl font-bold text-xs border border-transparent;
   }
 
   .badge-outline {
-    @apply text-[10px] font-black bg-cavite-maroon/10 text-cavite-maroon px-2 py-0.5 rounded border border-cavite-maroon/20 uppercase tracking-tighter;
+    @apply text-xs font-bold bg-cavite-maroon/5 text-cavite-maroon px-3 py-1 rounded-xl border border-cavite-maroon/20;
+  }
+
+  /* Semantic Feedback Badges */
+  .badge-success {
+    @apply px-3 py-1.5 rounded-lg text-xs font-bold bg-green-100 text-green-700 inline-block;
+  }
+  .badge-warning {
+    @apply px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-100 text-orange-700 inline-block;
+  }
+  .badge-danger {
+    @apply px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-700 inline-block;
   }
 
   .alert-success {
-    @apply bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg text-sm font-semibold;
+    @apply bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-2xl text-sm font-medium;
   }
 
   .alert-error {
-    @apply bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-r-lg text-sm font-semibold;
+    @apply bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-2xl text-sm font-medium;
   }
 
-  /* --- Data Tables --- */
-  .table-th {
-    @apply py-4 px-6 text-xs font-semibold text-gray-500 uppercase;
+  /* --- Premium Gradients & Shadows --- */
+  .grad-primary {
+    @apply bg-gradient-to-br from-[#7A191B] to-[#A02023];
   }
-}
+  .grad-blue {
+    @apply bg-gradient-to-br from-[#4299E1] to-[#3182CE];
+  }
+  .grad-orange {
+    @apply bg-gradient-to-br from-[#ED8936] to-[#DD6B20];
+  }
 
-/* --- Dashboard Stats --- */
+  /* --- Dashboard Stats --- */
   .stat-card {
-    @apply bg-white p-6 rounded-xl border border-cavite-border shadow-sm flex flex-col justify-center;
+    @apply bg-white p-6 rounded-3xl border border-gray-100 flex flex-col justify-center transition-transform hover:-translate-y-1 relative overflow-hidden;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
+  }
+
+  .stat-card-primary {
+    @apply bg-gradient-to-br from-[#7A191B] to-[#A02023] rounded-3xl p-6 text-white flex flex-col justify-center transition-transform hover:-translate-y-1 relative overflow-hidden;
+    box-shadow: 0 10px 25px -5px rgba(122, 25, 27, 0.3);
+  }
+
+  .stat-card-orange {
+    @apply bg-gradient-to-br from-[#ED8936] to-[#DD6B20] rounded-3xl p-6 text-white flex flex-col justify-center transition-transform hover:-translate-y-1 relative overflow-hidden;
+    box-shadow: 0 10px 15px -3px rgba(237, 137, 54, 0.3);
+  }
+
+  .stat-label {
+    @apply text-gray-400 text-sm font-semibold uppercase tracking-wider mb-2 relative z-10;
+  }
+
+  .stat-label-light {
+    @apply text-white/80 text-sm font-semibold uppercase tracking-wider mb-2 relative z-10;
   }
 
   .stat-value {
-    @apply text-3xl font-black text-cavite-black mt-1;
+    @apply text-4xl font-bold text-gray-900 mt-2 relative z-10;
+  }
+  
+  .stat-value-light {
+    @apply text-4xl font-bold text-white mt-2 relative z-10;
   }
   
   .stat-value-danger {
-    @apply text-3xl font-black text-red-600 mt-1;
+    @apply text-4xl font-bold text-red-600 mt-2 relative z-10;
   }
   
   .stat-value-success {
-    @apply text-3xl font-black text-green-600 mt-1;
+    @apply text-4xl font-bold text-green-600 mt-2 relative z-10;
   }
 
-  /* --- Tables --- */
+  /* --- Data Tables --- */
   .sys-table-wrapper {
     @apply w-full overflow-x-auto;
   }
@@ -139,17 +203,41 @@
     @apply w-full text-left border-collapse min-w-[600px];
   }
 
-  .table-header-row {
-    @apply bg-cavite-gray/80 border-b border-cavite-border;
+  .sys-table thead {
+    @apply border-b border-gray-100;
   }
 
-  /* Note: .table-th is already in your globals.css */
+  .table-header-row {
+    @apply bg-transparent;
+  }
+
+  .table-th {
+    @apply pb-4 pt-2 px-5 text-xs font-semibold text-gray-400 uppercase tracking-wider;
+  }
 
   .table-td {
-    @apply py-4 px-6 text-sm font-medium border-b border-cavite-border/50 text-gray-700 bg-white;
+    @apply py-5 px-5 text-sm text-gray-800 bg-white transition-colors border-b border-gray-50;
+  }
+  
+  .sys-table tbody {
+    @apply divide-y divide-gray-50;
+  }
+  
+  /* Make rows highlight slightly on hover in table body */
+  .sys-table tbody tr {
+    @apply transition-colors;
+  }
+
+  .sys-table tbody tr:hover .table-td {
+    @apply bg-gray-50;
+  }
+  
+  .sys-table tbody tr:last-child .table-td {
+    @apply border-b-0;
   }
 
   /* --- Layout Utilities --- */
   .layout-center {
     @apply min-h-screen flex items-center justify-center px-4;
   }
+}

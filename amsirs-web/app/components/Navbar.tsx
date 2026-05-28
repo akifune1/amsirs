@@ -103,22 +103,25 @@ export default async function Navbar() {
 
   return (
     <nav className="sys-navbar">
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-8">
         <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
+          <div className="w-7 h-7 bg-cavite-maroon text-white rounded-[6px] flex items-center justify-center font-bold text-sm shadow-[0_2px_5px_rgba(122,25,27,0.2)]">
+            A
+          </div>
           <div className="hidden md:block">
-            <p className="sys-label leading-none">Cavite National High School</p>
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">Integrated System</p>
+            <p className="text-sm font-semibold text-zinc-500 tracking-tight">
+              AMSIRS <span className="text-cavite-black font-semibold ml-2 pl-2 border-l border-cavite-border">Admin Console</span>
+            </p>
           </div>
         </div>
 
         {/* Dynamic Links */}
-        <div className="hidden lg:flex items-center gap-4 ml-6 pl-6 border-l border-cavite-border">
+        <div className="hidden lg:flex items-center gap-6 ml-4">
           {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-xs font-bold text-gray-500 hover:text-cavite-maroon uppercase tracking-wider transition-colors"
+              className="text-sm font-medium text-zinc-500 hover:text-cavite-black transition-colors"
             >
               {link.label}
             </Link>
@@ -128,16 +131,16 @@ export default async function Navbar() {
       
       <div className="flex items-center gap-6">
         <div className="text-right hidden sm:block">
-          <p className="sys-label text-gray-400">{roleLabel}</p>
-          <p className="text-xs font-bold text-cavite-maroon mt-0.5">{userEmail}</p>
+          <p className="text-xs font-semibold text-zinc-500">{roleLabel}</p>
+          <p className="text-xs font-medium text-cavite-maroon mt-0.5">{userEmail}</p>
         </div>
 
         <form action={logout}>
           <button type="submit" className="btn-ghost">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="14"
+              height="14"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
