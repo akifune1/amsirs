@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, Eye } from 'lucide-react';
 import RiskBadge from './RiskBadge';
 
@@ -41,6 +41,19 @@ export default function StudentTable({
 
     return matchesSearch && matchesRisk;
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRisk]);
+
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+  const paginatedStudents = filteredStudents.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const getCounselingStatusColor = (status: string) => {
     switch (status) {
@@ -104,8 +117,8 @@ export default function StudentTable({
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => (
+              {paginatedStudents.length > 0 ? (
+                paginatedStudents.map((student) => (
                   <tr
                     key={student.id}
                     className="table-td hover:bg-cavite-gray/30 transition-colors border-b border-cavite-border/50 last:border-b-0"
@@ -180,6 +193,28 @@ export default function StudentTable({
           Showing <span className="font-bold text-cavite-maroon">{filteredStudents.length}</span> of{' '}
           <span className="font-bold text-cavite-maroon">{students.length}</span> flagged students
         </p>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 text-sm font-bold bg-white border border-cavite-border rounded text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm font-bold text-gray-500">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 text-sm font-bold bg-white border border-cavite-border rounded text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
-export default function SearchBar({ placeholder = "Search..." }: { placeholder?: string }) {
+export default function SearchBar({ placeholder = "Search...", paramName = "q" }: { placeholder?: string, paramName?: string }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -17,9 +17,9 @@ export default function SearchBar({ placeholder = "Search..." }: { placeholder?:
     params.delete("studentPage");
 
     if (term) {
-      params.set("q", term);
+      params.set(paramName, term);
     } else {
-      params.delete("q");
+      params.delete(paramName);
     }
 
     startTransition(() => {
@@ -38,7 +38,7 @@ export default function SearchBar({ placeholder = "Search..." }: { placeholder?:
         onChange={(e) => {
           handleSearch(e.target.value);
         }}
-        defaultValue={searchParams.get("q")?.toString()}
+        defaultValue={searchParams.get(paramName)?.toString()}
       />
       <svg
         className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400 peer-focus:text-cavite-maroon transition-colors"

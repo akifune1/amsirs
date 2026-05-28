@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { updateStudent, updateStaff } from './actions';
 import { logout } from '../auth/actions';
 import CreateStaffModal from './CreateStaffModal';
@@ -32,15 +33,50 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   // ==========================================
   // 📊 DATA FETCHING: STAFF & STUDENTS
   // ==========================================
-  const { data: staff } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .order('last_name');
+  const activeTab = (searchParams?.tab as string) || 'staff';
+  const ITEMS_PER_PAGE = 10;
 
-  const { data: students } = await supabase
-    .from('students')
-    .select('*')
-    .order('last_name');
+  // STAFF TAB DATA
+  let staff: any[] = [];
+  let staffCount = 0;
+  let staffTotalPages = 0;
+  const staffQ = (searchParams?.staffQ as string) || '';
+  const staffPage = Number(searchParams?.staffPage) || 1;
+
+  if (activeTab === 'staff') {
+    let staffQuery = supabase.from('user_profiles').select('*', { count: 'exact' });
+    if (staffQ) {
+      staffQuery = staffQuery.or(`first_name.ilike.%${staffQ}%,last_name.ilike.%${staffQ}%`);
+    }
+    const { data, count } = await staffQuery
+      .order('last_name')
+      .range((staffPage - 1) * ITEMS_PER_PAGE, staffPage * ITEMS_PER_PAGE - 1);
+    
+    staff = data || [];
+    staffCount = count || 0;
+    staffTotalPages = Math.ceil(staffCount / ITEMS_PER_PAGE);
+  }
+
+  // STUDENT TAB DATA
+  let students: any[] = [];
+  let studentCount = 0;
+  let studentTotalPages = 0;
+  const studentQ = (searchParams?.studentQ as string) || '';
+  const studentPage = Number(searchParams?.studentPage) || 1;
+
+  if (activeTab === 'students') {
+    let studentQuery = supabase.from('students').select('*', { count: 'exact' });
+    if (studentQ) {
+      studentQuery = studentQuery.or(`first_name.ilike.%${studentQ}%,last_name.ilike.%${studentQ}%,student_id.ilike.%${studentQ}%`);
+    }
+    const { data, count } = await studentQuery
+      .order('last_name')
+      .range((studentPage - 1) * ITEMS_PER_PAGE, studentPage * ITEMS_PER_PAGE - 1);
+    
+    students = data || [];
+    studentCount = count || 0;
+    studentTotalPages = Math.ceil(studentCount / ITEMS_PER_PAGE);
+  }
 
   // Helper to format timestamps cleanly
   const formatDate = (dateString: string) => {
@@ -66,16 +102,46 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
           <p className="sys-subtitle">Administrative Tier Isolation Active</p>
         </div>
 
+        
+        {/* TAB NAVIGATION */}
+        <div className="flex items-center gap-4 border-b border-cavite-border mb-8">
+          <Link 
+            href="?tab=staff"
+            className={`pb-4 px-2 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${
+              activeTab === 'staff' 
+                ? 'border-cavite-maroon text-cavite-maroon' 
+                : 'border-transparent text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            Institutional Staff
+          </Link>
+          <Link 
+            href="?tab=students"
+            className={`pb-4 px-2 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${
+              activeTab === 'students' 
+                ? 'border-cavite-maroon text-cavite-maroon' 
+                : 'border-transparent text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            Student Body
+          </Link>
+        </div>
+
         <div className="space-y-12">
           
           {/* ==========================================
               STAFF SECTION 
               ========================================== */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
+          {activeTab === 'staff' && (
+          <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <h2 className="sys-label text-gray-400">Institutional Staff</h2>
-              {/* NEW: The Create Button */}
-              <CreateStaffModal /> 
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="w-full sm:w-64">
+                  <SearchBar paramName="staffQ" placeholder="Search staff..." />
+                </div>
+                <CreateStaffModal /> 
+              </div>
             </div>
             <div className="sys-card">
               <div className="sys-table-wrapper">
@@ -145,14 +211,22 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                   </tbody>
                 </table>
               </div>
+              <Pagination totalPages={staffTotalPages} paramName="staffPage" />
             </div>
           </section>
+          )}
 
           {/* ==========================================
               STUDENT SECTION (UNCHANGED)
               ========================================== */}
-          <section className="space-y-4">
-            <h2 className="sys-label text-gray-400">Student Body</h2>
+          {activeTab === 'students' && (
+          <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <h2 className="sys-label text-gray-400">Student Body</h2>
+              <div className="w-full sm:w-80">
+                <SearchBar paramName="studentQ" placeholder="Search by name or ID..." />
+              </div>
+            </div>
             <div className="sys-card">
               <div className="sys-table-wrapper">
                 <table className="sys-table">
@@ -240,8 +314,10 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                   </tbody>
                 </table>
               </div>
+              <Pagination totalPages={studentTotalPages} paramName="studentPage" />
             </div>
           </section>
+          )}
         </div>
       </main>
     </div>

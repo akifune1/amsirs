@@ -29,7 +29,11 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
   // UPDATED NESTED QUERY: 
   // We are grabbing the report AND the linked students
   // ==========================================
-  const { data: reports } = await supabase
+  const q = (searchParams?.q as string) || '';
+  const page = Number(searchParams?.page) || 1;
+  const ITEMS_PER_PAGE = 10;
+
+  let query = supabase
     .from('incident_reports')
     .select(`
       *,
@@ -43,19 +47,33 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
           grade_level 
         )
       )
-    `)
-    .order('created_at', { ascending: false });
+    `, { count: 'exact' });
+
+  if (q) {
+    query = query.or(`location.ilike.%${q}%,severity.ilike.%${q}%`);
+  }
+
+  const { data: reports, count } = await query
+    .order('created_at', { ascending: false })
+    .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
+
+  const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen font-sans">
       
 
       <main className="sys-container">
-        <div className="mb-10">
-          <h2 className="text-3xl font-extrabold tracking-tight">Recent Incident Reports</h2>
-          <p className="text-gray-500 font-medium mt-1">
-            Official security logs for Cavite National High School. All descriptions are stored with <span className="text-cavite-maroon font-bold">AES-256 Encryption</span>.
-          </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight">Recent Incident Reports</h2>
+            <p className="text-gray-500 font-medium mt-1">
+              Official security logs for Cavite National High School. All descriptions are stored with <span className="text-cavite-maroon font-bold">AES-256 Encryption</span>.
+            </p>
+          </div>
+          <div className="w-full sm:w-72">
+            <SearchBar placeholder="Search by location or severity..." />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -105,6 +123,7 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
               </tbody>
             </table>
           </div>
+          <Pagination totalPages={totalPages} />
         </div>
 
         <footer className="mt-12 text-center">

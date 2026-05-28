@@ -9,23 +9,21 @@ export default function AccessLogsPage() {
   const [logs, setLogs] =
     useState<any[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [actionFilter, setActionFilter] = useState('All');
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
-
     fetchLogs();
-
-  }, []);
+  }, [currentPage, actionFilter]);
 
   async function fetchLogs() {
-
     try {
-
-      const {
-        data,
-        error,
-      } = await supabase
+      setLoading(true);
+      let query = supabase
         .from("access_logs")
         .select(`
           *,
@@ -35,25 +33,23 @@ export default function AccessLogsPage() {
             student_id,
             face_photo_path
           )
-        `)
-        .order(
-          "created_at",
-          {
-            ascending: false,
-          }
-        );
+        `, { count: 'exact' });
+
+      if (actionFilter !== 'All') {
+        query = query.eq('action', actionFilter);
+      }
+
+      const { data, error, count } = await query
+        .order("created_at", { ascending: false })
+        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (error) {
-
-        console.error(
-          "Supabase fetch error:",
-          error
-        );
-
+        console.error("Supabase fetch error:", error);
         return;
       }
 
       setLogs(data || []);
+      setTotalLogs(count || 0);
 
     } catch (error) {
 
@@ -102,16 +98,27 @@ export default function AccessLogsPage() {
 
         <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
 
-          <div className="border-b border-gray-100 px-6 py-5">
-
-            <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">
-              Security Records
-            </p>
-
-            <h2 className="text-xl font-bold text-gray-900 mt-1">
-              Student Entry & Exit Logs
-            </h2>
-
+          <div className="border-b border-gray-100 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">
+                Security Records
+              </p>
+              <h2 className="text-xl font-bold text-gray-900 mt-1">
+                Student Entry & Exit Logs
+              </h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-bold text-gray-500 uppercase tracking-widest">Filter:</label>
+              <select 
+                value={actionFilter} 
+                onChange={(e) => { setActionFilter(e.target.value); setCurrentPage(1); }}
+                className="bg-gray-50 border border-gray-200 text-gray-900 text-sm font-bold rounded-lg focus:ring-cavite-maroon focus:border-cavite-maroon block w-full p-2.5 outline-none cursor-pointer"
+              >
+                <option value="All">All Actions</option>
+                <option value="Entry">Entry</option>
+                <option value="Exit">Exit</option>
+              </select>
+            </div>
           </div>
 
           <div className="overflow-auto">
@@ -257,9 +264,31 @@ export default function AccessLogsPage() {
               </tbody>
 
             </table>
-
           </div>
-
+          
+          <div className="flex items-center justify-between border-t border-gray-100 bg-white px-6 py-4">
+            <p className="text-sm text-gray-500 font-medium">
+              Showing <span className="font-bold text-gray-900">{logs.length}</span> logs 
+              (Total: <span className="font-bold text-gray-900">{totalLogs}</span>)
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-bold bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors uppercase tracking-widest"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalLogs / ITEMS_PER_PAGE), p + 1))}
+                disabled={currentPage >= Math.ceil(totalLogs / ITEMS_PER_PAGE)}
+                className="px-4 py-2 text-sm font-bold bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors uppercase tracking-widest"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+          
         </div>
 
       </main>
