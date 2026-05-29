@@ -176,7 +176,7 @@ export default function CounselingModal({
                 type="button"
                 onClick={() => {
                   setFormData({ ...formData, caseStatus: 'Resolved' });
-                  // Would need to handle this differently, but for now just update the state
+                  onSave({ ...formData, caseStatus: 'Resolved' });
                 }}
                 disabled={isLoading}
                 className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-semibold py-2.5 rounded-md transition-all disabled:opacity-50 text-sm"
@@ -184,6 +184,9 @@ export default function CounselingModal({
                 Resolve Case
               </button>
             </div>
+            <p className="text-[10px] text-gray-500 text-center font-medium px-4 pb-2 border-t border-cavite-border pt-4">
+              By saving this session, you acknowledge that this information is highly sensitive and falls under the strict confidentiality guidelines of the Data Privacy Act of 2012 (RA 10173). Unauthorized disclosure is punishable by law.
+            </p>
           </form>
         </div>
       </div>

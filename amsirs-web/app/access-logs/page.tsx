@@ -1,68 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { fetchAccessLogs, getSnapshotSignedUrls } from "./actions";
 
 export default function AccessLogsPage() {
 
-  const [logs, setLogs] =
-    useState<any[]>([]);
-
+  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const [currentPage, setCurrentPage] = useState(1);
   const [totalLogs, setTotalLogs] = useState(0);
   const [actionFilter, setActionFilter] = useState('All');
+  
+  // Need state for signed URLs since they must be fetched async
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  
   const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
-    fetchLogs();
+    loadLogs();
   }, [currentPage, actionFilter]);
 
-  async function fetchLogs() {
+  async function loadLogs() {
     try {
       setLoading(true);
-      let query = supabase
-        .from("access_logs")
-        .select(`
-          *,
-          students (
-            first_name,
-            last_name,
-            student_id,
-            face_photo_path
-          )
-        `, { count: 'exact' });
+      
+      const result = await fetchAccessLogs({
+        page: currentPage,
+        itemsPerPage: ITEMS_PER_PAGE,
+        actionFilter: actionFilter
+      });
 
-      if (actionFilter !== 'All') {
-        query = query.eq('action', actionFilter);
-      }
-
-      const { data, error, count } = await query
-        .order("created_at", { ascending: false })
-        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-
-      if (error) {
-        console.error("Supabase fetch error:", error);
+      if (!result.success) {
+        console.error("Failed to fetch logs:", result.error);
+        setLogs([]);
         return;
       }
 
-      setLogs(data || []);
-      setTotalLogs(count || 0);
+      const fetchedLogs = result.data || [];
+      setLogs(fetchedLogs);
+      setTotalLogs(result.count || 0);
+
+      // Fetch signed URLs for all images in ONE bulk call
+      const paths = fetchedLogs.map(log => log.snapshot_path).filter(Boolean);
+      const urls = await getSnapshotSignedUrls(paths);
+      setImageUrls(urls);
 
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }
-
-  function getSnapshotUrl(path: string) {
-    return supabase.storage
-      .from("access-snapshots")
-      .getPublicUrl(path)
-      .data.publicUrl;
   }
 
   return (
@@ -137,9 +124,9 @@ export default function AccessLogsPage() {
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="table-td">
-                        {log.snapshot_path ? (
+                        {log.snapshot_path && imageUrls[log.snapshot_path] ? (
                           <img
-                            src={getSnapshotUrl(log.snapshot_path)}
+                            src={imageUrls[log.snapshot_path]}
                             alt="snapshot"
                             className="w-16 h-16 object-cover rounded-xl"
                           />

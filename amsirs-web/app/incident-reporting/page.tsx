@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { useFormStatus } from 'react-dom';
 import { submitSecureIncident } from './actions';
 import { logout } from '../auth/actions';
+import DataPrivacyCheckbox from '@/app/components/DataPrivacyCheckbox';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -161,7 +162,8 @@ export default function IncidentReportingPage() {
               </div>
             </div>
 
-            <div className="pt-6">
+            <div className="pt-6 space-y-6">
+              <DataPrivacyCheckbox id="dpa-incident" />
               <SubmitButton />
             </div>
           </form>

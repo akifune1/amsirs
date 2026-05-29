@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
 import ToasterProvider from "./components/ToasterProvider";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-
-// Configure the Poppins font
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-poppins",
-});
 
 export const metadata: Metadata = {
   title: "AMSIRS | Cavite National High School",
@@ -84,7 +76,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${poppins.variable} font-sans bg-[#F3F5F8] text-[#2D3748] antialiased flex h-screen overflow-hidden`}
+        className={`font-sans bg-[#F3F5F8] text-[#2D3748] antialiased flex h-screen overflow-hidden`}
       >
         <ToasterProvider />
         <Sidebar userInfo={userInfo} />

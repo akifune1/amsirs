@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-import { supabase } from "@/lib/supabase";
+import { fetchCampusStatus } from "../access-logs/actions";
 
 export default function CampusStatusPage() {
 
-  const [students, setStudents] =
-    useState<any[]>([]);
-
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,83 +26,23 @@ export default function CampusStatusPage() {
   }, [searchTerm]);
 
   useEffect(() => {
-
     loadCampusStatus();
-
   }, []);
 
-async function loadCampusStatus() {
+  async function loadCampusStatus() {
     try {
-      console.log("[DEBUG] Starting loadCampusStatus fetch...");
-
-      // =========================
-      // LOAD ACCESS LOGS
-      // =========================
-      const { data: logs, error } = await supabase
-        .from("access_logs")
-        .select(`
-          *,
-          students (
-            first_name,
-            last_name,
-            student_id,
-            grade_level,
-            section
-          )
-        `)
-        .order("created_at", { ascending: false })
-        .limit(2000);
-
-      // DEBUG: The Raw Response
-      console.log("[DEBUG] Raw Supabase Response:", { logs, error });
-
-      if (error) {
-        console.error("[RLS/DB ERROR] Failed to fetch access_logs:", error);
+      setLoading(true);
+      const result = await fetchCampusStatus();
+      
+      if (!result.success) {
+        console.error("Failed to fetch campus status:", result.error);
+        setStudents([]);
         return;
       }
-
-      if (!logs) {
-        console.warn("[DEBUG] Logs array is null or undefined.");
-        return;
-      }
-
-      // RLS CHECK: Silent filtering
-      if (logs.length === 0) {
-        console.warn(
-          "[RLS CHECK] Supabase returned an empty array []. If you know data exists in the database, your SELECT policy on 'access_logs' or 'students' is blocking this user from reading it."
-        );
-      }
-
-      // =========================
-      // GET LATEST ACTION
-      // =========================
-      const latestLogs = new Map();
-
-      for (const log of logs) {
-        // Quick check in case the foreign key join failed due to RLS on the 'students' table
-        if (!log.students) {
-          console.warn(`[RLS CHECK] Log ${log.id} returned null for 'students'. Check SELECT policy on 'students' table.`);
-        }
-
-        if (!latestLogs.has(log.student_id)) {
-          latestLogs.set(log.student_id, log);
-        }
-      }
-
-      console.log(`[DEBUG] Processed unique students count: ${latestLogs.size}`);
-
-      // =========================
-      // FILTER ENTRY ONLY
-      // =========================
-      const insideCampus = Array.from(latestLogs.values()).filter(
-        (log: any) => log.action === "ENTRY"
-      );
-
-      console.log("[DEBUG] Final 'insideCampus' array being set to state:", insideCampus);
-
-      setStudents(insideCampus);
+      
+      setStudents(result.data || []);
     } catch (error) {
-      console.error("[DEBUG] Caught system error in loadCampusStatus:", error);
+      console.error("Caught system error in loadCampusStatus:", error);
     } finally {
       setLoading(false);
     }
@@ -116,70 +53,7 @@ async function loadCampusStatus() {
 
       {/* NAVBAR */}
 
-      <nav className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
 
-        <div className="flex items-center gap-3">
-
-          <div className="bg-cavite-maroon text-white px-3 py-1.5 rounded-lg font-black text-lg shadow-sm">
-            AMSIRS
-          </div>
-
-          <div className="hidden md:block">
-
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none">
-              Cavite National High School
-            </p>
-
-            <p className="text-xs font-bold text-gray-700 uppercase tracking-tight">
-              Access Monitoring System
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* NAV LINKS */}
-
-        <div className="flex items-center gap-3 flex-wrap">
-
-          <Link
-            href="/access-gate"
-            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
-          >
-            Entry Gate
-          </Link>
-
-          <Link
-            href="/exit-gate"
-            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
-          >
-            Exit Gate
-          </Link>
-
-          <Link
-            href="/access-logs"
-            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
-          >
-            Access Logs
-          </Link>
-
-          <Link
-            href="/campus-monitor"
-            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-cavite-maroon text-white shadow-lg"
-          >
-            Campus Monitor
-          </Link>
-
-          <Link
-            href="/incident-dashboard"
-            className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
-          >
-            Incident Logs
-          </Link>
-
-        </div>
-
-      </nav>
 
       {/* MAIN */}
 

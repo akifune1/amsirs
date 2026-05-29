@@ -27,14 +27,25 @@ export { default as CounselingModal } from './components/CounselingModal';
 export { default as StudentCaseCard } from './components/StudentCaseCard';
 
 // Import server actions
+import {
+  verifyStudentSupportAccess,
+  getDashboardStats,
+  getFlaggedStudents,
+  getStudentCaseDetails,
+  createIntervention,
+  updateCaseStatus,
+  getCurrentUserProfile,
+} from './actions';
+
 export {
   verifyStudentSupportAccess,
   getDashboardStats,
   getFlaggedStudents,
   getStudentCaseDetails,
-  createCounselingSession,
+  createIntervention,
   updateCaseStatus,
-} from './actions';
+  getCurrentUserProfile,
+};
 
 // ==========================================
 // INTEGRATION EXAMPLES

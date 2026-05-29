@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import * as faceapi from "face-api.js";
-import { supabase } from "@/lib/supabase";
 import { loadModels } from "@/lib/face/loadModels";
 import { compareFaces, getMatchPercentage } from "@/lib/face/compareFaces";
 import { getMouthOpenRatio } from "@/lib/face/liveness";
+import {
+  fetchFaceEmbeddings,
+  lookupStudent,
+  checkDuplicateScan,
+  uploadSnapshotAndLog,
+} from "@/app/gate/actions";
 
 export default function AccessGatePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -20,7 +24,7 @@ export default function AccessGatePage() {
   // 2 = Verified
 
   // NEW: Temporary holding cell for the neutral snapshot
-  const pendingSnapshotRef = useRef<Blob | null>(null);
+  const pendingSnapshotRef = useRef<string | null>(null);
 
   const [message, setMessage] = useState("INITIALIZING SYSTEM...");
 
@@ -77,7 +81,8 @@ export default function AccessGatePage() {
     }, 800);
   }
 
-  async function captureSnapshot() {
+  // Capture snapshot as base64 string (to send to server action)
+  function captureSnapshotBase64(): string | null {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     if (!canvas || !video) return null;
@@ -85,9 +90,7 @@ export default function AccessGatePage() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, "image/jpeg");
-    });
+    return canvas.toDataURL("image/jpeg");
   }
 
   // Helper function to cleanly reset the scanner state
@@ -125,7 +128,7 @@ export default function AccessGatePage() {
           // ==========================================
           // CAPTURE THE NEUTRAL SNAPSHOT HERE IN THE BACKGROUND
           // ==========================================
-          pendingSnapshotRef.current = await captureSnapshot();
+          pendingSnapshotRef.current = captureSnapshotBase64();
 
         } else {
           setMessage("LIVENESS CHECK\n\nPlease look at the camera with a closed mouth.");
@@ -149,10 +152,10 @@ export default function AccessGatePage() {
       const currentDescriptor = detection.descriptor;
 
       // =========================
-      // DATABASE MATCHING
+      // DATABASE MATCHING (via server action)
       // =========================
-      const { data, error } = await supabase.from("face_embeddings").select("*");
-      if (error || !data) {
+      const embeddingsResult = await fetchFaceEmbeddings();
+      if (!embeddingsResult.success || !embeddingsResult.data) {
         setMessage("FAILED TO LOAD EMBEDDINGS");
         resetScanner();
         return;
@@ -160,7 +163,7 @@ export default function AccessGatePage() {
 
       let bestMatch = null;
       let lowestDistance = 999;
-      for (const face of data) {
+      for (const face of embeddingsResult.data) {
         const distance = compareFaces(face.descriptor, currentDescriptor);
         if (distance < lowestDistance) {
           lowestDistance = distance;
@@ -171,59 +174,33 @@ export default function AccessGatePage() {
       const matchPercentage = getMatchPercentage(lowestDistance);
 
       if (bestMatch && lowestDistance < 0.75) {
-        const { data: studentData } = await supabase
-          .from("students")
-          .select("*")
-          .eq("id", bestMatch.student_id)
-          .single();
+        const studentResult = await lookupStudent(bestMatch.student_id);
 
-        if (!studentData) {
+        if (!studentResult.success || !studentResult.data) {
           setMessage("STUDENT NOT FOUND");
           resetScanner();
           return;
         }
 
-        const { data: recentLog } = await supabase
-          .from("access_logs")
-          .select("*")
-          .eq("student_id", studentData.id)
-          .eq("action", "ENTRY")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const studentData = studentResult.data;
 
-        if (recentLog) {
-          const lastScan = new Date(recentLog.created_at).getTime();
-          const now = Date.now();
-          if ((now - lastScan) / 1000 < 15) {
-            setMessage(`WELCOME BACK\n\n${studentData.first_name} ${studentData.last_name}\n\nAlready Scanned`);
-            resetScanner();
-            return;
-          }
+        // Check for duplicate scan (15-second cooldown)
+        const dupCheck = await checkDuplicateScan(studentData.id, "ENTRY");
+        if (dupCheck.isDuplicate) {
+          setMessage(`WELCOME BACK\n\n${studentData.first_name} ${studentData.last_name}\n\nAlready Scanned`);
+          resetScanner();
+          return;
         }
 
         // =====================
-        // SNAPSHOT & LOGGING
+        // SNAPSHOT & LOGGING (via server action)
         // =====================
-        let snapshotPath = null;
-        
-        // Grab the neutral photo we took at Step 0 instead of taking a new one!
-        const snapshotBlob = pendingSnapshotRef.current;
-
-        if (snapshotBlob) {
-          const fileName = `scan-${Date.now()}.jpg`;
-          const { error: uploadError } = await supabase.storage
-            .from("access-snapshots")
-            .upload(fileName, snapshotBlob);
-          if (!uploadError) snapshotPath = fileName;
-        }
-
-        await supabase.from("access_logs").insert({
-          student_id: studentData.id,
-          match_percentage: matchPercentage,
-          face_distance: lowestDistance,
-          snapshot_path: snapshotPath,
+        await uploadSnapshotAndLog({
+          studentId: studentData.id,
+          matchPercentage,
+          faceDistance: lowestDistance,
           action: "ENTRY",
+          snapshotBase64: pendingSnapshotRef.current,
         });
 
         setMessage(`ACCESS GRANTED\n\n${studentData.first_name} ${studentData.last_name}\n\nStudent ID:\n${studentData.student_id}\n\nMatch:\n${matchPercentage}%`);
@@ -310,6 +287,11 @@ export default function AccessGatePage() {
                   Every successful facial scan is securely recorded with timestamp, and biometric snapshot for campus monitoring.
                 </p>
               </div>
+            </div>
+            <div className="mt-auto pt-8">
+              <p className="text-center text-[10px] text-gray-500 font-medium px-4">
+                This area is monitored by AMSIRS biometric tracking. By proceeding, you consent to the processing of your biometric data for security purposes in compliance with the Data Privacy Act of 2012 (RA 10173).
+              </p>
             </div>
           </div>
         </div>

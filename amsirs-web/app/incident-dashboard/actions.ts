@@ -119,7 +119,7 @@ export async function linkStudentToIncident(incidentId: string, studentId: strin
   }
 
   console.log("✅ [LINK SUCCESS] Database updated.");
-  revalidatePath('/dashboard');
+  revalidatePath('/incident-dashboard');
 }
 
 // 3. Remove a mistaken link
@@ -131,11 +131,91 @@ export async function unlinkStudentFromIncident(involvementId: string) {
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
-  await supabase
+  const { error } = await supabase
     .from('incident_involvements')
     .delete()
     .eq('id', involvementId);
 
+  if (error) {
+    console.error("🚨 [DATABASE REJECTED UNLINK]:", error.message);
+    throw new Error(error.message);
+  }
+
   // Refresh the dashboard to remove the link
-  revalidatePath('/dashboard');
+  revalidatePath('/incident-dashboard');
+}
+
+// ==========================================
+// 🤖 AI FACE MATCHING
+// ==========================================
+
+export async function getAiMatches(incidentId: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase
+    .from('incident_ai_matches')
+    .select(`*, students(id, first_name, last_name, student_id)`)
+    .eq('incident_id', incidentId);
+    
+  if (error) {
+    console.error("Error fetching AI matches:", error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getFaceEmbeddings() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase.from('face_embeddings').select('*');
+  if (error) {
+    console.error("Error fetching embeddings:", error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function saveAiMatch(incidentId: string, studentId: string, matchPercentage: number) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase
+    .from('incident_ai_matches')
+    .insert({
+      incident_id: incidentId,
+      student_id: studentId,
+      match_percentage: matchPercentage
+    })
+    .select(`*, students(id, first_name, last_name, student_id)`)
+    .single();
+
+  if (error) {
+    console.error("Error saving AI match:", error);
+    return null;
+  }
+  
+  return data;
 }

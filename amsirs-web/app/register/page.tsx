@@ -8,6 +8,7 @@ import * as faceapi from 'face-api.js';
 import { loadModels } from '@/lib/face/loadModels';
 import { supabase } from '@/lib/supabase';
 import { registerStudent } from './actions';
+import DataPrivacyCheckbox from '@/app/components/DataPrivacyCheckbox';
 
 function EnrollButton() {
   const { pending } = useFormStatus();
@@ -298,7 +299,8 @@ export default function StudentRegistrationPage() {
                 </ul>
               </div>
 
-              <div className="pt-6">
+              <div className="pt-6 space-y-6">
+                <DataPrivacyCheckbox id="dpa-register" />
                 <EnrollButton />
               </div>
             </form>

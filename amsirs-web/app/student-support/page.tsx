@@ -151,7 +151,8 @@ export default function StudentSupportPage() {
         selectedStudentForModal.id, 
         data.interventionType,
         data.notes,
-        data.followUpDate
+        data.followUpDate,
+        data.caseStatus
       );
 
       if (response.success) {

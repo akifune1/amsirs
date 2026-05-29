@@ -9,7 +9,10 @@ import {
   getSecureImageUrl,
   searchStudents,
   linkStudentToIncident,
-  unlinkStudentFromIncident
+  unlinkStudentFromIncident,
+  getFaceEmbeddings,
+  saveAiMatch,
+  getAiMatches
 } from './actions';
 import { loadModels } from '@/lib/face/loadModels';
 import { compareFaces, getMatchPercentage } from '@/lib/face/compareFaces'; 
@@ -63,10 +66,7 @@ export default function IncidentRow({ report }: { report: any }) {
   }, [searchQuery]);
 
   const fetchRecommendations = async () => {
-    const { data } = await supabase
-      .from('incident_ai_matches')
-      .select(`*, students(id, first_name, last_name, student_id)`)
-      .eq('incident_id', report.id);
+    const data = await getAiMatches(report.id);
     if (data) setAiRecommendations(data);
   };
 
@@ -88,9 +88,15 @@ export default function IncidentRow({ report }: { report: any }) {
     
     try {
       setIsScanningStatus('LOADING AI MODELS...');
+      // YIELD: Allow the browser to paint the text and process scroll momentum before we block the thread
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
       await loadModels();
 
       setIsScanningStatus('EXTRACTING FACES FROM EVIDENCE...');
+      // YIELD: Allow the browser to paint the "EXTRACTING..." text before WebGL tensor parsing blocks the thread
+      await new Promise(resolve => setTimeout(resolve, 150));
+
       const detections = await faceapi
         .detectAllFaces(imageRef.current, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks()
@@ -104,8 +110,15 @@ export default function IncidentRow({ report }: { report: any }) {
 
       setIsScanningStatus(`FOUND ${detections.length} FACE(S). CROSS-REFERENCING DB...`);
       
-      const { data: embeddings } = await supabase.from('face_embeddings').select('*');
-      if (!embeddings) throw new Error("Could not load database embeddings");
+      const embeddings = await getFaceEmbeddings();
+      if (!embeddings || embeddings.length === 0) throw new Error("Could not load database embeddings or no embeddings exist");
+
+      // OPTIMIZATION: Pre-convert all descriptors to Float32Array once
+      // Creating Float32Arrays inside the loop for every face causes massive memory allocation and UI freezing.
+      const processedEmbeddings = embeddings.map((face: any) => ({
+        ...face,
+        floatDescriptor: new Float32Array(face.descriptor)
+      }));
 
       let newMatches = [];
 
@@ -113,8 +126,11 @@ export default function IncidentRow({ report }: { report: any }) {
         let bestMatch = null;
         let lowestDistance = 999;
 
-        for (const face of embeddings) {
-          const distance = compareFaces(face.descriptor, detection.descriptor);
+        // Yield to the main thread so UI can update the scanning status text
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        for (const face of processedEmbeddings) {
+          const distance = faceapi.euclideanDistance(face.floatDescriptor, detection.descriptor);
           if (distance < lowestDistance) {
             lowestDistance = distance;
             bestMatch = face;
@@ -124,15 +140,7 @@ export default function IncidentRow({ report }: { report: any }) {
         if (bestMatch && lowestDistance < 0.6) {
           const matchPercentage = getMatchPercentage(lowestDistance);
           
-          const { data: savedMatch } = await supabase
-            .from('incident_ai_matches')
-            .insert({
-              incident_id: report.id,
-              student_id: bestMatch.student_id,
-              match_percentage: matchPercentage
-            })
-            .select(`*, students(id, first_name, last_name, student_id)`)
-            .single();
+          const savedMatch = await saveAiMatch(report.id, bestMatch.student_id, matchPercentage);
             
           if (savedMatch) newMatches.push(savedMatch);
         }
@@ -184,9 +192,11 @@ export default function IncidentRow({ report }: { report: any }) {
     }
   };
 
-  const firstNames = (report.first_name || '').split(' & ').filter(Boolean);
-  const lastNames = (report.last_name || '').split(' & ').filter(Boolean);
   const locations = (report.location || '').split(' & ').filter(Boolean);
+  
+  // Unverified names typed by the reporter
+  const reportedFirstNames = (report.first_name || '').split(' & ').filter(Boolean);
+  const reportedLastNames = (report.last_name || '').split(' & ').filter(Boolean);
 
   const severityColors: any = {
     Low: "bg-green-100 text-green-700",
@@ -221,12 +231,25 @@ export default function IncidentRow({ report }: { report: any }) {
         
         <td className="table-td">
           <div className="flex flex-col gap-1">
-            {lastNames.length > 0 ? lastNames.map((ln: string, i: number) => (
-              <div key={i} className="text-sm font-semibold text-cavite-black flex items-center gap-2">
-                <span className="w-1 h-1 bg-zinc-300 rounded-full"></span>
-                {ln}, {firstNames[i]}
-              </div>
-            )) : <span className="text-zinc-400 italic text-sm">Unknown</span>}
+            {involvements.length > 0 ? (
+              involvements.map((inv: any, i: number) => (
+                <div key={i} className="text-sm font-semibold text-cavite-black flex items-center gap-2">
+                  <span className="w-1 h-1 bg-zinc-300 rounded-full"></span>
+                  {inv.students?.last_name || 'Unknown'}, {inv.students?.first_name || 'Unknown'}
+                </div>
+              ))
+            ) : (
+              reportedLastNames.length > 0 ? (
+                reportedLastNames.map((ln: string, i: number) => (
+                  <div key={i} className="text-sm font-medium text-zinc-500 flex items-center gap-2">
+                    <span className="w-1 h-1 bg-zinc-300 rounded-full"></span>
+                    {ln}, {reportedFirstNames[i]} <span className="text-[10px] bg-zinc-100 px-1 rounded">Unverified</span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-zinc-400 italic text-sm">Unidentified Participant</span>
+              )
+            )}
             
             {involvements.length > 0 && (
               <span className="mt-1 badge-primary w-max">
@@ -292,7 +315,7 @@ export default function IncidentRow({ report }: { report: any }) {
                         alt="Evidence" 
                         className="w-full h-auto max-h-96 object-cover cursor-zoom-in" 
                         onClick={() => setIsModalOpen(true)}
-                        onLoad={runAIAnalysis}
+                        onLoad={() => setTimeout(runAIAnalysis, 500)}
                       />
                     </div>
                   ) : (

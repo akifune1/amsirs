@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
       student_id,
       intervention_type,
       notes,
-      follow_up_date
+      follow_up_date,
+      body.caseStatus || 'Active'
     );
 
     // Return response

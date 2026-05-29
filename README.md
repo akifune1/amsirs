@@ -71,7 +71,6 @@ amsirs/
 | Type Safety       | TypeScript 5.9                           |
 | Face AI           | face-api.js (TinyFaceDetector + FaceLandmarks + FaceRecognition) |
 | Encryption        | Node.js `crypto` — AES-256-GCM           |
-| Font              | Inter (via `next/font/google`)           |
 
 ---
 
@@ -235,6 +234,7 @@ The entry and exit gates are fully automated biometric scanners powered by `face
 - **Liveness Detection:** A two-step mouth-open challenge prevents photo spoofing. The system waits for a closed mouth, then prompts the student to open it before accepting the scan.
 - **Neutral Snapshot:** The face photo is captured at the neutral (closed-mouth) step, so the stored image is always clean, not mid-gesture.
 - **Matching Logic:** The live facial descriptor is compared against all stored embeddings using Euclidean distance. A match threshold of `< 0.75` is required for access to be granted.
+- **Engine Optimization:** The system pre-processes massive mathematical array conversions (Float32Array) before iterative scans and uses main-thread micro-yielding (`setTimeout`) to prevent the heavy WebGL engine from freezing the browser UI during scanning.
 - **Duplicate Scan Prevention:** A 15-second cooldown is enforced per student to prevent re-scans.
 - **Logging:** Every successful scan is recorded in `access_logs` with the student ID, action type, match percentage, face distance score, and the captured snapshot.
 
@@ -325,6 +325,13 @@ All protected pages use `@supabase/ssr` with `createServerClient` and cookie-bas
 ### No Self-Elevation
 
 Users cannot change their own role or approval status. Role assignment is controlled by admin server actions only. Students remain in `pending-approval` state until explicitly approved by an administrator.
+
+### Data Privacy Act (RA 10173) Compliance
+
+Because the system captures biometrics (facial geometry) and Personally Identifiable Information (PII) like disciplinary history, it enforces strict consent requirements:
+- **Mandatory Consent Checkboxes:** Registration and Incident Reporting forms strictly block submission unless the explicit Data Privacy consent checkbox is ticked.
+- **Visual Disclaimers:** Biometric entry gates display persistent legal consent disclaimers informing users that stepping into the camera's view grants consent to process their data.
+- **Counselor Confidentiality:** Staff resolving cases in the Student Support module are prompted with strict confidentiality reminders before committing case notes to the database.
 
 ---
 

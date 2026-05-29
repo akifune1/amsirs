@@ -30,6 +30,8 @@ const allNavLinks = [
   { name: "Incidents", href: "/incident-dashboard", icon: AlertTriangle, roles: ["admin", "guard"] },
   // Guidance pages
   { name: "Student Support", href: "/student-support", icon: Users, roles: ["admin", "guidance"] },
+  // Campus pages
+  { name: "Campus Status", href: "/campus-status", icon: Radio, roles: ["admin", "guard", "guidance"] },
   // Student pages
   { name: "My Profile", href: "/student-portal", icon: User, roles: ["student"] },
   { name: "Report Incident", href: "/incident-reporting", icon: FileText, roles: ["student"] },

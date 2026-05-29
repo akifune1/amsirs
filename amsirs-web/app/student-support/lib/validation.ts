@@ -69,7 +69,7 @@ export function validateFutureDate(dateString: string): boolean {
 /**
  * Validate intervention creation input
  */
-export function validateInterventionInput(input: Partial<InterventionInput>): AssertionError | null {
+export function validateInterventionInput(input: Partial<InterventionInput>): void {
   if (!input.student_id) {
     throw new ValidationError('student_id is required');
   }
@@ -105,8 +105,6 @@ export function validateInterventionInput(input: Partial<InterventionInput>): As
   if (!validateFutureDate(input.follow_up_date)) {
     throw new ValidationError('follow_up_date must be a valid future date');
   }
-
-  return null;
 }
 
 /**

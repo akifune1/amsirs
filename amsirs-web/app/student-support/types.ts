@@ -272,17 +272,7 @@ export interface StudentCaseCardProps {
 // Database Models (Supabase)
 // ==========================================
 
-export interface SupportIntervention {
-  id: string;
-  student_id: string;
-  counselor_id: string;
-  intervention_type: string;
-  notes: string;
-  follow_up_date: string;
-  case_status: CaseStatus;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface FlaggedStudent {
   student_id: string;
@@ -359,17 +349,7 @@ export interface AuthenticatedUser {
   role: 'Guidance Counselor' | 'System Admin';
 }
 
-export interface SupportIntervention {
-  id: string;
-  student_id: string;
-  counselor_id: string;
-  intervention_type: string;
-  notes: string | null;
-  follow_up_date: string;
-  case_status: string;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface AttendanceRecord {
   id: string;

@@ -1,16 +1,7 @@
 export default function StudentSupportLoading() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-      {/* Navigation Skeleton */}
-      <nav className="sys-navbar">
-        <div className="flex items-center gap-3">
-          <div className="badge-primary">AMSIRS</div>
-          <div className="hidden md:block space-y-1">
-            <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
-            <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
-          </div>
-        </div>
-      </nav>
+
 
       <main className="sys-container">
         {/* Page Title Skeleton */}

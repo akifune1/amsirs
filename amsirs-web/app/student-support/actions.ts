@@ -28,7 +28,7 @@ interface AuthorizedUser {
   role: 'counselor' | 'admin';
 }
 
-async function verifyStudentSupportAccess(): Promise<{ supabase: any; auth: AuthorizedUser }> {
+export async function verifyStudentSupportAccess(): Promise<{ supabase: any; auth: AuthorizedUser }> {
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -398,7 +398,8 @@ export async function createIntervention(
   studentId: string,
   interventionType: string,
   notes: string,
-  followUpDate: string
+  followUpDate: string,
+  caseStatus: string
 ): Promise<ActionResponse<{ interventionId: string }>> {
   try {
     const { supabase, auth } = await verifyStudentSupportAccess();
@@ -415,7 +416,7 @@ export async function createIntervention(
         intervention_type: interventionType,
         notes,
         follow_up_date: followUpDate,
-        case_status: 'ongoing', // Aligning with your DB schema
+        case_status: caseStatus === 'Active' ? 'ongoing' : caseStatus, // Aligning with your DB schema
       })
       .select('id')
       .single();
