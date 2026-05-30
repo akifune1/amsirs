@@ -232,6 +232,8 @@ The entry and exit gates are fully automated biometric scanners powered by `face
 
 - **AI Models Used:** TinyFaceDetector (speed-optimized), FaceLandmark68 (precision alignment), FaceRecognition (128-point descriptor)
 - **Liveness Detection:** A two-step mouth-open challenge prevents photo spoofing. The system waits for a closed mouth, then prompts the student to open it before accepting the scan.
+- **Proactive Privacy Architecture:** Bypasses standard Next.js unmount delays by severing raw DOM video streams instantly upon navigation, guaranteeing the camera hardware shuts down the millisecond the guard navigates away.
+- **Identity Verification Profile:** Upon a successful scan, the dashboard locks in a persistent data card displaying the student's database photo, name, match confidence, grade, and timestamp for effortless visual cross-referencing by the guard.
 - **Neutral Snapshot:** The face photo is captured at the neutral (closed-mouth) step, so the stored image is always clean, not mid-gesture.
 - **Matching Logic:** The live facial descriptor is compared against all stored embeddings using Euclidean distance. A match threshold of `< 0.75` is required for access to be granted.
 - **Engine Optimization:** The system pre-processes massive mathematical array conversions (Float32Array) before iterative scans and uses main-thread micro-yielding (`setTimeout`) to prevent the heavy WebGL engine from freezing the browser UI during scanning.
@@ -289,8 +291,10 @@ A counselor-facing case management dashboard:
 
 ### 🛡️ Admin Dashboard (`/admin-dashboard`) — Root Only
 
-Exclusive to `system_admins`. Provides full inline-editable control over:
+Exclusive to `system_admins`. Provides full inline-editable control over staff and students with a highly optimized, data-dense UI.
 
+- **High-Density Layouts:** Competitive-tier compact tables with specific column width constraints ensure massive amounts of data fit cleanly on screen without truncating or stretching.
+- **Smart Modals & Visual Diffs:** All destructive actions (e.g., Reset Password) require explicit confirmation via custom safety modals. Inline row edits trigger a visual difference modal (showing red strikethroughs for old values vs. green for new) before committing to the database.
 - **Staff management** — View, edit name and role (guard/guidance), or create new staff accounts
 - **Student management** — Edit student name, grade level, section, and toggle approval status (`Approved` / `Pending`)
 
