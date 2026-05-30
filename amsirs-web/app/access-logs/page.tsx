@@ -10,6 +10,7 @@ export default function AccessLogsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalLogs, setTotalLogs] = useState(0);
   const [actionFilter, setActionFilter] = useState('All');
+  const [dateFilter, setDateFilter] = useState('All');
   
   // Need state for signed URLs since they must be fetched async
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
@@ -18,7 +19,7 @@ export default function AccessLogsPage() {
 
   useEffect(() => {
     loadLogs();
-  }, [currentPage, actionFilter]);
+  }, [currentPage, actionFilter, dateFilter]);
 
   async function loadLogs() {
     try {
@@ -27,7 +28,8 @@ export default function AccessLogsPage() {
       const result = await fetchAccessLogs({
         page: currentPage,
         itemsPerPage: ITEMS_PER_PAGE,
-        actionFilter: actionFilter
+        actionFilter: actionFilter,
+        dateFilter: dateFilter
       });
 
       if (!result.success) {
@@ -65,34 +67,48 @@ export default function AccessLogsPage() {
           </p>
         </div>
 
+        <div className="mb-6">
+          <h2 className="sys-label">Security Records: Student Entry & Exit Logs</h2>
+        </div>
+
         {/* TABLE CARD */}
         <div className="sys-card">
 
-          <div className="sys-card-header flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p className="sys-label">Security Records</p>
-              <h2 className="text-lg font-bold text-cavite-black mt-1">
-                Student Entry & Exit Logs
-              </h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-semibold text-zinc-500">Filter:</label>
-              <select 
-                value={actionFilter} 
-                onChange={(e) => { setActionFilter(e.target.value); setCurrentPage(1); }}
-                className="input-field py-1.5"
-              >
-                <option value="All">All Actions</option>
-                <option value="Entry">Entry</option>
-                <option value="Exit">Exit</option>
-              </select>
+          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h3 className="sys-label m-0 text-sm">Filter Security Records</h3>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Date</label>
+                <select 
+                  value={dateFilter} 
+                  onChange={(e) => { setDateFilter(e.target.value); setCurrentPage(1); }}
+                  className="bg-white text-sm font-medium px-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon cursor-pointer shadow-sm transition-all text-cavite-black min-w-[140px]"
+                >
+                  <option value="All">All Time</option>
+                  <option value="Today">Today</option>
+                  <option value="Yesterday">Yesterday</option>
+                  <option value="This Week">Last 7 Days</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Action</label>
+                <select 
+                  value={actionFilter} 
+                  onChange={(e) => { setActionFilter(e.target.value); setCurrentPage(1); }}
+                  className="bg-white text-sm font-medium px-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon cursor-pointer shadow-sm transition-all text-cavite-black min-w-[140px]"
+                >
+                  <option value="All">All Actions</option>
+                  <option value="Entry">Entry</option>
+                  <option value="Exit">Exit</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <div className="sys-table-wrapper">
+          <div className="sys-table-wrapper max-h-[600px] overflow-auto">
 
             <table className="sys-table">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
                 <tr className="table-header-row">
                   <th className="table-th">Snapshot</th>
                   <th className="table-th">Student</th>
@@ -108,13 +124,16 @@ export default function AccessLogsPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="table-td text-center py-10 text-zinc-400 font-medium text-sm">
+                      <div className="w-8 h-8 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin mx-auto mb-2"></div>
                       Loading access logs...
                     </td>
                   </tr>
                 ) : logs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="table-td text-center py-10 text-zinc-400 font-medium text-sm">
-                      No access logs found.
+                    <td colSpan={6} className="p-16 text-center text-zinc-400 bg-white">
+                      <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <p className="text-base font-medium">No access logs found.</p>
+                      <p className="text-sm mt-1">Try adjusting your filters.</p>
                     </td>
                   </tr>
                 ) : (
@@ -123,7 +142,7 @@ export default function AccessLogsPage() {
                       key={log.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
-                      <td className="table-td">
+                      <td className="table-td" data-label="Snapshot">
                         {log.snapshot_path && imageUrls[log.snapshot_path] ? (
                           <img
                             src={imageUrls[log.snapshot_path]}
@@ -136,13 +155,13 @@ export default function AccessLogsPage() {
                           </div>
                         )}
                       </td>
-                      <td className="table-td font-semibold text-cavite-black">
+                      <td className="table-td font-semibold text-cavite-black" data-label="Student">
                         {log.students?.first_name} {log.students?.last_name}
                       </td>
-                      <td className="table-td text-zinc-500 font-mono text-sm">
+                      <td className="table-td text-zinc-500 font-mono text-sm" data-label="Student ID">
                         {log.students?.student_id}
                       </td>
-                      <td className="table-td">
+                      <td className="table-td" data-label="Action">
                         <span
                           className={`badge-primary ${
                             log.action === "ENTRY" ? "badge-success" : "badge-danger"
@@ -151,10 +170,10 @@ export default function AccessLogsPage() {
                           {log.action}
                         </span>
                       </td>
-                      <td className="table-td font-semibold text-cavite-black">
+                      <td className="table-td font-semibold text-cavite-black" data-label="Match">
                         {log.match_percentage}%
                       </td>
-                      <td className="table-td text-zinc-500 text-sm">
+                      <td className="table-td text-zinc-500 text-sm" data-label="Timestamp">
                         {new Date(log.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </td>
                     </tr>

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import IncidentRow from './incidentRow';
 import SearchBar from '../components/SearchBar';
 import Pagination from '../components/Pagination';
+import FilterDropdown from '../components/FilterDropdown';
 import { logout } from '../auth/actions';
 
 // This forces the page to always fetch fresh data (no caching)
@@ -31,6 +32,8 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
   // ==========================================
   const q = (searchParams?.q as string) || '';
   const page = Number(searchParams?.page) || 1;
+  const severity = (searchParams?.severity as string) || '';
+  const timeframe = (searchParams?.timeframe as string) || '';
   const ITEMS_PER_PAGE = 10;
 
   let query = supabase
@@ -52,6 +55,19 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
   if (q) {
     query = query.or(`location.ilike.%${q}%,severity.ilike.%${q}%`);
   }
+  if (severity) {
+    query = query.eq('severity', severity);
+  }
+  if (timeframe) {
+    const now = new Date();
+    let dateRange = null;
+    if (timeframe === '7days') dateRange = new Date(now.setDate(now.getDate() - 7));
+    else if (timeframe === '30days') dateRange = new Date(now.setDate(now.getDate() - 30));
+    
+    if (dateRange) {
+      query = query.gte('created_at', dateRange.toISOString());
+    }
+  }
 
   const { data: reports, count } = await query
     .order('created_at', { ascending: false })
@@ -62,16 +78,11 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
   return (
     <>
       <main className="sys-container">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
-          <div>
-            <h2 className="sys-title">Recent Incident Reports</h2>
-            <p className="sys-subtitle mt-1">
-              Official security logs for Cavite National High School. All descriptions are stored with <span className="font-semibold text-cavite-maroon">AES-256 Encryption</span>.
-            </p>
-          </div>
-          <div className="w-full sm:w-72">
-            <SearchBar placeholder="Search by location or severity..." />
-          </div>
+        <div className="mb-10">
+          <h2 className="sys-title">Recent Incident Reports</h2>
+          <p className="sys-subtitle mt-1">
+            Official security logs for Cavite National High School. All descriptions are stored with <span className="font-semibold text-cavite-maroon">AES-256 Encryption</span>.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
@@ -98,9 +109,19 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
         </div>
 
         <div className="sys-card">
-          <div className="sys-table-wrapper">
+          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h3 className="sys-label m-0 text-sm">Filter Reports</h3>
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <FilterDropdown paramName="timeframe" placeholder="Time" options={[{label:'All Time', value:'All'}, {label:'Last 7 Days', value:'7days'}, {label:'Last 30 Days', value:'30days'}]} />
+              <FilterDropdown paramName="severity" placeholder="Severity" options={[{label:'All Severity', value:'All'}, {label:'High', value:'High'}, {label:'Medium', value:'Medium'}, {label:'Low', value:'Low'}]} />
+              <div className="w-full sm:w-72">
+                <SearchBar placeholder="Search by location or severity..." />
+              </div>
+            </div>
+          </div>
+          <div className="sys-table-wrapper max-h-[600px] overflow-auto">
             <table className="sys-table">
-              <thead>
+              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
                 <tr className="table-header-row">
                   <th className="table-th">Date & Time</th>
                   <th className="table-th">Student Involved</th>

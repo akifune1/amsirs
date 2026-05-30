@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
+import MobileNav from "./components/MobileNav";
 import ToasterProvider from "./components/ToasterProvider";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -27,12 +28,22 @@ async function getUserInfo() {
     // 1. Check admin
     const { data: admin } = await supabase
       .from("system_admins")
-      .select("id")
+      .select("id, role")
       .eq("id", user.id)
       .maybeSingle();
 
     if (admin) {
-      return { email, role: "Administrator", roleKey: "admin", initials: email.substring(0, 2).toUpperCase() };
+      const roleMap: Record<string, string> = { 
+        it_admin: "IT Administrator", 
+        school_admin: "School Administrator", 
+        super_admin: "Super Admin" 
+      };
+      return { 
+        email, 
+        role: roleMap[admin.role] || "Administrator", 
+        roleKey: admin.role, 
+        initials: email.substring(0, 2).toUpperCase() 
+      };
     }
 
     // 2. Check staff
@@ -80,7 +91,8 @@ export default async function RootLayout({
       >
         <ToasterProvider />
         <Sidebar userInfo={userInfo} />
-        <div className="flex-1 h-full overflow-y-auto hide-scrollbar relative">
+        <MobileNav userInfo={userInfo} />
+        <div className="flex-1 h-full overflow-y-auto hide-scrollbar relative pt-16 pb-20 lg:pt-0 lg:pb-0">
           {children}
         </div>
       </body>

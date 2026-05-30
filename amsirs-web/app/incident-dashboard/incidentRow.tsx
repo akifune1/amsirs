@@ -227,9 +227,9 @@ export default function IncidentRow({ report }: { report: any }) {
   return (
     <>
       <tr className={`group hover:bg-zinc-50 transition-colors align-top ${decryptedText ? 'bg-zinc-50' : ''}`}>
-        <td className="table-td text-gray-500 whitespace-nowrap">{formattedDate}</td>
+        <td className="table-td text-gray-500 whitespace-nowrap" data-label="Date">{formattedDate}</td>
         
-        <td className="table-td">
+        <td className="table-td" data-label="Student">
           <div className="flex flex-col gap-1">
             {involvements.length > 0 ? (
               involvements.map((inv: any, i: number) => (
@@ -259,7 +259,7 @@ export default function IncidentRow({ report }: { report: any }) {
           </div>
         </td>
 
-        <td className="table-td">
+        <td className="table-td" data-label="Location">
           <div className="flex flex-col gap-1">
             {locations.length > 0 ? locations.map((loc: string, i: number) => (
               <div key={i} className="text-sm text-zinc-500 flex items-center gap-2">
@@ -270,21 +270,27 @@ export default function IncidentRow({ report }: { report: any }) {
           </div>
         </td>
 
-        <td className="table-td">
+        <td className="table-td" data-label="Severity">
           <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${severityColors[report.severity]}`}>
             {report.severity}
           </span>
         </td>
         
-        <td className="table-td text-right">
-          <button onClick={handleToggleDetails} disabled={loading} className={`text-xs font-semibold transition-all ${decryptedText ? 'text-zinc-400 hover:text-cavite-black' : 'text-cavite-maroon hover:text-cavite-hover'}`}>
-            {loading ? 'Decrypting...' : decryptedText ? 'Close Brief' : 'Open Brief'}
+        <td className="table-td text-right" data-label="Actions">
+          <button onClick={handleToggleDetails} disabled={loading} className={`px-4 py-2 rounded-md font-semibold text-xs shadow-sm transition-all flex items-center justify-end gap-1.5 ml-auto w-fit ${decryptedText ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200' : 'bg-cavite-maroon hover:bg-cavite-hover text-white'}`}>
+            {loading ? (
+              <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> Decrypting...</>
+            ) : decryptedText ? (
+              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path></svg> Close Brief</>
+            ) : (
+              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg> Open Brief</>
+            )}
           </button>
         </td>
       </tr>
       
       {decryptedText && (
-        <tr>
+        <tr className="expansion-row">
           <td colSpan={5} className="p-0 bg-zinc-50 border-b border-cavite-border shadow-inner">
             <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
               
@@ -373,9 +379,10 @@ export default function IncidentRow({ report }: { report: any }) {
                       </div>
                       <button 
                         onClick={() => handleUnlink(inv.id)}
-                        className="text-xs font-semibold text-zinc-400 hover:text-danger-text transition-colors opacity-0 group-hover:opacity-100"
+                        className="text-xs font-semibold text-zinc-400 hover:text-danger-text transition-colors flex items-center gap-1"
                       >
-                        Unlink
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4l16 16"></path></svg>
+                        <span className="hidden sm:inline">Unlink</span>
                       </button>
                     </div>
                   ))}
@@ -417,7 +424,10 @@ export default function IncidentRow({ report }: { report: any }) {
                             <p className="text-sm font-semibold text-cavite-black leading-none mb-1">{student.last_name}, {student.first_name}</p>
                             <p className="text-xs font-mono text-zinc-500 leading-none">{student.student_id} • {student.grade_level}</p>
                           </div>
-                          <span className="text-xs font-semibold text-cavite-maroon opacity-0 group-hover:opacity-100">+ Link</span>
+                          <div className="flex items-center gap-1 text-xs font-semibold text-cavite-maroon opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                            <span className="hidden sm:inline">Link</span>
+                          </div>
                         </button>
                       ))}
                     </div>

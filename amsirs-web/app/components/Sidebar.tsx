@@ -21,20 +21,15 @@ interface SidebarProps {
 
 // Define all possible nav links
 const allNavLinks = [
-  // Admin-only
-  { name: "Dashboard", href: "/admin-dashboard", icon: Grid, roles: ["admin"] },
-  // Guard pages
-  { name: "Access Gate", href: "/access-gate", icon: DoorOpen, roles: ["admin", "guard"] },
-  { name: "Exit Gate", href: "/exit-gate", icon: DoorClosed, roles: ["admin", "guard"] },
-  { name: "Access Logs", href: "/access-logs", icon: Shield, roles: ["admin", "guard"] },
-  { name: "Incidents", href: "/incident-dashboard", icon: AlertTriangle, roles: ["admin", "guard"] },
-  // Guidance pages
-  { name: "Student Support", href: "/student-support", icon: Users, roles: ["admin", "guidance"] },
-  // Campus pages
-  { name: "Campus Status", href: "/campus-status", icon: Radio, roles: ["admin", "guard", "guidance"] },
-  // Student pages
+  { name: "Dashboard", href: "/admin-dashboard", icon: Grid, roles: ["it_admin", "super_admin"] },
+  { name: "Access Gate", href: "/access-gate", icon: DoorOpen, roles: ["super_admin", "guard"] },
+  { name: "Exit Gate", href: "/exit-gate", icon: DoorClosed, roles: ["super_admin", "guard"] },
+  { name: "Access Logs", href: "/access-logs", icon: Shield, roles: ["it_admin", "school_admin", "super_admin", "guard"] },
+  { name: "Incidents", href: "/incident-dashboard", icon: AlertTriangle, roles: ["school_admin", "super_admin", "guard"] },
+  { name: "Student Support", href: "/student-support", icon: Users, roles: ["school_admin", "super_admin", "guidance"] },
+  { name: "Campus Status", href: "/campus-status", icon: Radio, roles: ["it_admin", "school_admin", "super_admin", "guard", "guidance"] },
   { name: "My Profile", href: "/student-portal", icon: User, roles: ["student"] },
-  { name: "Report Incident", href: "/incident-reporting", icon: FileText, roles: ["student"] },
+  { name: "Report Incident", href: "/incident-reporting", icon: FileText, roles: ["student"] }
 ];
 
 export default function Sidebar({ userInfo }: SidebarProps) {
@@ -48,7 +43,7 @@ export default function Sidebar({ userInfo }: SidebarProps) {
   const navLinks = allNavLinks.filter((link) => link.roles.includes(roleKey));
 
   return (
-    <aside className="w-24 lg:w-64 bg-white flex flex-col justify-between rounded-r-[32px] my-4 ml-4 z-20 overflow-hidden flex-shrink-0" style={{ boxShadow: '0 10px 40px -10px rgba(0,0,0,0.05)' }}>
+    <aside className="hidden lg:flex w-24 lg:w-64 bg-white flex-col justify-between rounded-r-[32px] my-4 ml-4 z-20 overflow-hidden flex-shrink-0" style={{ boxShadow: '0 10px 40px -10px rgba(0,0,0,0.05)' }}>
       <div>
         {/* Logo Area */}
         <div className="h-24 flex items-center justify-center lg:justify-start lg:px-8 border-b border-gray-100">

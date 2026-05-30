@@ -33,14 +33,14 @@ export default async function StudentSupportLayout({
   // 3. Check if they are an admin
   const { data: admin } = await supabase
     .from('system_admins')
-    .select('id')
+    .select('id, role')
     .eq('id', user.id)
     .maybeSingle();
 
   // 🛑 THE FIX: Strictly check for 'guidance' to match your database
-  if (profile?.role !== 'guidance' && !admin) {
-    // If a non-counselor (like a student) tries to access this URL, kick them to the portal
-    redirect('/student-portal');
+  if (profile?.role !== 'guidance' && (!admin || admin.role === 'it_admin')) {
+    // If a non-counselor (like a student or it_admin) tries to access this URL, kick them to the portal
+    redirect('/unauthorized');
   }
 
   // If they pass, render the Student Support Page

@@ -26,9 +26,9 @@ export default function CreateStaffModal() {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-lg shadow-xl border border-cavite-border max-w-md w-full overflow-hidden">
+          <div className="bg-white rounded-lg shadow-xl border border-cavite-border max-w-md w-[95vw] md:w-full max-h-[90vh] flex flex-col overflow-hidden">
             
-            <div className="px-6 py-5 border-b border-cavite-border flex justify-between items-center bg-zinc-50">
+            <div className="px-6 py-5 border-b border-cavite-border flex justify-between items-center bg-zinc-50 flex-shrink-0">
               <div>
                 <h3 className="text-base font-semibold text-cavite-black tracking-tight">Provision Account</h3>
                 <p className="text-sm text-zinc-500 mt-1">Create a new institutional access account</p>
@@ -38,7 +38,7 @@ export default function CreateStaffModal() {
               </button>
             </div>
 
-            <form action={formAction} className="p-6 space-y-5 bg-white">
+            <form action={formAction} className="p-6 space-y-5 bg-white overflow-y-auto">
               
               {state?.error && (
                 <div className="p-3 bg-danger-bg text-danger-text border border-danger-border text-sm font-medium rounded-md">
@@ -72,6 +72,8 @@ export default function CreateStaffModal() {
                 <select required name="role" className="w-full bg-white border border-cavite-border rounded-md p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all">
                   <option value="guard">Security Guard</option>
                   <option value="guidance">Guidance Counselor</option>
+                  <option value="school_admin">School Administrator</option>
+                  <option value="it_admin">IT Administrator</option>
                 </select>
               </div>
 

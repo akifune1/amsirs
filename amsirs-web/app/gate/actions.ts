@@ -62,6 +62,9 @@ export async function lookupStudent(studentId: string): Promise<{
     first_name: string;
     last_name: string;
     is_approved: boolean;
+    grade_level?: string;
+    section?: string;
+    photoUrl?: string | null;
   };
   error?: string;
 }> {
@@ -70,14 +73,22 @@ export async function lookupStudent(studentId: string): Promise<{
 
     const { data, error } = await supabase
       .from('students')
-      .select('id, student_id, first_name, last_name, is_approved')
+      .select('id, student_id, first_name, last_name, is_approved, grade_level, section, face_photo_path')
       .eq('id', studentId)
       .single();
 
     if (error) return { success: false, error: error.message };
     if (!data) return { success: false, error: 'Student not found' };
 
-    return { success: true, data };
+    let photoUrl = null;
+    if (data.face_photo_path) {
+      const { data: photoData } = await supabase.storage
+        .from('student_faces')
+        .createSignedUrl(data.face_photo_path, 3600);
+      if (photoData) photoUrl = photoData.signedUrl;
+    }
+
+    return { success: true, data: { ...data, photoUrl } };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Failed to lookup student' };
   }

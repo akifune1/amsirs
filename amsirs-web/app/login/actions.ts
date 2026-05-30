@@ -42,11 +42,17 @@ export async function login(prevState: any, formData: FormData) {
   // 1. Admin
   const { data: admin } = await supabase
     .from('system_admins')
-    .select('id')
+    .select('id, role')
     .eq('id', userId)
     .maybeSingle();
 
-  if (admin) redirect('/admin-dashboard');
+  if (admin) {
+    if (admin.role === 'school_admin') {
+      redirect('/incident-dashboard');
+    } else {
+      redirect('/admin-dashboard');
+    }
+  }
 
   // 2. Staff (Guard/Guidance)
   const { data: staff } = await supabase

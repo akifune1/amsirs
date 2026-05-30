@@ -56,11 +56,11 @@ export async function verifyStudentSupportAccess(): Promise<{ supabase: any; aut
   // Check if user is an admin
   const { data: admin } = await supabase
     .from('system_admins')
-    .select('id')
+    .select('id, role')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (admin) {
+  if (admin && admin.role !== 'it_admin') {
     return { supabase, auth: { user_id: user.id, role: 'admin' } };
   }
 

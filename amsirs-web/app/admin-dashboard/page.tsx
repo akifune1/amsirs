@@ -2,12 +2,14 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { updateStudent, updateStaff } from './actions';
+import { updateStudent, updateStaff, resetUserPassword, bulkApproveStudents } from './actions';
 import { logout } from '../auth/actions';
 import CreateStaffModal from './CreateStaffModal';
 import SearchBar from '../components/SearchBar';
 import Pagination from '../components/Pagination';
-import ActionForm from '../components/ActionForm'; // <-- NEW IMPORT
+import ActionForm from '../components/ActionForm';
+import FilterDropdown from '../components/FilterDropdown';
+import ConfirmChangesForm from './components/ConfirmChangesForm';
 
 export default async function AdminDashboard(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = props.searchParams ? await props.searchParams : {};
@@ -24,11 +26,11 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   
   const { data: adminAuth } = await supabase
     .from('system_admins')
-    .select('id')
+    .select('id, role')
     .eq('id', user?.id)
     .maybeSingle();
 
-  if (!adminAuth) redirect('/unauthorized');
+  if (!adminAuth || adminAuth.role === 'school_admin') redirect('/unauthorized');
 
   // ==========================================
   // 📊 DATA FETCHING: STAFF & STUDENTS
@@ -42,12 +44,18 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   let staffTotalPages = 0;
   const staffQ = (searchParams?.staffQ as string) || '';
   const staffPage = Number(searchParams?.staffPage) || 1;
+  const staffRole = searchParams?.staffRole as string;
+  const staffStatus = searchParams?.staffStatus as string;
 
   if (activeTab === 'staff') {
     let staffQuery = supabase.from('user_profiles').select('*', { count: 'exact' });
     if (staffQ) {
       staffQuery = staffQuery.or(`first_name.ilike.%${staffQ}%,last_name.ilike.%${staffQ}%`);
     }
+    if (staffRole) staffQuery = staffQuery.eq('role', staffRole);
+    if (staffStatus === 'active') staffQuery = staffQuery.eq('is_active', true);
+    if (staffStatus === 'suspended') staffQuery = staffQuery.eq('is_active', false);
+    
     const { data, count } = await staffQuery
       .order('last_name')
       .range((staffPage - 1) * ITEMS_PER_PAGE, staffPage * ITEMS_PER_PAGE - 1);
@@ -63,12 +71,18 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   let studentTotalPages = 0;
   const studentQ = (searchParams?.studentQ as string) || '';
   const studentPage = Number(searchParams?.studentPage) || 1;
+  const studentGrade = searchParams?.studentGrade as string;
+  const studentStatus = searchParams?.studentStatus as string;
 
   if (activeTab === 'students') {
     let studentQuery = supabase.from('students').select('*', { count: 'exact' });
     if (studentQ) {
       studentQuery = studentQuery.or(`first_name.ilike.%${studentQ}%,last_name.ilike.%${studentQ}%,student_id.ilike.%${studentQ}%`);
     }
+    if (studentGrade) studentQuery = studentQuery.eq('grade_level', studentGrade);
+    if (studentStatus === 'approved') studentQuery = studentQuery.eq('is_approved', true);
+    if (studentStatus === 'pending') studentQuery = studentQuery.eq('is_approved', false);
+    
     const { data, count } = await studentQuery
       .order('last_name')
       .range((studentPage - 1) * ITEMS_PER_PAGE, studentPage * ITEMS_PER_PAGE - 1);
@@ -129,80 +143,125 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
               ========================================== */}
           {activeTab === 'staff' && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <h2 className="sys-label">Institutional Staff Directory</h2>
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="w-full sm:w-72">
-                  <SearchBar paramName="staffQ" placeholder="Search staff..." />
-                </div>
-                <CreateStaffModal /> 
+              <div className="mb-6">
+                <h2 className="sys-label">Institutional Staff Directory</h2>
               </div>
-            </div>
-            <div className="sys-card">
-              <div className="sys-table-wrapper">
-                <table className="sys-table">
-                  <thead>
+              <div className="sys-card">
+                <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <h3 className="sys-label m-0 text-sm">Filter Directory</h3>
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <FilterDropdown paramName="staffRole" placeholder="Role" options={[{label:'All Roles', value:'All'}, {label:'Guard', value:'guard'}, {label:'Guidance', value:'guidance'}, {label:'School Admin', value:'school_admin'}, {label:'IT Admin', value:'it_admin'}]} />
+                    <FilterDropdown paramName="staffStatus" placeholder="Status" options={[{label:'All Status', value:'All'}, {label:'Active', value:'active'}, {label:'Suspended', value:'suspended'}]} />
+                    <div className="w-full sm:w-64">
+                      <SearchBar paramName="staffQ" placeholder="Search staff..." />
+                    </div>
+                    <CreateStaffModal /> 
+                  </div>
+                </div>
+                <div className="sys-table-wrapper max-h-[600px] overflow-auto">
+                  <table className="sys-table">
+                    <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
                     <tr className="table-header-row">
                       <th className="table-th w-16">ID</th>
-                      <th className="table-th">Last Name</th>
-                      <th className="table-th">First Name</th>
-                      <th className="table-th">Date Added</th>
-                      <th className="table-th">Role</th>
-                      <th className="table-th text-right">Actions</th>
+                      <th className="table-th min-w-[180px]">Last Name</th>
+                      <th className="table-th min-w-[180px]">First Name</th>
+                      <th className="table-th min-w-[120px]">Date Added</th>
+                      <th className="table-th min-w-[140px]">Role</th>
+                      <th className="table-th min-w-[120px]">Status</th>
+                      <th className="table-th min-w-[120px] text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {(staff || []).map((member) => {
+                    {staff.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-16 text-center text-zinc-400 bg-white">
+                          <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                          <p className="text-base font-medium">No staff members found.</p>
+                          <p className="text-sm mt-1">Try adjusting your search or filters.</p>
+                        </td>
+                      </tr>
+                    ) : (staff.map((member) => {
                       const formId = `staff-form-${member.id}`;
                       return (
                         <tr key={member.id} className="hover:bg-gray-50 group transition-colors">
                           
                           {/* ID Column */}
-                          <td className="table-td">
+                          <td className="table-td" data-label="ID">
                             <span className="text-zinc-500 font-mono text-xs">
                               {member.internal_id}
                             </span>
                           </td>
 
-                          {/* Hidden Form Definition */}
-                          <td className="hidden">
-                            <form id={formId} action={updateStaff}>
+                          {/* Last Name & Form */}
+                          <td className="table-td" data-label="Last Name">
+                            <ConfirmChangesForm 
+                              id={formId} 
+                              action={updateStaff}
+                              originalData={{
+                                lastName: member.last_name || '',
+                                firstName: member.first_name || '',
+                                role: member.role || '',
+                                isActive: String(member.is_active !== false)
+                              }}
+                            >
                               <input type="hidden" name="id" value={member.id} />
-                            </form>
-                          </td>
-
-                          {/* Last Name */}
-                          <td className="table-td">
-                            <input form={formId} name="lastName" defaultValue={member.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                            </ConfirmChangesForm>
+                            <input form={formId} name="lastName" defaultValue={member.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* First Name */}
-                          <td className="table-td">
-                            <input form={formId} name="firstName" defaultValue={member.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                          <td className="table-td" data-label="First Name">
+                            <input form={formId} name="firstName" defaultValue={member.first_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* Created At */}
-                          <td className="table-td text-zinc-500 text-sm">
+                          <td className="table-td text-zinc-500 text-sm whitespace-nowrap" data-label="Date Added">
                             {formatDate(member.created_at)}
                           </td>
 
                           {/* Role */}
-                          <td className="table-td">
+                          <td className="table-td" data-label="Role">
                             <select form={formId} name="role" defaultValue={member.role} className="bg-zinc-50 text-xs font-medium px-2.5 py-1.5 rounded-md border border-cavite-border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer w-full max-w-[120px]">
                               <option value="guard">Guard</option>
                               <option value="guidance">Guidance</option>
+                              <option value="school_admin">School Admin</option>
+                              <option value="it_admin">IT Admin</option>
+                            </select>
+                          </td>
+
+                          {/* Status */}
+                          <td className="table-td" data-label="Status">
+                            <select form={formId} name="isActive" defaultValue={String(member.is_active !== false)} className={`text-xs font-medium px-2.5 py-1.5 rounded-full border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer transition-all ${member.is_active !== false ? 'bg-success-bg text-success-text border-success-border' : 'bg-danger-bg text-danger-text border-danger-border'}`}>
+                              <option value="true">Active</option>
+                              <option value="false">Suspended</option>
                             </select>
                           </td>
 
                           {/* Actions */}
-                          <td className="table-td text-right">
-                            <button form={formId} type="submit" className="text-xs font-semibold text-cavite-maroon opacity-0 group-hover:opacity-100 transition-opacity hover:text-cavite-hover cursor-pointer">
-                              Save
-                            </button>
+                          <td className="table-td text-right" data-label="Actions">
+                            <div className="flex justify-end gap-2 items-center">
+                              {(() => {
+                                const defaultStaffPw = `Mabuhay${(member.last_name || '').toUpperCase()}1902`;
+                                return (
+                                  <ActionForm action={resetUserPassword} confirmMessage={`Reset this user's password to '${defaultStaffPw}'?`}>
+                                    <input type="hidden" name="userId" value={member.id} />
+                                    <input type="hidden" name="newPassword" value={defaultStaffPw} />
+                                    <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg> 
+                                      <span className="hidden sm:inline">Reset PW</span>
+                                    </button>
+                                  </ActionForm>
+                                );
+                              })()}
+                              <button form={formId} type="submit" className="px-3 py-1.5 rounded-md bg-cavite-maroon hover:bg-cavite-hover text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> 
+                                <span className="hidden sm:inline">Save</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
-                    })}
+                    }))}
                   </tbody>
                 </table>
               </div>
@@ -216,74 +275,115 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
               ========================================== */}
           {activeTab === 'students' && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <h2 className="sys-label">Student Body Database</h2>
-              <div className="w-full sm:w-80">
-                <SearchBar paramName="studentQ" placeholder="Search by name or ID..." />
+              <div className="mb-6">
+                <h2 className="sys-label">Student Body Database</h2>
               </div>
-            </div>
-            <div className="sys-card">
-              <div className="sys-table-wrapper">
-                <table className="sys-table">
-                  <thead>
-                    <tr className="table-header-row">
-                      <th className="table-th w-32">Student ID</th>
-                      <th className="table-th">Last Name</th>
-                      <th className="table-th">First Name</th>
-                      <th className="table-th">Date Reg.</th>
-                      <th className="table-th">Placement</th>
-                      <th className="table-th">Status</th>
-                      <th className="table-th text-right">Actions</th>
-                    </tr>
-                  </thead>
+              <div className="sys-card">
+                <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <h3 className="sys-label m-0 text-sm">Filter Students</h3>
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <FilterDropdown paramName="studentGrade" placeholder="Grade" options={[{label:'All Grades', value:'All'}, {label:'Grade 11', value:'Grade 11'}, {label:'Grade 12', value:'Grade 12'}]} />
+                    <FilterDropdown paramName="studentStatus" placeholder="Status" options={[{label:'All Status', value:'All'}, {label:'Approved', value:'approved'}, {label:'Pending', value:'pending'}]} />
+                    <div className="w-full sm:w-64">
+                      <SearchBar paramName="studentQ" placeholder="Search by name or ID..." />
+                    </div>
+                  </div>
+                </div>
+              <form id="bulk-approve-form" action={async (formData) => {
+                'use server';
+                const ids = formData.getAll('studentIds') as string[];
+                await bulkApproveStudents(ids);
+              }} />
+              <div className="p-4 border-b border-cavite-border bg-zinc-50 flex justify-between items-center">
+                <span className="text-sm text-zinc-500 font-medium">Select pending students to approve them all at once.</span>
+                <button type="submit" form="bulk-approve-form" className="btn-primary m-0 py-1.5 px-4 text-xs">Bulk Approve Selected</button>
+              </div>
+              <div className="sys-table-wrapper max-h-[600px] overflow-auto">
+                  <table className="sys-table">
+                    <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                      <tr className="table-header-row">
+                        <th className="table-th w-10 text-center">✓</th>
+                        <th className="table-th min-w-[160px]">Student ID</th>
+                        <th className="table-th min-w-[180px]">Last Name</th>
+                        <th className="table-th min-w-[180px]">First Name</th>
+                        <th className="table-th min-w-[120px]">Date Reg.</th>
+                        <th className="table-th min-w-[140px]">Grade Level</th>
+                        <th className="table-th min-w-[140px]">Section</th>
+                        <th className="table-th min-w-[120px]">Status</th>
+                        <th className="table-th min-w-[120px] text-right">Actions</th>
+                      </tr>
+                    </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {(students || []).map((student) => {
+                    {students.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="p-16 text-center text-zinc-400 bg-white">
+                          <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                          <p className="text-base font-medium">No students found.</p>
+                          <p className="text-sm mt-1">Try adjusting your search or filters.</p>
+                        </td>
+                      </tr>
+                    ) : (students.map((student) => {
                       const formId = `student-form-${student.id}`;
                       return (
                         <tr key={student.id} className="hover:bg-gray-50 group transition-colors">
                           
+                          {/* Checkbox for Bulk Approve */}
+                          <td className="table-td text-center" data-label="Approve">
+                            {!student.is_approved && (
+                              <input type="checkbox" name="studentIds" value={student.id} form="bulk-approve-form" className="rounded border-gray-300 text-cavite-maroon focus:ring-cavite-maroon cursor-pointer" />
+                            )}
+                          </td>
+                          
                           {/* Student ID */}
-                          <td className="table-td">
+                          <td className="table-td" data-label="Student ID">
                             <span className="text-zinc-500 font-mono text-xs">
                               {student.student_id}
                             </span>
                           </td>
 
-                          {/* Hidden Form Definition */}
-                          <td className="hidden">
-                            <form id={formId} action={updateStudent}>
+                          {/* Last Name & Form */}
+                          <td className="table-td" data-label="Last Name">
+                            <ConfirmChangesForm 
+                              id={formId} 
+                              action={updateStudent}
+                              originalData={{
+                                lastName: student.last_name || '',
+                                firstName: student.first_name || '',
+                                gradeLevel: student.grade_level || '',
+                                section: student.section || '',
+                                isApproved: String(student.is_approved)
+                              }}
+                            >
                               <input type="hidden" name="id" value={student.id} />
-                            </form>
-                          </td>
-
-                          {/* Last Name */}
-                          <td className="table-td">
-                            <input form={formId} name="lastName" defaultValue={student.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                            </ConfirmChangesForm>
+                            <input form={formId} name="lastName" defaultValue={student.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* First Name */}
-                          <td className="table-td">
-                            <input form={formId} name="firstName" defaultValue={student.first_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full border border-transparent hover:border-cavite-border transition-all" />
+                          <td className="table-td" data-label="First Name">
+                            <input form={formId} name="firstName" defaultValue={student.first_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
                           </td>
 
                           {/* Created At */}
-                          <td className="table-td text-zinc-500 text-sm">
+                          <td className="table-td text-zinc-500 text-sm whitespace-nowrap" data-label="Date Reg.">
                             {formatDate(student.created_at)}
                           </td>
 
-                          {/* Placement (Grade + Section) */}
-                          <td className="table-td">
-                            <div className="flex flex-col gap-1.5">
-                              <select form={formId} name="gradeLevel" defaultValue={student.grade_level} className="bg-transparent text-xs font-medium outline-none px-1 py-0.5 hover:bg-zinc-100 focus:ring-1 focus:ring-cavite-maroon rounded border border-transparent hover:border-cavite-border cursor-pointer w-full max-w-[100px] transition-all">
-                                <option value="Grade 11">Grade 11</option>
-                                <option value="Grade 12">Grade 12</option>
-                              </select>
-                              <input form={formId} name="section" defaultValue={student.section} className="bg-transparent text-xs text-zinc-500 outline-none px-1 py-0.5 hover:bg-zinc-100 hover:text-cavite-black border border-transparent hover:border-cavite-border rounded focus:ring-1 focus:ring-cavite-maroon transition-all w-full max-w-[100px]" placeholder="SECTION" />
-                            </div>
+                          {/* Grade Level */}
+                          <td className="table-td" data-label="Grade Level">
+                            <select form={formId} name="gradeLevel" defaultValue={student.grade_level} className="bg-transparent text-sm font-medium outline-none px-2 py-1 hover:bg-zinc-100 focus:ring-1 focus:ring-cavite-maroon rounded border border-transparent hover:border-cavite-border cursor-pointer w-full max-w-[110px] transition-all">
+                              <option value="Grade 11">Grade 11</option>
+                              <option value="Grade 12">Grade 12</option>
+                            </select>
+                          </td>
+
+                          {/* Section */}
+                          <td className="table-td" data-label="Section">
+                            <input form={formId} name="section" defaultValue={student.section} className="bg-transparent text-sm font-medium outline-none px-2 py-1 hover:bg-zinc-100 focus:ring-1 focus:ring-cavite-maroon rounded border border-transparent hover:border-cavite-border w-full min-w-[120px] transition-all" placeholder="SECTION" />
                           </td>
 
                           {/* Approval Status */}
-                          <td className="table-td">
+                          <td className="table-td" data-label="Status">
                             <select 
                               form={formId}
                               name="isApproved" 
@@ -298,14 +398,39 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                           </td>
 
                           {/* Actions */}
-                          <td className="table-td text-right">
-                            <button form={formId} type="submit" className="text-xs font-semibold text-cavite-maroon opacity-0 group-hover:opacity-100 transition-opacity hover:text-cavite-hover cursor-pointer">
-                              Apply
-                            </button>
+                          <td className="table-td text-right" data-label="Actions">
+                            <div className="flex justify-end gap-2 items-center">
+                              {(() => {
+                                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                let monthStr = "Jan";
+                                if (student.birthday && student.birthday.includes('-')) {
+                                  const parts = student.birthday.split('-');
+                                  if (parts.length >= 2) {
+                                    const monthIdx = parseInt(parts[1], 10) - 1;
+                                    if (monthIdx >= 0 && monthIdx <= 11) monthStr = monthNames[monthIdx];
+                                  }
+                                }
+                                const defaultStudentPw = `${monthStr}${student.student_id}`;
+                                return (
+                                  <ActionForm action={resetUserPassword} confirmMessage={`Reset this student's password to '${defaultStudentPw}'?`}>
+                                    <input type="hidden" name="userId" value={student.account_id} />
+                                    <input type="hidden" name="newPassword" value={defaultStudentPw} />
+                                    <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                      <span className="hidden sm:inline">Reset PW</span>
+                                    </button>
+                                  </ActionForm>
+                                );
+                              })()}
+                              <button form={formId} type="submit" className="px-3 py-1.5 rounded-md bg-cavite-maroon hover:bg-cavite-hover text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span className="hidden sm:inline">Apply</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
-                    })}
+                    }))}
                   </tbody>
                 </table>
               </div>

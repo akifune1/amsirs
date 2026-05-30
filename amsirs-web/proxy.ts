@@ -41,21 +41,37 @@ export async function proxy(request: NextRequest) {
     // TIER 1: SYSTEM ADMIN CHECK
     const { data: admin } = await supabase
       .from('system_admins')
-      .select('id')
+      .select('id, role')
       .eq('id', user.id)
       .maybeSingle();
 
-    console.log("👑 Admin Check:", admin ? "YES" : "NO");
+    console.log("👑 Admin Check:", admin ? `YES (${admin.role})` : "NO");
 
     if (admin) {
-      console.log("✅ Action: Admin Pass");
+      const { role } = admin;
+      
+      if (role === 'it_admin') {
+        if (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting') || path.startsWith('/student-support') || path.startsWith('/access-gate') || path.startsWith('/exit-gate')) {
+          console.log(`🛑 Action: Redirecting to /unauthorized (IT Admin cannot access ${path})`);
+          return NextResponse.redirect(new URL('/unauthorized', request.url));
+        }
+      }
+
+      if (role === 'school_admin') {
+        if (path.startsWith('/admin-dashboard') || path.startsWith('/access-gate') || path.startsWith('/exit-gate')) {
+          console.log(`🛑 Action: Redirecting to /unauthorized (School Admin cannot access ${path})`);
+          return NextResponse.redirect(new URL('/unauthorized', request.url));
+        }
+      }
+
+      console.log(`✅ Action: Admin Pass (${role})`);
       return response;
     }
 
     // TIER 2: STAFF CHECK
     const { data: staff, error: staffError } = await supabase
       .from('user_profiles')
-      .select('role')
+      .select('role, is_active')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -63,6 +79,11 @@ export async function proxy(request: NextRequest) {
     if (staffError) console.log("⚠️ Staff Query Error:", staffError.message);
 
     if (staff) {
+      if (staff.is_active === false) {
+        console.log("🛑 Action: Redirecting to /unauthorized (Staff is suspended)");
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+
       if (path.startsWith('/admin-dashboard')) {
         console.log("🛑 Action: Redirecting to /unauthorized (Staff cannot access Admin)");
         return NextResponse.redirect(new URL('/unauthorized', request.url));

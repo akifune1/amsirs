@@ -24,8 +24,26 @@ async function getClient() {
   );
 }
 
-export async function updateStudent(formData: FormData) {
+// Ensure the caller is an it_admin or super_admin
+async function verifyAdminAccess() {
   const supabase = await getClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+  
+  const { data: admin } = await supabase
+    .from('system_admins')
+    .select('id, role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!admin || admin.role === 'school_admin') {
+    throw new Error('Forbidden');
+  }
+  return supabase;
+}
+
+export async function updateStudent(formData: FormData) {
+  const supabase = await verifyAdminAccess();
   const id = formData.get('id') as string;
 
   const { error } = await supabase
@@ -44,15 +62,16 @@ export async function updateStudent(formData: FormData) {
 }
 
 export async function updateStaff(formData: FormData) {
-  const supabase = await getClient();
+  const supabase = await verifyAdminAccess();
   const id = formData.get('id') as string;
 
   const { error } = await supabase
-    .from('user_profiles') // FIXED: Was pointing to students table
+    .from('user_profiles') 
     .update({
       first_name: formData.get('firstName'),
       last_name: formData.get('lastName'),
       role: formData.get('role'),
+      is_active: formData.get('isActive') === 'true'
     })
     .eq('id', id);
 
@@ -86,6 +105,9 @@ export async function createStaffAccount(prevState: any, formData: FormData) {
 
     console.log(`📋 Payload Received: ${firstName} ${lastName} | ${email} | Role: ${role}`);
 
+    // VERIFY ADMIN ACCESS BEFORE PROCEEDING
+    await verifyAdminAccess();
+
     // 1. Create the Auth user
     console.log("⏳ Step 1: Creating Auth User via Admin API...");
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -105,23 +127,37 @@ export async function createStaffAccount(prevState: any, formData: FormData) {
 
     console.log(`✅ Auth User Created Successfully! ID: ${authData.user.id}`);
 
-    // 2. Create the User Profile
-    console.log("⏳ Step 2: Creating User Profile Record...");
-    const { error: profileError } = await supabaseAdmin
-      .from('user_profiles')
-      .insert({
-        id: authData.user.id,
-        first_name: firstName,
-        last_name: lastName,
-        role: role
-      });
+    // 2. Create the User Profile or Admin Record
+    console.log("⏳ Step 2: Creating User Record...");
+    
+    let dbError = null;
+    
+    if (role === 'it_admin' || role === 'school_admin' || role === 'super_admin') {
+      const { error } = await supabaseAdmin
+        .from('system_admins')
+        .insert({
+          id: authData.user.id,
+          role: role
+        });
+      dbError = error;
+    } else {
+      const { error } = await supabaseAdmin
+        .from('user_profiles')
+        .insert({
+          id: authData.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          role: role
+        });
+      dbError = error;
+    }
 
-    if (profileError) {
-      console.error("❌ Supabase Database Insert Error:", profileError);
+    if (dbError) {
+      console.error("❌ Supabase Database Insert Error:", dbError);
       // Let's also try to rollback the auth user so we don't end up with ghost accounts
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       console.log("🧹 Rolled back (deleted) the Auth user because profile creation failed.");
-      return { error: `Profile Error: ${profileError.message}` };
+      return { error: `Profile Error: ${dbError.message}` };
     }
 
     console.log("✅ Profile Record Created Successfully!");
@@ -132,5 +168,66 @@ export async function createStaffAccount(prevState: any, formData: FormData) {
   } catch (err) {
     console.error("💥 CATCH BLOCK TRIGGERED. Raw Error:", err);
     return { error: 'An unexpected error occurred during creation. Check server logs.' };
+  }
+}
+
+// ==========================================
+// 🔐 RESET USER PASSWORD
+// ==========================================
+export async function resetUserPassword(formData: FormData) {
+  try {
+    await verifyAdminAccess();
+    
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return { error: "Server Configuration Error: Missing Service Role Key" };
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+
+    const userId = formData.get('userId') as string;
+    const newPassword = formData.get('newPassword') as string;
+
+    if (!newPassword || newPassword.length < 6) {
+      return { error: 'Password must be at least 6 characters long.' };
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword
+    });
+
+    if (error) {
+      return { error: `Failed to reset password: ${error.message}` };
+    }
+
+    return { success: true, message: 'Password reset successfully!' };
+  } catch (err) {
+    return { error: 'Unauthorized or unexpected error occurred.' };
+  }
+}
+
+// ==========================================
+// 📦 BULK APPROVE STUDENTS
+// ==========================================
+export async function bulkApproveStudents(studentIds: string[]) {
+  try {
+    const supabase = await verifyAdminAccess();
+    
+    if (!studentIds || studentIds.length === 0) return { success: true };
+
+    const { error } = await supabase
+      .from('students')
+      .update({ is_approved: true })
+      .in('id', studentIds);
+
+    if (error) throw error;
+    
+    revalidatePath('/admin-dashboard');
+    return { success: true };
+  } catch (err) {
+    console.error(err);
+    return { error: 'Failed to bulk approve students.' };
   }
 }

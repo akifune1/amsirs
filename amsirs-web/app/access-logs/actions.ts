@@ -33,6 +33,7 @@ export async function fetchAccessLogs(params: {
   page: number;
   itemsPerPage: number;
   actionFilter: string;
+  dateFilter?: string;
 }): Promise<{
   success: boolean;
   data?: any[];
@@ -56,6 +57,23 @@ export async function fetchAccessLogs(params: {
 
     if (params.actionFilter !== 'All') {
       query = query.eq('action', params.actionFilter);
+    }
+
+    if (params.dateFilter && params.dateFilter !== 'All') {
+      const now = new Date();
+      const startOfDay = new Date(now.setHours(0,0,0,0));
+      
+      if (params.dateFilter === 'Today') {
+        query = query.gte('created_at', startOfDay.toISOString());
+      } else if (params.dateFilter === 'Yesterday') {
+        const yesterday = new Date(startOfDay);
+        yesterday.setDate(yesterday.getDate() - 1);
+        query = query.gte('created_at', yesterday.toISOString()).lt('created_at', startOfDay.toISOString());
+      } else if (params.dateFilter === 'This Week') {
+        const thisWeek = new Date(startOfDay);
+        thisWeek.setDate(thisWeek.getDate() - 7);
+        query = query.gte('created_at', thisWeek.toISOString());
+      }
     }
 
     const { data, error, count } = await query

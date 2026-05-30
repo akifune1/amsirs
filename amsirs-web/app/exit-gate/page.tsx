@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as faceapi from "face-api.js";
+import { toast } from "react-hot-toast";
 import { loadModels } from "@/lib/face/loadModels";
 import { compareFaces, getMatchPercentage } from "@/lib/face/compareFaces";
 import { getMouthOpenRatio } from "@/lib/face/liveness";
@@ -16,6 +17,22 @@ export default function ExitGatePage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanningRef = useRef(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+
+  interface VerifiedStudent {
+    student_id: string;
+    first_name: string;
+    last_name: string;
+    photoUrl?: string | null;
+    grade_level?: string;
+    section?: string;
+    matchPercentage: number;
+    timestamp: Date;
+    status: string;
+  }
 
   // Liveness Refs
   const livenessStepRef = useRef(0);
@@ -26,16 +43,58 @@ export default function ExitGatePage() {
   // Temporary holding cell for the neutral snapshot
   const pendingSnapshotRef = useRef<string | null>(null);
 
-  const [message, setMessage] = useState("INITIALIZING EXIT SYSTEM...");
+  const [verifiedStudent, setVerifiedStudent] = useState<VerifiedStudent | null>(null);
+
+  const lastMsgRef = useRef("");
+  const setMessage = (msg: string) => {
+    if (lastMsgRef.current === msg) return;
+    lastMsgRef.current = msg;
+    const toastId = "scanner-toast";
+    if (msg.includes("ERROR") || msg.includes("DENIED") || msg.includes("NOT RECOGNIZED") || msg.includes("NOT FOUND") || msg.includes("FAILED")) {
+      toast.error(msg, { id: toastId, duration: 4000 });
+    } else if (msg.includes("GRANTED") || msg.includes("VERIFIED") || msg.includes("WELCOME BACK") || msg.includes("READY")) {
+      toast.success(msg, { id: toastId, duration: 4000 });
+    } else if (msg.includes("INITIALIZING") || msg.includes("LOADING") || msg.includes("STARTING") || msg.includes("Analyzing") || msg.includes("WAITING")) {
+      toast.loading(msg, { id: toastId });
+    } else {
+      toast(msg, { id: toastId, duration: 4000, icon: 'ℹ️' });
+    }
+  };
+
+  const killCamera = () => {
+    isMountedRef.current = false;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoElementRef.current) {
+      if (videoElementRef.current.srcObject) {
+        const stream = videoElementRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoElementRef.current.srcObject = null;
+      }
+    }
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+    }
+  };
 
   useEffect(() => {
+    isMountedRef.current = true;
     initialize();
-    return () => {
-      const video = videoRef.current;
-      if (video?.srcObject) {
-        const tracks = (video.srcObject as MediaStream).getTracks();
-        tracks.forEach((track) => track.stop());
+
+    const handleNavigationClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a');
+      if (target && target.href && target.href.startsWith(window.location.origin)) {
+        killCamera();
       }
+    };
+    
+    document.addEventListener('click', handleNavigationClick);
+
+    return () => {
+      document.removeEventListener('click', handleNavigationClick);
+      killCamera();
     };
   }, []);
 
@@ -45,6 +104,7 @@ export default function ExitGatePage() {
       await loadModels();
       setMessage("STARTING CAMERA...");
       await startCamera();
+      if (!isMountedRef.current) return;
       setMessage("EXIT GATE READY\n\nWaiting for face...");
       startAutoScan();
     } catch (error) {
@@ -55,11 +115,22 @@ export default function ExitGatePage() {
 
   async function startCamera() {
     try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: "user" },
       });
+      
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoElementRef.current = videoRef.current;
       }
     } catch (error: any) {
       console.error("[CAMERA ERROR]", error);
@@ -73,7 +144,8 @@ export default function ExitGatePage() {
   }
 
   function startAutoScan() {
-    setInterval(async () => {
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+    scanIntervalRef.current = setInterval(async () => {
       if (scanningRef.current) return;
       scanningRef.current = true;
       await scanFace();
@@ -186,10 +258,21 @@ export default function ExitGatePage() {
 
         // =====================
         // PREVENT DUPLICATES (EXIT CHECK)
-        // =====================
+        // Check for duplicate scan (15-second cooldown)
         const dupCheck = await checkDuplicateScan(studentData.id, "EXIT");
         if (dupCheck.isDuplicate) {
-          setMessage(`EXIT ALREADY RECORDED\n\n${studentData.first_name} ${studentData.last_name}`);
+          setMessage(`WELCOME BACK\n\n${studentData.first_name} ${studentData.last_name}\n\nAlready Scanned`);
+          setVerifiedStudent({
+            student_id: studentData.student_id,
+            first_name: studentData.first_name,
+            last_name: studentData.last_name,
+            photoUrl: studentData.photoUrl,
+            grade_level: studentData.grade_level,
+            section: studentData.section,
+            matchPercentage,
+            timestamp: new Date(),
+            status: "DUPLICATE"
+          });
           resetScanner();
           return;
         }
@@ -205,8 +288,20 @@ export default function ExitGatePage() {
           snapshotBase64: pendingSnapshotRef.current,
         });
 
-        setMessage(`EXIT RECORDED\n\n${studentData.first_name} ${studentData.last_name}\n\nStudent ID:\n${studentData.student_id}\n\nMatch:\n${matchPercentage}%`);
+        setMessage(`EXIT VERIFIED\n\n${studentData.first_name} ${studentData.last_name}`);
         
+        setVerifiedStudent({
+          student_id: studentData.student_id,
+          first_name: studentData.first_name,
+          last_name: studentData.last_name,
+          photoUrl: studentData.photoUrl,
+          grade_level: studentData.grade_level,
+          section: studentData.section,
+          matchPercentage,
+          timestamp: new Date(),
+          status: "VERIFIED"
+        });
+
         resetScanner(); // Clean up for the next person
       } else {
         setMessage("FACE NOT RECOGNIZED");
@@ -242,13 +337,74 @@ export default function ExitGatePage() {
                   EXIT ACTIVE
                 </div>
               </div>
-              <div className="bg-black flex items-center justify-center p-4">
+              <div className="bg-black flex items-center justify-center p-4 relative overflow-hidden">
                 <video ref={videoRef} autoPlay muted playsInline className="rounded-2xl w-full max-h-[650px] object-cover border-4 border-black shadow-2xl" />
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
+            
+            {/* IDENTITY VERIFICATION PANEL */}
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
+              <div className="border-b border-gray-100 px-6 py-5">
+                <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">Recognition Result</p>
+                <h2 className="text-xl font-bold text-gray-900 mt-1">Identity Profile</h2>
+              </div>
+              <div className="p-6">
+                {verifiedStudent ? (
+                  <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
+                       <div className="w-20 h-20 rounded-2xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
+                         {verifiedStudent.photoUrl ? (
+                           <img src={verifiedStudent.photoUrl} alt="Face" className="w-full h-full object-cover" />
+                         ) : (
+                           <div className="w-full h-full flex items-center justify-center text-gray-400">
+                             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                           </div>
+                         )}
+                       </div>
+                       <div>
+                         <p className="text-2xl font-black text-gray-900 leading-tight">{verifiedStudent.first_name} {verifiedStudent.last_name}</p>
+                         <p className="text-sm font-bold text-cavite-maroon mt-1">{verifiedStudent.student_id}</p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Match Confidence</p>
+                        <p className="text-lg font-black text-green-600">{verifiedStudent.matchPercentage}%</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</p>
+                        <p className={`text-lg font-black ${verifiedStudent.status === 'VERIFIED' ? 'text-green-600' : 'text-orange-500'}`}>
+                          {verifiedStudent.status}
+                        </p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Grade Level</p>
+                        <p className="text-sm font-bold text-gray-700">{verifiedStudent.grade_level || 'N/A'}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Section</p>
+                        <p className="text-sm font-bold text-gray-700">{verifiedStudent.section || 'N/A'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 text-center">
+                      <p className="text-[10px] text-gray-400 font-medium">Recorded at: {verifiedStudent.timestamp.toLocaleTimeString()}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 min-h-[250px] flex flex-col items-center justify-center text-gray-400">
+                    <svg className="w-12 h-12 mb-3 text-gray-300 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z"></path></svg>
+                    <p className="font-bold tracking-tight text-gray-500">Awaiting Scan</p>
+                    <p className="text-xs text-center mt-1 max-w-[200px] text-gray-400">Identity profile will securely appear here once a face is successfully matched.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
               <div className="border-b border-gray-100 px-6 py-5">
                 <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">System Status</p>
@@ -267,19 +423,7 @@ export default function ExitGatePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-100 px-6 py-5">
-                <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">Recognition Result</p>
-                <h2 className="text-xl font-bold text-gray-900 mt-1">Exit Verification</h2>
-              </div>
-              <div className="p-6">
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 min-h-[250px] flex items-center justify-center">
-                  <div className="text-center whitespace-pre-line">
-                    <div className="text-xl font-bold text-gray-800 leading-relaxed">{message}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+
 
             <div className="bg-cavite-maroon text-white rounded-3xl shadow-xl overflow-hidden">
               <div className="p-6">
