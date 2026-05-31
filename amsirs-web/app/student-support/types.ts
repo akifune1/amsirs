@@ -40,6 +40,10 @@ export interface StudentRecord {
   counselingStatus: CounselingStatus;
   lastInteraction?: string;
   guardianEmail?: string;
+  lowCount?: number;
+  mediumCount?: number;
+  highCount?: number;
+  flagReason?: string;
 }
 
 export interface FlaggedStudent {
@@ -106,12 +110,17 @@ export interface SupportIntervention {
 export interface StudentCaseDetails {
   studentName: string;
   studentId: string;
+  lrn?: string;
   gradeSection: string;
   guardianContact: string;
   riskLevel: RiskLevel;
   attendanceStats: AttendanceStats;
   recentIncidents: IncidentRecord[];
   counselingHistory: CounselingRecord[];
+  lowCount?: number;
+  mediumCount?: number;
+  highCount?: number;
+  flagReason?: string;
 }
 
 // ==========================================

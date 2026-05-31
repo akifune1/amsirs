@@ -42,6 +42,7 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
       *,
       incident_involvements (
         id,
+        role,
         students ( 
           id, 
           student_id, 

@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { encrypt } from '@/lib/encryption';
 
 // Helper to create the Supabase client
 async function getClient() {
@@ -49,11 +50,16 @@ export async function updateStudent(formData: FormData) {
   const { error } = await supabase
     .from('students')
     .update({
+      student_id: formData.get('studentId'),
       first_name: formData.get('firstName'),
       last_name: formData.get('lastName'),
       grade_level: formData.get('gradeLevel'),
       section: formData.get('section'),
-      is_approved: formData.get('isApproved') === 'true'
+      gender: formData.get('gender') || null,
+      birthday: formData.get('birthday') ? encrypt(formData.get('birthday') as string) : null,
+      address: formData.get('address') ? encrypt(formData.get('address') as string) : null,
+      is_approved: formData.get('isApproved') === 'true',
+      face_photo_path: formData.get('facePhotoPath') || null
     })
     .eq('id', id);
 

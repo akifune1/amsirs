@@ -94,8 +94,83 @@ export async function searchStudents(query: string) {
   return data || [];
 }
 
-export async function linkStudentToIncident(incidentId: string, studentId: string) {
-  console.log(`🔗 [LINKING ATTEMPT] Incident: ${incidentId} -> Student: ${studentId}`);
+export async function recalculateStudentFlags(studentId: string, supabase: any) {
+  // 1. Fetch all involvements for this student where role is Offender
+  const { data: involvements, error: invError } = await supabase
+    .from('incident_involvements')
+    .select('incident_id, incident_reports(severity)')
+    .eq('student_id', studentId)
+    .eq('role', 'Offender');
+
+  if (invError) {
+    console.error("🚨 Error fetching involvements for recalculation:", invError.message);
+    return;
+  }
+
+  // 2. Tally up the severities
+  let low = 0, medium = 0, high = 0;
+  for (const inv of involvements || []) {
+    const severity = inv.incident_reports?.severity;
+    if (severity === 'Low') low++;
+    else if (severity === 'Medium') medium++;
+    else if (severity === 'High') high++;
+  }
+
+  // 3. Apply ABC EWS Threshold Rules
+  let isFlagged = false;
+  let flagReason = null;
+  let reviewStatus = 'Pending';
+
+  if (high >= 1) {
+    isFlagged = true;
+    flagReason = `Triggered by ${high} High Severity Incident(s)`;
+  } else if (medium >= 2) {
+    isFlagged = true;
+    flagReason = `Triggered by ${medium} Medium Severity Incident(s)`;
+  } else if (low >= 3) {
+    isFlagged = true;
+    flagReason = `Triggered by ${low} Low Severity Incident(s)`;
+  }
+
+  // 4. Update the student_flags table (Upsert logic to ensure record exists)
+  const { data: existingFlag } = await supabase
+    .from('student_flags')
+    .select('id, review_status')
+    .eq('student_id', studentId)
+    .maybeSingle();
+
+  if (existingFlag) {
+    await supabase
+      .from('student_flags')
+      .update({
+        low_severity_count: low,
+        medium_severity_count: medium,
+        high_severity_count: high,
+        is_flagged: isFlagged,
+        flag_reason: flagReason,
+        // If it's no longer flagged, reset review status. If it was already under review, keep it.
+        review_status: isFlagged ? (existingFlag.review_status !== 'Resolved' ? existingFlag.review_status : 'Pending') : 'Pending',
+        last_calculated_at: new Date().toISOString()
+      })
+      .eq('id', existingFlag.id);
+  } else {
+    await supabase
+      .from('student_flags')
+      .insert({
+        student_id: studentId,
+        low_severity_count: low,
+        medium_severity_count: medium,
+        high_severity_count: high,
+        is_flagged: isFlagged,
+        flag_reason: flagReason,
+        review_status: reviewStatus,
+        last_calculated_at: new Date().toISOString()
+      });
+  }
+}
+
+export async function linkStudentToIncident(incidentId: string, studentId: string, role: string = 'Offender') {
+  console.log(`🔗 [LINKING ATTEMPT] Incident: ${incidentId} -> Student: ${studentId} (${role})`);
 
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -109,7 +184,8 @@ export async function linkStudentToIncident(incidentId: string, studentId: strin
     .from('incident_involvements')
     .insert([{ 
       incident_id: incidentId, 
-      student_id: studentId 
+      student_id: studentId,
+      role: role
     }]);
 
   if (error) {
@@ -119,6 +195,10 @@ export async function linkStudentToIncident(incidentId: string, studentId: strin
   }
 
   console.log("✅ [LINK SUCCESS] Database updated.");
+  
+  // Recalculate EWS Flags
+  await recalculateStudentFlags(studentId, supabase);
+  
   revalidatePath('/incident-dashboard');
 }
 
@@ -131,6 +211,13 @@ export async function unlinkStudentFromIncident(involvementId: string) {
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
+  // First get the student_id so we can recalculate later
+  const { data: involvement } = await supabase
+    .from('incident_involvements')
+    .select('student_id')
+    .eq('id', involvementId)
+    .single();
+
   const { error } = await supabase
     .from('incident_involvements')
     .delete()
@@ -139,6 +226,11 @@ export async function unlinkStudentFromIncident(involvementId: string) {
   if (error) {
     console.error("🚨 [DATABASE REJECTED UNLINK]:", error.message);
     throw new Error(error.message);
+  }
+
+  // Recalculate EWS Flags for the student
+  if (involvement?.student_id) {
+    await recalculateStudentFlags(involvement.student_id, supabase);
   }
 
   // Refresh the dashboard to remove the link

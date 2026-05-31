@@ -152,12 +152,12 @@ export default function StudentRegistrationPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                      Student ID (LRN)
+                      Learner Reference Number (LRN)
                     </label>
                     <input
-                      name="studentId"
+                      name="lrn"
                       required
-                      placeholder="e.g. 2026-0001"
+                      placeholder="e.g. 123456789012"
                       className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
                     />
                   </div>

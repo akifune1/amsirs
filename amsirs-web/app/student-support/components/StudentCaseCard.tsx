@@ -30,6 +30,10 @@ interface StudentCaseCardProps {
   gradeSection: string;
   guardianContact: string;
   riskLevel: 'Low' | 'Medium' | 'High';
+  lowCount?: number;
+  mediumCount?: number;
+  highCount?: number;
+  flagReason?: string;
   attendanceStats: {
     totalAbsences: number;
     lateRecords: number;
@@ -46,6 +50,10 @@ export default function StudentCaseCard({
   gradeSection,
   guardianContact,
   riskLevel,
+  lowCount = 0,
+  mediumCount = 0,
+  highCount = 0,
+  flagReason,
   attendanceStats,
   recentIncidents,
   counselingHistory,
@@ -102,26 +110,50 @@ export default function StudentCaseCard({
           </div>
         </div>
 
-        {/* Attendance Summary */}
-        <div className="p-8">
-          <h3 className="sys-label mb-4">ATTENDANCE SUMMARY</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
-              <p className="sys-label !mb-2">Total Absences</p>
-              <p className="text-3xl font-semibold text-cavite-black">{attendanceStats.totalAbsences}</p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-cavite-border">
+          {/* Attendance Summary */}
+          <div className="p-8">
+            <h3 className="sys-label mb-4">ATTENDANCE SUMMARY</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
+                <p className="text-xs font-semibold text-zinc-500 mb-1">Absences</p>
+                <p className="text-2xl font-semibold text-cavite-black">{attendanceStats.totalAbsences}</p>
+              </div>
 
-            <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
-              <p className="sys-label !mb-2">Late Records</p>
-              <p className="text-3xl font-semibold text-cavite-black">{attendanceStats.lateRecords}</p>
-            </div>
+              <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
+                <p className="text-xs font-semibold text-zinc-500 mb-1">Lates</p>
+                <p className="text-2xl font-semibold text-cavite-black">{attendanceStats.lateRecords}</p>
+              </div>
 
-            <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
-              <p className="sys-label !mb-2">Attendance %</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-semibold text-green-600">{attendanceStats.attendancePercentage}%</p>
+              <div className="bg-zinc-50 p-4 rounded-md border border-cavite-border">
+                <p className="text-xs font-semibold text-zinc-500 mb-1">Rate</p>
+                <p className="text-2xl font-semibold text-green-600">{attendanceStats.attendancePercentage}%</p>
               </div>
             </div>
+          </div>
+
+          {/* Behavioral Summary */}
+          <div className="p-8">
+            <h3 className="sys-label mb-4">BEHAVIORAL SUMMARY</h3>
+            <div className="grid grid-cols-3 gap-4 mb-3">
+              <div className="bg-red-50 p-4 rounded-md border border-red-100">
+                <p className="text-xs font-bold text-red-600 mb-1 uppercase tracking-wider">High</p>
+                <p className="text-2xl font-semibold text-red-700">{highCount}</p>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-md border border-orange-100">
+                <p className="text-xs font-bold text-orange-600 mb-1 uppercase tracking-wider">Medium</p>
+                <p className="text-2xl font-semibold text-orange-700">{mediumCount}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-md border border-green-100">
+                <p className="text-xs font-bold text-green-600 mb-1 uppercase tracking-wider">Low</p>
+                <p className="text-2xl font-semibold text-green-700">{lowCount}</p>
+              </div>
+            </div>
+            {flagReason && (
+              <p className="text-xs font-semibold text-zinc-500 bg-zinc-100 p-2 rounded border border-zinc-200">
+                🚩 {flagReason}
+              </p>
+            )}
           </div>
         </div>
       </div>

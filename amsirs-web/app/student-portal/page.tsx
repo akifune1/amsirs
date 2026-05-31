@@ -38,6 +38,17 @@ export default async function StudentPortal() {
     );
   }
 
+  // Decrypt Student PII
+  if (student.lrn && student.lrn.includes(':')) {
+    student.lrn = decrypt(student.lrn);
+  }
+  if (student.address && student.address.includes(':')) {
+    student.address = decrypt(student.address);
+  }
+  if (student.birthday && student.birthday.includes(':')) {
+    student.birthday = decrypt(student.birthday);
+  }
+
   // 3. FETCH AUTOMATED FLAGGING STATUS
   const { data: flagRecord } = await supabase
     .from('student_flags')
@@ -170,8 +181,9 @@ export default async function StudentPortal() {
                     )}
                   </div>
                   <div>
-                    <label className="form-label !mb-1">Student ID</label>
+                    <label className="form-label !mb-1">Internal ID</label>
                     <p className="text-2xl font-black tracking-tight text-cavite-maroon">{student.student_id}</p>
+                    <p className="text-xs font-bold text-gray-500 mt-1">LRN: {student.lrn || 'Not provided'}</p>
                   </div>
                 </div>
 

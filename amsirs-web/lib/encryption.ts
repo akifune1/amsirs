@@ -60,3 +60,15 @@ export function decrypt(ciphertext: string): string {
 
   return decrypted;
 }
+
+/**
+ * Creates a deterministic, irreversible SHA-256 hash of a string.
+ * Used for Blind Indexes (searching encrypted data).
+ */
+export function hashString(text: string): string {
+  if (!ENCRYPTION_KEY) {
+    throw new Error('ENCRYPTION_KEY is not defined');
+  }
+  // We use the ENCRYPTION_KEY as a static pepper to prevent rainbow table attacks
+  return crypto.createHash('sha256').update(text + ENCRYPTION_KEY).digest('hex');
+}

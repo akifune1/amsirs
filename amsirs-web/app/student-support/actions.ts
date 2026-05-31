@@ -3,7 +3,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { decrypt } from '@/lib/encryption'; // Add this at the top!
+import { encrypt, decrypt } from '@/lib/encryption';
 
 import type {
   StudentRecord,
@@ -13,10 +13,10 @@ import type {
   SupportIntervention,
 } from './types';
 
-function getRiskLevelFromScore(score: number): 'Low' | 'Medium' | 'High' {
-  if (score < 10) return 'Low';
-  if (score >= 10 && score <= 15) return 'Medium';
-  return 'High';
+function getRiskLevelFromCounts(low: number, medium: number, high: number): 'Low' | 'Medium' | 'High' {
+  if (high >= 1) return 'High';
+  if (medium >= 2) return 'Medium'; // Or 'High' depending on specific policy
+  return 'Low'; // If flagged but not medium/high, it's low
 }
 
 // ==========================================
@@ -164,7 +164,10 @@ export async function getFlaggedStudents(
     const { data: flaggedData, error } = await supabase
       .from('student_flags')
       .select(`
-        total_score,
+        low_severity_count,
+        medium_severity_count,
+        high_severity_count,
+        flag_reason,
         is_flagged,
         student_id,
         students (
@@ -225,9 +228,16 @@ export async function getFlaggedStudents(
         gradeSection: studentInfo ? `${studentInfo.grade_level} - ${studentInfo.section}` : 'Unknown',
         attendanceConcern: false,
         absenceCount: 0,
-        // FIXED: Using array length instead of the flaky PostgREST count syntax
         incidentCount: studentInfo?.incident_involvements?.length || 0,
-        riskLevel: getRiskLevelFromScore(flag.total_score),
+        lowCount: flag.low_severity_count || 0,
+        mediumCount: flag.medium_severity_count || 0,
+        highCount: flag.high_severity_count || 0,
+        flagReason: flag.flag_reason || undefined,
+        riskLevel: getRiskLevelFromCounts(
+          flag.low_severity_count || 0, 
+          flag.medium_severity_count || 0, 
+          flag.high_severity_count || 0
+        ),
         counselingStatus: cStatus,
       };
     });
@@ -284,10 +294,13 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
       .select(`
         id,
         student_id,
+        lrn,
         first_name,
         last_name,
         grade_level,
         section,
+        address,
+        birthday,
         incident_involvements (
           id,
           incident_id,
@@ -306,7 +319,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
     // 2. Fetch the mathematical flag score
     const { data: flagRecord } = await supabase
       .from('student_flags')
-      .select('total_score')
+      .select('low_severity_count, medium_severity_count, high_severity_count, flag_reason')
       .eq('student_id', studentId)
       .maybeSingle();
 
@@ -360,7 +373,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
     const counselingRecords = (counselingSessions || []).map((session: any) => ({
       date: session.created_at,
       type: session.intervention_type,
-      notes: session.notes,
+      notes: session.notes && session.notes.includes(':') ? decrypt(session.notes) : session.notes,
       counselor: session.counselor_id,
       followUpDate: session.follow_up_date,
       caseStatus: session.case_status,
@@ -371,9 +384,18 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
       data: {
         studentName: `${student.first_name} ${student.last_name}`,
         studentId: student.student_id,
+        lrn: student.lrn && student.lrn.includes(':') ? decrypt(student.lrn) : student.lrn,
         gradeSection: `${student.grade_level} - ${student.section}`,
         guardianContact: 'Pending Update',
-        riskLevel: flagRecord ? getRiskLevelFromScore(flagRecord.total_score) : 'Low',
+        riskLevel: flagRecord ? getRiskLevelFromCounts(
+          flagRecord.low_severity_count || 0,
+          flagRecord.medium_severity_count || 0,
+          flagRecord.high_severity_count || 0
+        ) : 'Low',
+        lowCount: flagRecord?.low_severity_count || 0,
+        mediumCount: flagRecord?.medium_severity_count || 0,
+        highCount: flagRecord?.high_severity_count || 0,
+        flagReason: flagRecord?.flag_reason || undefined,
         attendanceStats: {
           totalAbsences: 0,
           lateRecords: 0,
@@ -414,7 +436,7 @@ export async function createIntervention(
         student_id: studentId,
         counselor_id: auth.user_id,
         intervention_type: interventionType,
-        notes,
+        notes: encrypt(notes),
         follow_up_date: followUpDate,
         case_status: caseStatus === 'Active' ? 'ongoing' : caseStatus, // Aligning with your DB schema
       })

@@ -30,6 +30,7 @@ export default function IncidentRow({ report }: { report: any }) {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [involvements, setInvolvements] = useState(report.incident_involvements || []);
+  const [selectedRole, setSelectedRole] = useState('Offender');
 
   // 🤖 AI Scanning State
   const imageRef = useRef<HTMLImageElement>(null);
@@ -73,7 +74,7 @@ export default function IncidentRow({ report }: { report: any }) {
   const handleLink = async (studentId: string) => {
     setSearchQuery('');
     setSearchResults([]);
-    await linkStudentToIncident(report.id, studentId);
+    await linkStudentToIncident(report.id, studentId, selectedRole);
   };
 
   const handleUnlink = async (involvementId: string) => {
@@ -370,8 +371,11 @@ export default function IncidentRow({ report }: { report: any }) {
                   {involvements.map((inv: any) => (
                     <div key={inv.id} className="bg-zinc-100 border border-cavite-border rounded-md px-3 py-2 flex justify-between items-center group">
                       <div>
-                        <p className="text-xs font-mono text-zinc-500 leading-none mb-1">
+                        <p className="text-xs font-mono text-zinc-500 leading-none mb-1 flex items-center gap-1.5">
                           {inv.students.student_id}
+                          <span className={`px-1.5 py-[1px] rounded text-[9px] font-bold tracking-wider uppercase ${inv.role === 'Offender' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {inv.role || 'Offender'}
+                          </span>
                         </p>
                         <p className="text-sm font-semibold text-cavite-black leading-none">
                           {inv.students.last_name}, {inv.students.first_name}
@@ -397,7 +401,18 @@ export default function IncidentRow({ report }: { report: any }) {
 
                 {/* Smart Search Input */}
                 <div className="pt-4 mt-4 border-t border-cavite-border relative">
-                  <label className="block text-sm font-medium text-cavite-black mb-1.5">Link Database Record</label>
+                  <div className="flex justify-between items-end mb-1.5">
+                    <label className="block text-sm font-medium text-cavite-black">Link Database Record</label>
+                    <select 
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="text-xs font-semibold bg-zinc-50 border border-zinc-200 rounded px-2 py-0.5 outline-none text-zinc-600 focus:border-cavite-maroon"
+                    >
+                      <option value="Offender">Offender</option>
+                      <option value="Victim">Victim</option>
+                      <option value="Witness">Witness</option>
+                    </select>
+                  </div>
                   <input 
                     type="text" 
                     value={searchQuery}

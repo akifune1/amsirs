@@ -4,12 +4,15 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { updateStudent, updateStaff, resetUserPassword, bulkApproveStudents } from './actions';
 import { logout } from '../auth/actions';
+import { decrypt, hashString } from '@/lib/encryption';
 import CreateStaffModal from './CreateStaffModal';
 import SearchBar from '../components/SearchBar';
 import Pagination from '../components/Pagination';
 import ActionForm from '../components/ActionForm';
 import FilterDropdown from '../components/FilterDropdown';
 import ConfirmChangesForm from './components/ConfirmChangesForm';
+import EditStudentModal from './EditStudentModal';
+import EditStaffModal from './EditStaffModal';
 
 export default async function AdminDashboard(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = props.searchParams ? await props.searchParams : {};
@@ -77,7 +80,12 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   if (activeTab === 'students') {
     let studentQuery = supabase.from('students').select('*', { count: 'exact' });
     if (studentQ) {
-      studentQuery = studentQuery.or(`first_name.ilike.%${studentQ}%,last_name.ilike.%${studentQ}%,student_id.ilike.%${studentQ}%`);
+      const isLrnFormat = /^\d{12}$/.test(studentQ);
+      let orQuery = `first_name.ilike.%${studentQ}%,last_name.ilike.%${studentQ}%,student_id.ilike.%${studentQ}%`;
+      if (isLrnFormat) {
+        orQuery += `,lrn_hash.eq.${hashString(studentQ)}`;
+      }
+      studentQuery = studentQuery.or(orQuery);
     }
     if (studentGrade) studentQuery = studentQuery.eq('grade_level', studentGrade);
     if (studentStatus === 'approved') studentQuery = studentQuery.eq('is_approved', true);
@@ -87,7 +95,12 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
       .order('last_name')
       .range((studentPage - 1) * ITEMS_PER_PAGE, studentPage * ITEMS_PER_PAGE - 1);
     
-    students = data || [];
+    students = (data || []).map((student: any) => ({
+      ...student,
+      lrn: student.lrn && student.lrn.includes(':') ? decrypt(student.lrn) : student.lrn,
+      address: student.address && student.address.includes(':') ? decrypt(student.address) : student.address,
+      birthday: student.birthday && student.birthday.includes(':') ? decrypt(student.birthday) : student.birthday // we will decrypt if it has colon formatting for ciphertext to prevent crash on unmigrated data
+    }));
     studentCount = count || 0;
     studentTotalPages = Math.ceil(studentCount / ITEMS_PER_PAGE);
   }
@@ -181,7 +194,6 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                         </td>
                       </tr>
                     ) : (staff.map((member) => {
-                      const formId = `staff-form-${member.id}`;
                       return (
                         <tr key={member.id} className="hover:bg-gray-50 group transition-colors">
                           
@@ -192,26 +204,14 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                             </span>
                           </td>
 
-                          {/* Last Name & Form */}
+                          {/* Last Name */}
                           <td className="table-td" data-label="Last Name">
-                            <ConfirmChangesForm 
-                              id={formId} 
-                              action={updateStaff}
-                              originalData={{
-                                lastName: member.last_name || '',
-                                firstName: member.first_name || '',
-                                role: member.role || '',
-                                isActive: String(member.is_active !== false)
-                              }}
-                            >
-                              <input type="hidden" name="id" value={member.id} />
-                            </ConfirmChangesForm>
-                            <input form={formId} name="lastName" defaultValue={member.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
+                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{member.last_name}</span>
                           </td>
 
                           {/* First Name */}
                           <td className="table-td" data-label="First Name">
-                            <input form={formId} name="firstName" defaultValue={member.first_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
+                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{member.first_name}</span>
                           </td>
 
                           {/* Created At */}
@@ -221,20 +221,19 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
                           {/* Role */}
                           <td className="table-td" data-label="Role">
-                            <select form={formId} name="role" defaultValue={member.role} className="bg-zinc-50 text-xs font-medium px-2.5 py-1.5 rounded-md border border-cavite-border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer w-full max-w-[120px]">
-                              <option value="guard">Guard</option>
-                              <option value="guidance">Guidance</option>
-                              <option value="school_admin">School Admin</option>
-                              <option value="it_admin">IT Admin</option>
-                            </select>
+                            <span className="text-sm font-medium px-2 py-1 block w-full max-w-[120px]">
+                              {member.role === 'guard' ? 'Guard' :
+                               member.role === 'guidance' ? 'Guidance' :
+                               member.role === 'school_admin' ? 'School Admin' :
+                               member.role === 'it_admin' ? 'IT Admin' : member.role}
+                            </span>
                           </td>
 
                           {/* Status */}
                           <td className="table-td" data-label="Status">
-                            <select form={formId} name="isActive" defaultValue={String(member.is_active !== false)} className={`text-xs font-medium px-2.5 py-1.5 rounded-full border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer transition-all ${member.is_active !== false ? 'bg-success-bg text-success-text border-success-border' : 'bg-danger-bg text-danger-text border-danger-border'}`}>
-                              <option value="true">Active</option>
-                              <option value="false">Suspended</option>
-                            </select>
+                            <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${member.is_active !== false ? 'bg-success-bg text-success-text border-success-border' : 'bg-danger-bg text-danger-text border-danger-border'}`}>
+                              {member.is_active !== false ? 'Active' : 'Suspended'}
+                            </span>
                           </td>
 
                           {/* Actions */}
@@ -253,10 +252,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                                   </ActionForm>
                                 );
                               })()}
-                              <button form={formId} type="submit" className="px-3 py-1.5 rounded-md bg-cavite-maroon hover:bg-cavite-hover text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> 
-                                <span className="hidden sm:inline">Save</span>
-                              </button>
+                              <EditStaffModal staff={member} />
                             </div>
                           </td>
                         </tr>
@@ -323,7 +319,6 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                         </td>
                       </tr>
                     ) : (students.map((student) => {
-                      const formId = `student-form-${student.id}`;
                       return (
                         <tr key={student.id} className="hover:bg-gray-50 group transition-colors">
                           
@@ -341,27 +336,14 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                             </span>
                           </td>
 
-                          {/* Last Name & Form */}
+                          {/* Last Name */}
                           <td className="table-td" data-label="Last Name">
-                            <ConfirmChangesForm 
-                              id={formId} 
-                              action={updateStudent}
-                              originalData={{
-                                lastName: student.last_name || '',
-                                firstName: student.first_name || '',
-                                gradeLevel: student.grade_level || '',
-                                section: student.section || '',
-                                isApproved: String(student.is_approved)
-                              }}
-                            >
-                              <input type="hidden" name="id" value={student.id} />
-                            </ConfirmChangesForm>
-                            <input form={formId} name="lastName" defaultValue={student.last_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
+                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{student.last_name}</span>
                           </td>
 
                           {/* First Name */}
                           <td className="table-td" data-label="First Name">
-                            <input form={formId} name="firstName" defaultValue={student.first_name} className="bg-transparent text-sm font-medium focus:ring-1 focus:ring-cavite-maroon rounded px-2 py-1 outline-none w-full min-w-[160px] border border-transparent hover:border-cavite-border transition-all" />
+                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{student.first_name}</span>
                           </td>
 
                           {/* Created At */}
@@ -371,30 +353,21 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
                           {/* Grade Level */}
                           <td className="table-td" data-label="Grade Level">
-                            <select form={formId} name="gradeLevel" defaultValue={student.grade_level} className="bg-transparent text-sm font-medium outline-none px-2 py-1 hover:bg-zinc-100 focus:ring-1 focus:ring-cavite-maroon rounded border border-transparent hover:border-cavite-border cursor-pointer w-full max-w-[110px] transition-all">
-                              <option value="Grade 11">Grade 11</option>
-                              <option value="Grade 12">Grade 12</option>
-                            </select>
+                            <span className="text-sm font-medium px-2 py-1 block w-full max-w-[110px]">{student.grade_level}</span>
                           </td>
 
                           {/* Section */}
                           <td className="table-td" data-label="Section">
-                            <input form={formId} name="section" defaultValue={student.section} className="bg-transparent text-sm font-medium outline-none px-2 py-1 hover:bg-zinc-100 focus:ring-1 focus:ring-cavite-maroon rounded border border-transparent hover:border-cavite-border w-full min-w-[120px] transition-all" placeholder="SECTION" />
+                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[120px]">{student.section || '-'}</span>
                           </td>
 
                           {/* Approval Status */}
                           <td className="table-td" data-label="Status">
-                            <select 
-                              form={formId}
-                              name="isApproved" 
-                              defaultValue={String(student.is_approved)} 
-                              className={`text-xs font-medium px-2.5 py-1.5 rounded-full border outline-none focus:ring-1 focus:ring-cavite-maroon cursor-pointer transition-all ${
+                            <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${
                                 student.is_approved ? 'bg-success-bg text-success-text border-success-border' : 'bg-warning-bg text-warning-text border-warning-border'
-                              }`}
-                            >
-                              <option value="true">Approved</option>
-                              <option value="false">Pending</option>
-                            </select>
+                              }`}>
+                              {student.is_approved ? 'Approved' : 'Pending'}
+                            </span>
                           </td>
 
                           {/* Actions */}
@@ -422,10 +395,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                                   </ActionForm>
                                 );
                               })()}
-                              <button form={formId} type="submit" className="px-3 py-1.5 rounded-md bg-cavite-maroon hover:bg-cavite-hover text-white font-semibold text-xs shadow-sm transition-all flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                <span className="hidden sm:inline">Apply</span>
-                              </button>
+                              <EditStudentModal student={student} />
                             </div>
                           </td>
                         </tr>

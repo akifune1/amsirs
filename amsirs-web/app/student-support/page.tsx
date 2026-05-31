@@ -26,6 +26,10 @@ interface StudentRecord {
   riskLevel: 'Low' | 'Medium' | 'High';
   counselingStatus: 'Active' | 'Pending' | 'Resolved' | 'Not Started';
   lastInteraction?: string;
+  lowCount?: number;
+  mediumCount?: number;
+  highCount?: number;
+  flagReason?: string;
 }
 
 interface StatData {
@@ -41,6 +45,10 @@ interface StudentCaseDetails {
   gradeSection: string;
   guardianContact: string;
   riskLevel: 'Low' | 'Medium' | 'High';
+  lowCount?: number;
+  mediumCount?: number;
+  highCount?: number;
+  flagReason?: string;
   attendanceStats: {
     totalAbsences: number;
     lateRecords: number;

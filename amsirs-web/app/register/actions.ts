@@ -2,6 +2,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { encrypt, hashString } from '@/lib/encryption';
 
 export async function registerStudent(prevState: any, formData: FormData) {
   try {
@@ -32,7 +33,7 @@ export async function registerStudent(prevState: any, formData: FormData) {
     const password = formData.get('password') as string;
     
     // Identity
-    const studentId = formData.get('studentId') as string;
+    const lrn = formData.get('lrn') as string;
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
 
@@ -120,12 +121,13 @@ export async function registerStudent(prevState: any, formData: FormData) {
       .insert([
         {
           account_id: newUserId,
-          student_id: studentId,
+          lrn: lrn ? encrypt(lrn) : null,
+          lrn_hash: lrn ? hashString(lrn) : null,
           first_name: firstName,
           last_name: lastName,
-          gender: gender,       // <-- NEW DATA
-          birthday: birthday,   // <-- NEW DATA
-          address: address,     // <-- NEW DATA
+          gender: gender,       
+          birthday: birthday ? encrypt(birthday) : null,   
+          address: address ? encrypt(address) : null,     
           grade_level: gradeLevel,
           section: section,
           face_photo_path: facePhotoPath,
@@ -139,7 +141,7 @@ export async function registerStudent(prevState: any, formData: FormData) {
 
       if (dbError.code === '23505') {
         return {
-          error: `Student ID ${studentId} is already registered.`,
+          error: `LRN ${lrn} is already registered.`,
         };
       }
 

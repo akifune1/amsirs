@@ -89,7 +89,7 @@ export default function AccessGatePage() {
         killCamera();
       }
     };
-    
+
     document.addEventListener('click', handleNavigationClick);
 
     return () => {
@@ -103,11 +103,11 @@ export default function AccessGatePage() {
       setMessage("LOADING AI MODELS...");
       await loadModels();
       if (!isMountedRef.current) return;
-      
+
       setMessage("STARTING CAMERA...");
       await startCamera();
       if (!isMountedRef.current) return;
-      
+
       setMessage("SYSTEM READY\n\nWaiting for face...");
       startAutoScan();
     } catch (error) {
@@ -124,7 +124,7 @@ export default function AccessGatePage() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: "user" },
       });
-      
+
       if (!isMountedRef.current) {
         stream.getTracks().forEach(track => track.stop());
         return;
@@ -199,7 +199,7 @@ export default function AccessGatePage() {
         if (mouthRatio < 0.15) {
           livenessStepRef.current = 1;
           setMessage("LIVENESS CHECK\n\nPlease slightly open your mouth.");
-          
+
           // ==========================================
           // CAPTURE THE NEUTRAL SNAPSHOT HERE IN THE BACKGROUND
           // ==========================================
@@ -290,7 +290,7 @@ export default function AccessGatePage() {
         });
 
         setMessage(`ACCESS GRANTED\n\n${studentData.first_name} ${studentData.last_name}`);
-        
+
         setVerifiedStudent({
           student_id: studentData.student_id,
           first_name: studentData.first_name,
@@ -317,7 +317,7 @@ export default function AccessGatePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
-      
+
 
       <main className="p-6 md:p-10">
         <div className="mb-8">
@@ -345,7 +345,7 @@ export default function AccessGatePage() {
           </div>
 
           <div className="space-y-6">
-            
+
             {/* IDENTITY VERIFICATION PANEL */}
             <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
               <div className="border-b border-gray-100 px-6 py-5">
@@ -356,19 +356,19 @@ export default function AccessGatePage() {
                 {verifiedStudent ? (
                   <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
                     <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                       <div className="w-20 h-20 rounded-2xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
-                         {verifiedStudent.photoUrl ? (
-                           <img src={verifiedStudent.photoUrl} alt="Face" className="w-full h-full object-cover" />
-                         ) : (
-                           <div className="w-full h-full flex items-center justify-center text-gray-400">
-                             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                           </div>
-                         )}
-                       </div>
-                       <div>
-                         <p className="text-2xl font-black text-gray-900 leading-tight">{verifiedStudent.first_name} {verifiedStudent.last_name}</p>
-                         <p className="text-sm font-bold text-cavite-maroon mt-1">{verifiedStudent.student_id}</p>
-                       </div>
+                      <div className="w-20 h-20 rounded-2xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
+                        {verifiedStudent.photoUrl ? (
+                          <img src={verifiedStudent.photoUrl} alt="Face" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-2xl font-black text-gray-900 leading-tight">{verifiedStudent.first_name} {verifiedStudent.last_name}</p>
+                        <p className="text-sm font-bold text-cavite-maroon mt-1">{verifiedStudent.student_id}</p>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -391,7 +391,7 @@ export default function AccessGatePage() {
                         <p className="text-sm font-bold text-gray-700">{verifiedStudent.section || 'N/A'}</p>
                       </div>
                     </div>
-                    
+
                     <div className="pt-2 text-center">
                       <p className="text-[10px] text-gray-400 font-medium">Recorded at: {verifiedStudent.timestamp.toLocaleTimeString()}</p>
                     </div>

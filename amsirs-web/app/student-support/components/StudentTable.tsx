@@ -3,19 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, Eye } from 'lucide-react';
 import RiskBadge from './RiskBadge';
-
-interface StudentRecord {
-  id: string;
-  studentId: string;
-  name: string;
-  gradeSection: string;
-  attendanceConcern: boolean;
-  absenceCount: number;
-  incidentCount: number;
-  riskLevel: 'Low' | 'Medium' | 'High';
-  counselingStatus: 'Active' | 'Pending' | 'Resolved' | 'Not Started';
-  lastInteraction?: string;
-}
+import { StudentRecord } from '../types';
 
 interface StudentTableProps {
   students: StudentRecord[];
@@ -124,7 +112,7 @@ export default function StudentTable({
                 <th className="table-th">Student Name</th>
                 <th className="table-th">Grade & Section</th>
                 <th className="table-th">Absences</th>
-                <th className="table-th">Incident Reports</th>
+                <th className="table-th">Incident History</th>
                 <th className="table-th">Risk Level</th>
                 <th className="table-th">Counseling Status</th>
                 <th className="table-th">Actions</th>
@@ -154,8 +142,18 @@ export default function StudentTable({
                         )}
                       </div>
                     </td>
-                    <td className="table-td" data-label="Incident Reports">
-                      <span className="font-semibold text-cavite-black">{student.incidentCount}</span>
+                    <td className="table-td" data-label="Incident History">
+                      <div className="flex items-center gap-2 text-xs font-bold">
+                        {student.highCount !== undefined ? (
+                          <>
+                            <span className="text-red-600 bg-red-100 px-1.5 py-0.5 rounded">H: {student.highCount}</span>
+                            <span className="text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">M: {student.mediumCount}</span>
+                            <span className="text-green-600 bg-green-100 px-1.5 py-0.5 rounded">L: {student.lowCount}</span>
+                          </>
+                        ) : (
+                          <span className="text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded">Total: {student.incidentCount}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="table-td" data-label="Risk Level">
                       <RiskBadge level={student.riskLevel} />
