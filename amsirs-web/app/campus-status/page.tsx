@@ -159,129 +159,98 @@ export default function CampusStatusPage() {
           </div>
         )}
 
-        {/* STUDENT GRID */}
+        {/* STUDENT TABLE */}
 
         {!loading &&
           students.length > 0 && (
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
-            {paginatedStudents.map(
-              (log: any) => (
-
-                <div
-                  key={log.id}
-                  className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden"
-                >
-
-                  {/* HEADER */}
-
-                  <div className="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
-
-                    <div>
-
-                      <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">
-                        Campus Status
-                      </p>
-
-                      <h2 className="text-lg font-bold text-gray-900 mt-1">
-                        Student Presence
-                      </h2>
-
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider">
-
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-
-                      INSIDE
-
-                    </div>
-
-                  </div>
-
-                  {/* BODY */}
-
-                  <div className="p-6">
-
-                    <div className="space-y-4">
-
-                      <div>
-
-                        <p className="text-3xl font-black text-gray-900">
-                          {log.students.first_name}{" "}
-                          {log.students.last_name}
-                        </p>
-
-                        <p className="text-gray-500 font-medium mt-1">
-                          Student ID:{" "}
-                          {log.students.student_id}
-                        </p>
-
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-
-                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-
-                          <p className="text-xs font-black uppercase tracking-wider text-gray-400">
-                            Grade
-                          </p>
-
-                          <p className="text-xl font-bold text-gray-800 mt-1">
-                            {log.students.grade_level}
-                          </p>
-
+          <div className="sys-card mt-8">
+            <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <h3 className="sys-label m-0 text-sm">Active Campus Presence</h3>
+              <div className="w-full md:w-72">
+                <input
+                  type="text"
+                  placeholder="Search by ID or Name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white border border-cavite-border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
+                />
+              </div>
+            </div>
+            
+            <div className="sys-table-wrapper max-h-[600px] overflow-auto">
+              <table className="sys-table">
+                <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                  <tr className="table-header-row">
+                    <th className="table-th w-[40%]">Student Identity</th>
+                    <th className="table-th text-center">Entry Time</th>
+                    <th className="table-th text-center">Match Accuracy</th>
+                    <th className="table-th text-center">Access Gate Proof</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {paginatedStudents.map((log: any) => (
+                    <tr key={log.id} className="hover:bg-zinc-50 transition-colors group">
+                      <td className="table-td" data-label="Student Identity">
+                        <div className="flex items-center gap-4">
+                          {log.faceUrl ? (
+                            <img src={log.faceUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-zinc-200 shrink-0 shadow-sm" />
+                          ) : (
+                            <div className="w-14 h-14 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[9px] font-bold text-zinc-400 shrink-0">NO PIC</div>
+                          )}
+                          <div>
+                            <p className="text-sm font-bold text-cavite-black leading-tight">
+                              {log.students.last_name}, {log.students.first_name}
+                            </p>
+                            <p className="text-xs font-mono text-zinc-500 leading-none mt-1.5 mb-1.5">
+                              {log.students.student_id} • {log.students.grade_level} {log.students.section}
+                            </p>
+                            <span className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-2 py-[2px] rounded text-[9px] font-black uppercase tracking-wider">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                              INSIDE
+                            </span>
+                          </div>
                         </div>
-
-                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-
-                          <p className="text-xs font-black uppercase tracking-wider text-gray-400">
-                            Section
-                          </p>
-
-                          <p className="text-xl font-bold text-gray-800 mt-1">
-                            {log.students.section}
-                          </p>
-
+                      </td>
+                      <td className="table-td text-center" data-label="Entry Time">
+                        <span className="text-sm font-semibold text-zinc-700">
+                          {new Date(log.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </td>
+                      <td className="table-td text-center" data-label="Match Accuracy">
+                        <div className="inline-flex flex-col items-center">
+                          <span className="text-lg font-black text-blue-600">{log.match_percentage}%</span>
+                          <span className="text-[10px] font-bold tracking-wider text-blue-400 uppercase">Confidence</span>
                         </div>
-
-                      </div>
-
-                      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
-
-                        <p className="text-xs font-black uppercase tracking-wider text-blue-400">
-                          Match Accuracy
-                        </p>
-
-                        <p className="text-3xl font-black text-blue-700 mt-1">
-                          {log.match_percentage}%
-                        </p>
-
-                      </div>
-
-                      <div className="pt-2">
-
-                        <p className="text-xs font-black uppercase tracking-wider text-gray-400">
-                          Last Entry Time
-                        </p>
-
-                        <p className="text-sm font-semibold text-gray-700 mt-1">
-                          {new Date(
-                            log.created_at
-                          ).toLocaleString()}
-                        </p>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
+                      </td>
+                      <td className="table-td text-center relative" data-label="Access Gate Proof">
+                        <div className="flex justify-center h-16 items-center">
+                          {log.snapshotUrl ? (
+                            <img 
+                              src={log.snapshotUrl} 
+                              alt="Access proof" 
+                              className="w-24 h-16 rounded object-cover border border-zinc-200 group-hover:scale-[2.5] group-hover:z-50 group-hover:shadow-2xl group-hover:-translate-x-10 transition-all duration-300 origin-right cursor-zoom-in relative z-10 bg-white" 
+                            />
+                          ) : (
+                            <span className="text-xs text-zinc-400 font-medium italic bg-zinc-50 px-3 py-1.5 rounded-md border border-dashed border-zinc-200">No snapshot recorded</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-cavite-border bg-white flex justify-between items-center text-sm rounded-b-xl">
+                <span className="text-zinc-500 font-medium">Page <span className="font-semibold text-cavite-black">{currentPage}</span> of <span className="font-semibold text-cavite-black">{totalPages}</span></span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 border border-cavite-border rounded-md text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 font-semibold text-xs shadow-sm transition-colors">Previous</button>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 border border-cavite-border rounded-md text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 font-semibold text-xs shadow-sm transition-colors">Next</button>
                 </div>
-              )
+              </div>
             )}
-
           </div>
         )}
 

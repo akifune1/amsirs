@@ -9,6 +9,7 @@ import { loadModels } from '@/lib/face/loadModels';
 import { supabase } from '@/lib/supabase';
 import { registerStudent } from './actions';
 import DataPrivacyCheckbox from '@/app/components/DataPrivacyCheckbox';
+import CameraCapture from '@/app/components/CameraCapture';
 
 function EnrollButton() {
   const { pending } = useFormStatus();
@@ -283,15 +284,7 @@ export default function StudentRegistrationPage() {
                     Required
                   </span>
                 </div>
-                <div className="relative">
-                  <input
-                    type="file"
-                    name="facePhoto"
-                    required
-                    accept="image/jpeg, image/png"
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-widest file:bg-cavite-maroon/10 file:text-cavite-maroon hover:file:bg-cavite-maroon/20 transition-all cursor-pointer border border-gray-300 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon"
-                  />
-                </div>
+                  <CameraCapture name="facePhoto" required={true} />
                 <ul className="text-xs text-gray-500 font-medium mt-3 space-y-1 pl-4 list-disc marker:text-cavite-maroon">
                   <li>Ensure you are in a well-lit area.</li>
                   <li>Do not wear face masks, sunglasses, or hats.</li>

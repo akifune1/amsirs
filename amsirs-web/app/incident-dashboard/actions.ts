@@ -56,6 +56,24 @@ export async function getSecureImageUrl(imagePath: string | null) {
   return data.signedUrl;
 }
 
+export async function getStudentPhoto(facePhotoPath: string | null) {
+  if (!facePhotoPath) return null;
+
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data, error } = await supabase.storage
+    .from('student_faces')
+    .createSignedUrl(facePhotoPath, 3600);
+    
+  if (error) return null;
+  return data.signedUrl;
+}
+
 // ==========================================
 // 🔗 IDENTITY VERIFICATION & LINKING
 // ==========================================
@@ -74,9 +92,13 @@ export async function searchStudents(query: string) {
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
+  // Security Check: Ensure the person clicking is logged in
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
   const { data, error } = await supabase
     .from('students')
-    .select('id, student_id, first_name, last_name, grade_level, section')
+    .select('id, student_id, first_name, last_name, grade_level, section, face_photo_path')
     // I added first_name here so it searches all three fields!
     .or(`last_name.ilike.%${query}%,first_name.ilike.%${query}%,student_id.ilike.%${query}%`)
     .limit(5);
@@ -91,10 +113,23 @@ export async function searchStudents(query: string) {
   // 3. Confirm how many records were actually pulled
   console.log(`✅ [SEARCH SUCCESS] Found ${data?.length || 0} matching records.`);
   
-  return data || [];
+  const enrichedData = await Promise.all(
+    (data || []).map(async (student: any) => {
+      let photoUrl = null;
+      if (student.face_photo_path) {
+        const { data: photoData } = await supabase.storage
+          .from('student_faces')
+          .createSignedUrl(student.face_photo_path, 3600);
+        if (photoData) photoUrl = photoData.signedUrl;
+      }
+      return { ...student, photoUrl };
+    })
+  );
+
+  return enrichedData;
 }
 
-export async function recalculateStudentFlags(studentId: string, supabase: any) {
+async function recalculateStudentFlags(studentId: string, supabase: any) {
   // 1. Fetch all involvements for this student where role is Offender
   const { data: involvements, error: invError } = await supabase
     .from('incident_involvements')
@@ -179,6 +214,10 @@ export async function linkStudentToIncident(incidentId: string, studentId: strin
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
+  // Security Check: Ensure the person clicking is logged in
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
   // CRITICAL: We must capture 'error' here
   const { error } = await supabase
     .from('incident_involvements')
@@ -210,6 +249,10 @@ export async function unlinkStudentFromIncident(involvementId: string) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
+
+  // Security Check: Ensure the person clicking is logged in
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
 
   // First get the student_id so we can recalculate later
   const { data: involvement } = await supabase
@@ -254,14 +297,28 @@ export async function getAiMatches(incidentId: string) {
 
   const { data, error } = await supabase
     .from('incident_ai_matches')
-    .select(`*, students(id, first_name, last_name, student_id)`)
+    .select(`*, students(id, first_name, last_name, student_id, face_photo_path)`)
     .eq('incident_id', incidentId);
     
   if (error) {
     console.error("Error fetching AI matches:", error);
     return [];
   }
-  return data || [];
+
+  const enrichedData = await Promise.all(
+    (data || []).map(async (match: any) => {
+      let photoUrl = null;
+      if (match.students?.face_photo_path) {
+        const { data: photoData } = await supabase.storage
+          .from('student_faces')
+          .createSignedUrl(match.students.face_photo_path, 3600);
+        if (photoData) photoUrl = photoData.signedUrl;
+      }
+      return { ...match, photoUrl };
+    })
+  );
+
+  return enrichedData;
 }
 
 export async function getFaceEmbeddings() {
@@ -301,7 +358,7 @@ export async function saveAiMatch(incidentId: string, studentId: string, matchPe
       student_id: studentId,
       match_percentage: matchPercentage
     })
-    .select(`*, students(id, first_name, last_name, student_id)`)
+    .select(`*, students(id, first_name, last_name, student_id, face_photo_path)`)
     .single();
 
   if (error) {
@@ -309,5 +366,13 @@ export async function saveAiMatch(incidentId: string, studentId: string, matchPe
     return null;
   }
   
-  return data;
+  let photoUrl = null;
+  if (data?.students?.face_photo_path) {
+    const { data: photoData } = await supabase.storage
+      .from('student_faces')
+      .createSignedUrl(data.students.face_photo_path, 3600);
+    if (photoData) photoUrl = photoData.signedUrl;
+  }
+
+  return { ...data, photoUrl };
 }

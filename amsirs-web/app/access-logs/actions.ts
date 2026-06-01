@@ -141,7 +141,8 @@ export async function fetchCampusStatus(): Promise<{
           last_name,
           student_id,
           grade_level,
-          section
+          section,
+          face_photo_path
         )
       `)
       .order('created_at', { ascending: false })
@@ -164,7 +165,22 @@ export async function fetchCampusStatus(): Promise<{
       (log: any) => log.action === 'ENTRY'
     );
 
-    return { success: true, data: insideCampus };
+    const snapshotPaths = insideCampus.map((log: any) => log.image_path).filter(Boolean);
+    const facePaths = insideCampus.map((log: any) => log.students.face_photo_path).filter(Boolean);
+    
+    const { data: snapshotUrls } = await supabase.storage.from('access-snapshots').createSignedUrls(snapshotPaths, 3600);
+    const { data: faceUrls } = await supabase.storage.from('student_faces').createSignedUrls(facePaths, 3600);
+    
+    const snapMap = Object.fromEntries((snapshotUrls || []).filter(u => u.signedUrl).map(u => [u.path, u.signedUrl]));
+    const faceMap = Object.fromEntries((faceUrls || []).filter(u => u.signedUrl).map(u => [u.path, u.signedUrl]));
+    
+    const enrichedData = insideCampus.map((log: any) => ({
+      ...log,
+      snapshotUrl: snapMap[log.image_path] || null,
+      faceUrl: faceMap[log.students.face_photo_path] || null
+    }));
+
+    return { success: true, data: enrichedData };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch campus status' };
   }

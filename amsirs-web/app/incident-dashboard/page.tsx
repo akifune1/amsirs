@@ -48,7 +48,8 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
           student_id, 
           first_name, 
           last_name, 
-          grade_level 
+          grade_level,
+          face_photo_path
         )
       )
     `, { count: 'exact' });

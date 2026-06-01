@@ -178,9 +178,9 @@ export default function StudentTable({
                         </button>
                         <button
                           onClick={() => onStartIntervention(student.id)}
-                          className="btn-primary flex items-center"
+                          className="px-3 py-1.5 rounded-md bg-cavite-maroon hover:bg-cavite-hover text-white font-semibold text-xs shadow-sm flex items-center transition-all"
                         >
-                          <ChevronRight className="w-4 h-4 mr-0 sm:mr-1" />
+                          <ChevronRight className="w-3.5 h-3.5 mr-0 sm:mr-1.5" />
                           <span className="hidden sm:inline">Start</span>
                         </button>
                       </div>

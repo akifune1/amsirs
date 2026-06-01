@@ -12,7 +12,8 @@ import {
   unlinkStudentFromIncident,
   getFaceEmbeddings,
   saveAiMatch,
-  getAiMatches
+  getAiMatches,
+  getStudentPhoto
 } from './actions';
 import { loadModels } from '@/lib/face/loadModels';
 import { compareFaces, getMatchPercentage } from '@/lib/face/compareFaces'; 
@@ -43,7 +44,23 @@ export default function IncidentRow({ report }: { report: any }) {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    setInvolvements(report.incident_involvements || []);
+    const initInvolvements = async () => {
+      const initial = report.incident_involvements || [];
+      setInvolvements(initial);
+      
+      let changed = false;
+      const updated = await Promise.all(initial.map(async (inv: any) => {
+        if (inv.students?.face_photo_path && !inv.students.photoUrl) {
+          changed = true;
+          const url = await getStudentPhoto(inv.students.face_photo_path);
+          return { ...inv, students: { ...inv.students, photoUrl: url } };
+        }
+        return inv;
+      }));
+      
+      if (changed) setInvolvements(updated);
+    };
+    initInvolvements();
   }, [report.incident_involvements]);
 
   // Load existing AI recommendations if any exist for this incident
@@ -293,9 +310,9 @@ export default function IncidentRow({ report }: { report: any }) {
       {decryptedText && (
         <tr className="expansion-row">
           <td colSpan={5} className="p-0 bg-zinc-50 border-b border-cavite-border shadow-inner">
-            <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
               
-              <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-6">
                 <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="w-2 h-2 bg-cavite-maroon rounded-full animate-pulse"></span>
@@ -307,89 +324,122 @@ export default function IncidentRow({ report }: { report: any }) {
                 <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6">
                   <h4 className="sys-label mb-4">Evidence Attachment</h4>
                   
-                  {isScanningStatus && (
-                    <div className="mb-4 bg-zinc-100 border border-cavite-border p-3 rounded-md text-xs font-semibold text-zinc-500 tracking-wider animate-pulse">
-                      {">"} {isScanningStatus}
-                    </div>
-                  )}
+                  <div>
+                    {isScanningStatus && (
+                      <div className="mb-4 bg-zinc-100 border border-cavite-border p-3 rounded-md text-xs font-semibold text-zinc-500 tracking-wider animate-pulse">
+                        {">"} {isScanningStatus}
+                      </div>
+                    )}
 
-                  {imageUrl ? (
-                    <div className="relative rounded-lg overflow-hidden border border-cavite-border shadow-sm">
-                      <img 
-                        ref={imageRef} 
-                        src={imageUrl} 
-                        crossOrigin="anonymous" 
-                        alt="Evidence" 
-                        className="w-full h-auto max-h-96 object-cover cursor-zoom-in" 
-                        onClick={() => setIsModalOpen(true)}
-                        onLoad={() => setTimeout(runAIAnalysis, 500)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-32 rounded-lg border border-dashed border-cavite-border flex flex-col items-center justify-center text-zinc-400 bg-zinc-50">
-                      <span className="text-sm font-medium">No visual evidence</span>
-                    </div>
-                  )}
+                    {imageUrl ? (
+                      <div className="relative rounded-lg overflow-hidden border border-cavite-border shadow-sm">
+                        <img 
+                          ref={imageRef} 
+                          src={imageUrl} 
+                          crossOrigin="anonymous" 
+                          alt="Evidence" 
+                          className="w-full h-auto max-h-[500px] object-cover cursor-zoom-in" 
+                          onClick={() => setIsModalOpen(true)}
+                          onLoad={() => setTimeout(runAIAnalysis, 500)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-32 rounded-lg border border-dashed border-cavite-border flex flex-col items-center justify-center text-zinc-400 bg-zinc-50">
+                        <span className="text-sm font-medium">No visual evidence</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* IDENTITY VERIFICATION SECTION */}
               <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6 flex flex-col">
                 
-                {aiRecommendations.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-warning-text border-b border-warning-border pb-2 mb-4 flex items-center gap-2 tracking-tight">
-                      <span className="w-2 h-2 bg-warning-text rounded-full animate-pulse"></span>
-                      AI Suggested Matches
-                    </h4>
-                    <div className="space-y-2">
-                      {aiRecommendations.map((rec, idx) => (
-                        <div key={idx} className="bg-warning-bg border border-warning-border rounded-md px-3 py-2 flex justify-between items-center group">
-                          <div>
-                            <p className="text-xs font-semibold text-warning-text leading-none mb-1">
-                              {rec.students.student_id} • {rec.match_percentage}% MATCH
-                            </p>
-                            <p className="text-sm font-semibold text-cavite-black leading-none">
-                              {rec.students.last_name}, {rec.students.first_name}
-                            </p>
+                {(() => {
+                  const linkedStudentIds = new Set(involvements.map((inv: any) => inv.students.id));
+                  const visibleAiRecommendations = aiRecommendations.filter(rec => !linkedStudentIds.has(rec.students.id));
+                  
+                  return visibleAiRecommendations.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-semibold text-warning-text border-b border-warning-border pb-2 mb-4 flex items-center gap-2 tracking-tight">
+                        <span className="w-2 h-2 bg-warning-text rounded-full animate-pulse"></span>
+                        AI Suggested Matches
+                      </h4>
+                      <div className="space-y-4">
+                        {visibleAiRecommendations.map((rec, idx) => (
+                          <div key={idx} className="bg-warning-bg border border-warning-border rounded-xl p-5 flex flex-col sm:flex-row items-center sm:items-start gap-5 group shadow-sm transition-all hover:shadow-md">
+                            {rec.photoUrl ? (
+                              <img 
+                                src={rec.photoUrl} 
+                                alt="Matched student" 
+                                className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-lg shadow-sm border border-warning-border/50 bg-white shrink-0" 
+                              />
+                            ) : (
+                              <div className="w-32 h-32 sm:w-36 sm:h-36 bg-warning-border/20 rounded-lg border border-warning-border/50 flex flex-col items-center justify-center text-warning-text text-sm font-bold text-center leading-tight shrink-0">
+                                NO<br/>PHOTO
+                              </div>
+                            )}
+                            <div className="flex-1 flex flex-col justify-between self-stretch w-full">
+                              <div className="text-center sm:text-left">
+                                <p className="text-sm font-black text-warning-text leading-none mb-2 tracking-wide">
+                                  {rec.match_percentage}% MATCH • <span className="font-mono">{rec.students.student_id}</span>
+                                </p>
+                                <p className="text-lg font-bold text-cavite-black leading-tight">
+                                  {rec.students.last_name}, {rec.students.first_name}
+                                </p>
+                              </div>
+                              <button 
+                                onClick={() => handleLink(rec.students.id)}
+                                className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white text-xs font-black uppercase tracking-widest px-4 py-3 rounded-lg transition-colors shadow-sm active:scale-95"
+                              >
+                                Link Record
+                              </button>
+                            </div>
                           </div>
-                          <button 
-                            onClick={() => handleLink(rec.students.id)}
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-colors"
-                          >
-                            Link
-                          </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <h4 className="sys-label border-b border-cavite-border pb-2 mb-4">Verified Identities</h4>
                 
-                <div className="space-y-2 flex-1">
-                  {involvements.map((inv: any) => (
-                    <div key={inv.id} className="bg-zinc-100 border border-cavite-border rounded-md px-3 py-2 flex justify-between items-center group">
-                      <div>
-                        <p className="text-xs font-mono text-zinc-500 leading-none mb-1 flex items-center gap-1.5">
-                          {inv.students.student_id}
-                          <span className={`px-1.5 py-[1px] rounded text-[9px] font-bold tracking-wider uppercase ${inv.role === 'Offender' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {inv.role || 'Offender'}
-                          </span>
-                        </p>
-                        <p className="text-sm font-semibold text-cavite-black leading-none">
-                          {inv.students.last_name}, {inv.students.first_name}
-                        </p>
+                <div className="space-y-3 flex-1 overflow-y-auto max-h-[350px] pr-2">
+                  {involvements.map((inv: any) => {
+                    const isAiMatch = aiRecommendations.some(rec => rec.students.id === inv.students.id);
+                    return (
+                      <div key={inv.id} className={`border rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center justify-between group shadow-sm transition-all hover:shadow-md gap-4 sm:gap-0 ${isAiMatch ? 'bg-warning-bg border-warning-border' : 'bg-zinc-50 border-cavite-border'}`}>
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          {inv.students.photoUrl ? (
+                            <img src={inv.students.photoUrl} className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-zinc-200 shadow-sm shrink-0" alt="" />
+                          ) : (
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-zinc-200 border border-zinc-300 flex items-center justify-center text-[10px] sm:text-xs font-bold text-zinc-400 shrink-0 shadow-sm">NO PIC</div>
+                          )}
+                          <div>
+                            <p className="text-xs font-mono text-zinc-500 leading-none mb-2 flex flex-wrap items-center gap-1.5">
+                              {inv.students.student_id}
+                              <span className={`px-1.5 py-[2px] rounded text-[9px] font-bold tracking-wider uppercase ${inv.role === 'Offender' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {inv.role || 'Offender'}
+                              </span>
+                              {isAiMatch && (
+                                <span className="px-1.5 py-[2px] rounded text-[9px] font-bold tracking-wider uppercase bg-warning-border/50 text-warning-text">AI MATCH</span>
+                              )}
+                            </p>
+                            <p className="text-sm sm:text-base font-bold text-cavite-black leading-tight">
+                              {inv.students.last_name}, {inv.students.first_name}
+                            </p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleUnlink(inv.id)}
+                          className="w-full sm:w-auto text-xs font-bold text-danger-text bg-red-50 hover:bg-red-100 border border-red-200 transition-colors flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg shadow-sm active:scale-95"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4l16 16"></path></svg>
+                          <span>Unlink</span>
+                        </button>
                       </div>
-                      <button 
-                        onClick={() => handleUnlink(inv.id)}
-                        className="text-xs font-semibold text-zinc-400 hover:text-danger-text transition-colors flex items-center gap-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4l16 16"></path></svg>
-                        <span className="hidden sm:inline">Unlink</span>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
                   {involvements.length === 0 && (
                     <div className="text-center py-6 text-zinc-400 border border-dashed border-cavite-border rounded-md bg-zinc-50">
@@ -433,9 +483,14 @@ export default function IncidentRow({ report }: { report: any }) {
                         <button 
                           key={student.id}
                           onClick={() => handleLink(student.id)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-zinc-50 flex items-center justify-between transition-colors border-b border-cavite-border/50 last:border-0 group"
+                          className="w-full text-left p-3 hover:bg-zinc-50 flex items-center gap-3 transition-colors border-b border-cavite-border/50 last:border-0 group"
                         >
-                          <div>
+                          {student.photoUrl ? (
+                            <img src={student.photoUrl} alt="" className="w-10 h-10 rounded-md object-cover border border-zinc-200 shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[8px] font-bold text-zinc-400 shrink-0">NO PIC</div>
+                          )}
+                          <div className="flex-1">
                             <p className="text-sm font-semibold text-cavite-black leading-none mb-1">{student.last_name}, {student.first_name}</p>
                             <p className="text-xs font-mono text-zinc-500 leading-none">{student.student_id} • {student.grade_level}</p>
                           </div>
