@@ -226,9 +226,38 @@ export async function bulkApproveStudents(studentIds: string[]) {
     const { error } = await supabase
       .from('students')
       .update({ is_approved: true })
-      .in('id', studentIds);
+      .in('id', studentIds)
+      .select('account_id, first_name'); // Need account_id to notify them
 
     if (error) throw error;
+    
+    // --- NOTIFICATIONS DISPATCH ---
+    try {
+      const { createNotification } = await import('../utils/notificationHelpers');
+      // Fetch the updated students to get their account_ids
+      const { data: updatedStudents } = await supabase
+        .from('students')
+        .select('account_id, first_name')
+        .in('id', studentIds);
+
+      if (updatedStudents) {
+        for (const student of updatedStudents) {
+          if (student.account_id) {
+            await createNotification({
+              category: "System",
+              severity: "info",
+              title: "Account Approved",
+              message: `Welcome ${student.first_name}! Your student account has been approved.`,
+              icon: "CheckCircle",
+              userId: student.account_id
+            });
+          }
+        }
+      }
+    } catch (notifErr) {
+      console.error("Failed to dispatch approval notifications", notifErr);
+    }
+    // ------------------------------
     
     revalidatePath('/admin-dashboard');
     return { success: true };

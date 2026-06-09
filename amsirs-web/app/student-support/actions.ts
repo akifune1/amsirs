@@ -34,7 +34,22 @@ export async function verifyStudentSupportAccess(): Promise<{ supabase: any; aut
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll() { return cookieStore.getAll() } } }
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch (error) {
+            // The `setAll` method was called from a Server Component.
+          }
+        },
+      },
+    }
   );
 
   // Get current user
@@ -445,6 +460,30 @@ export async function createIntervention(
 
     if (insertError) throw new Error(insertError.message);
 
+    // --- NOTIFICATIONS DISPATCH ---
+    try {
+      const { createNotification } = await import('../utils/notificationHelpers');
+      const { data: student } = await supabase
+        .from('students')
+        .select('account_id, first_name')
+        .eq('id', studentId)
+        .single();
+      
+      if (student && student.account_id) {
+        await createNotification({
+          category: "Student support",
+          severity: "info",
+          title: "Counseling session scheduled",
+          message: `Hi ${student.first_name}, a support intervention has been scheduled for you. Please check your portal.`,
+          icon: "Calendar",
+          userId: student.account_id
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to dispatch counseling notification", notifErr);
+    }
+    // ------------------------------
+
     revalidatePath('/student-support');
 
     return {
@@ -480,6 +519,24 @@ export async function updateCaseStatus(
       .eq('id', interventionId);
 
     if (updateError) throw new Error(updateError.message);
+
+    // --- NOTIFICATIONS DISPATCH ---
+    try {
+      if (newStatus === 'Pending Review') {
+        const { createNotification } = await import('../utils/notificationHelpers');
+        await createNotification({
+          category: "Student support",
+          severity: "warning",
+          title: "Follow-up Required",
+          message: `A counseling case status was changed to 'Pending Review' by a counselor.`,
+          icon: "CalendarAlert",
+          targetRoles: ["guidance", "school_admin"]
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to dispatch follow-up notification", notifErr);
+    }
+    // ------------------------------
 
     revalidatePath('/student-support');
 

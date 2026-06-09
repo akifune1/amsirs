@@ -9,6 +9,7 @@ import {
 import { logout } from "../auth/actions";
 import { motion } from "framer-motion";
 import { cn } from "../utils/cn";
+import NotificationBell from "./NotificationBell";
 
 interface UserInfo {
   email: string;
@@ -54,8 +55,9 @@ export default function MobileNav({ userInfo }: MobileNavProps) {
           </span>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-cavite-maroon flex items-center justify-center text-white font-bold text-xs border-2 border-white shadow-sm">
+        <div className="flex items-center gap-2">
+          <NotificationBell roleKey={userInfo?.roleKey} />
+          <div className="w-8 h-8 rounded-full bg-cavite-maroon flex items-center justify-center text-white font-bold text-xs border-2 border-white shadow-sm ml-1">
             {userInfo?.initials || "??"}
           </div>
           <form action={logout}>

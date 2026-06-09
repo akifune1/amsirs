@@ -177,8 +177,77 @@ export async function uploadSnapshotAndLog(params: {
 
     if (logError) return { success: false, error: logError.message };
 
+    // --- NOTIFICATIONS DISPATCH ---
+    try {
+      const { createNotification } = await import('../utils/notificationHelpers');
+      
+      if (params.action === 'ENTRY') {
+        // Check if student is flagged
+        const { data: flag } = await supabase
+          .from('student_flags')
+          .select('is_flagged')
+          .eq('student_id', params.studentId)
+          .single();
+
+        if (flag && flag.is_flagged) {
+          await createNotification({
+            category: "Attendance & gates",
+            severity: "warning",
+            title: "Flagged student scanned entry",
+            message: `A student with an active flag has entered the campus.`,
+            icon: "ShieldAlert",
+            targetRoles: ["guidance", "admin", "school_admin", "super_admin"]
+          });
+        }
+      } else if (params.action === 'EXIT') {
+        // Check if they had an entry log today
+        const todayStr = new Date().toISOString().split('T')[0]; // simple UTC date check
+        const { data: entries } = await supabase
+          .from('access_logs')
+          .select('id')
+          .eq('student_id', params.studentId)
+          .eq('action', 'ENTRY')
+          .gte('created_at', todayStr)
+          .limit(1);
+
+        if (!entries || entries.length === 0) {
+          await createNotification({
+            category: "Attendance & gates",
+            severity: "critical",
+            title: "Exit scanned with no entry record",
+            message: `A student registered an EXIT but has no ENTRY log for today.`,
+            icon: "AlertTriangle",
+            targetRoles: ["guard", "admin", "school_admin", "super_admin"]
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error("Failed to dispatch notification", notifErr);
+    }
+    // ------------------------------
+
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Failed to log access' };
+  }
+}
+// ==========================================
+// 🚨 NOTIFY UNKNOWN FACE
+// ==========================================
+
+export async function notifyUnknownFace(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { createNotification } = await import('../utils/notificationHelpers');
+    await createNotification({
+      category: "Attendance & gates",
+      severity: "warning",
+      title: "Unknown face detected",
+      message: `The scanner failed to match a detected face at an access gate.`,
+      icon: "ScanFace",
+      targetRoles: ["guard", "admin"]
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to notify unknown face' };
   }
 }

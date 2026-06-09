@@ -170,11 +170,17 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
   // 4. Update the student_flags table (Upsert logic to ensure record exists)
   const { data: existingFlag } = await supabase
     .from('student_flags')
-    .select('id, review_status')
+    .select('id, review_status, is_flagged')
     .eq('student_id', studentId)
     .maybeSingle();
 
+  let riskEscalated = false;
+
   if (existingFlag) {
+    if (!existingFlag.is_flagged && isFlagged) {
+      riskEscalated = true;
+    }
+    
     await supabase
       .from('student_flags')
       .update({
@@ -189,6 +195,8 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
       })
       .eq('id', existingFlag.id);
   } else {
+    if (isFlagged) riskEscalated = true;
+    
     await supabase
       .from('student_flags')
       .insert({
@@ -201,6 +209,31 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
         review_status: reviewStatus,
         last_calculated_at: new Date().toISOString()
       });
+  }
+
+  // --- NOTIFICATION DISPATCH ---
+  if (riskEscalated) {
+    try {
+      const { createNotification } = await import('../utils/notificationHelpers');
+      const { data: student } = await supabase
+        .from('students')
+        .select('first_name, last_name')
+        .eq('id', studentId)
+        .single();
+      
+      if (student) {
+        await createNotification({
+          category: "Attendance & gates",
+          severity: "critical",
+          title: "EWS Risk Level Escalated",
+          message: `${student.first_name} ${student.last_name}'s calculated risk score crossed the threshold.`,
+          icon: "TrendingUp",
+          targetRoles: ["guidance", "school_admin", "super_admin"]
+        });
+      }
+    } catch (notifErr) {
+      console.error("Failed to dispatch EWS escalation notification", notifErr);
+    }
   }
 }
 
@@ -235,6 +268,43 @@ export async function linkStudentToIncident(incidentId: string, studentId: strin
 
   console.log("✅ [LINK SUCCESS] Database updated.");
   
+  // --- NOTIFICATION DISPATCH ---
+  try {
+    const { createNotification } = await import('../utils/notificationHelpers');
+    const { data: student } = await supabase
+      .from('students')
+      .select('first_name, last_name, account_id')
+      .eq('id', studentId)
+      .single();
+
+    if (student) {
+      // Notify guidance counselors that a student was linked
+      await createNotification({
+        category: "Incident management",
+        severity: "warning",
+        title: "Student linked to incident",
+        message: `${student.first_name} ${student.last_name} was added as an involved party (${role}) to an incident.`,
+        icon: "UserPlus",
+        targetRoles: ["guidance", "admin"]
+      });
+
+      // Notify the student themselves if they have an account
+      if (student.account_id) {
+        await createNotification({
+          category: "System",
+          severity: "info",
+          title: "Incident Update",
+          message: `You have been listed as an involved party (${role}) in a recent incident report.`,
+          icon: "FileWarning",
+          userId: student.account_id
+        });
+      }
+    }
+  } catch (notifErr) {
+    console.error("Failed to dispatch student link notification", notifErr);
+  }
+  // ------------------------------
+
   // Recalculate EWS Flags
   await recalculateStudentFlags(studentId, supabase);
   

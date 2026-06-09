@@ -4,6 +4,7 @@ import { encrypt } from '@/lib/encryption';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { createNotification } from '../utils/notificationHelpers';
 
 export async function submitSecureIncident(prevState: any, formData: FormData) {
   try {
@@ -64,6 +65,20 @@ export async function submitSecureIncident(prevState: any, formData: FormData) {
       ]);
 
     if (dbError) throw dbError;
+
+    // Dispatch Notification
+    const severityInput = formData.get('severity') as string;
+    const notificationSeverity = severityInput === 'High' ? 'critical' : severityInput === 'Medium' ? 'warning' : 'info';
+    
+    await createNotification({
+      category: "Incident management",
+      severity: notificationSeverity,
+      title: `${severityInput} severity incident filed`,
+      message: `A new incident was reported at ${aggregatedLocations}.`,
+      icon: "FileWarning",
+      link: "/incident-dashboard",
+      targetRoles: ["guidance", "school_admin", "super_admin", "it_admin"]
+    });
 
     revalidatePath('/incident-reporting');
     return { success: true, message: "Multi-subject report securely filed." };

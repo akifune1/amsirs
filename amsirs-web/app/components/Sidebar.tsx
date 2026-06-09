@@ -7,6 +7,7 @@ import {
   DoorOpen, DoorClosed, FileText, User, Radio,
 } from "lucide-react";
 import { logout } from "../auth/actions";
+import NotificationBell from "./NotificationBell";
 
 interface UserInfo {
   email: string;
@@ -46,13 +47,18 @@ export default function Sidebar({ userInfo }: SidebarProps) {
     <aside className="hidden lg:flex w-24 lg:w-64 bg-white flex-col justify-between rounded-r-[32px] my-4 ml-4 z-20 overflow-hidden flex-shrink-0" style={{ boxShadow: '0 10px 40px -10px rgba(0,0,0,0.05)' }}>
       <div>
         {/* Logo Area */}
-        <div className="h-24 flex items-center justify-center lg:justify-start lg:px-8 border-b border-gray-100">
-          <div className="w-10 h-10 bg-cavite-maroon rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{ boxShadow: '0 10px 25px -5px rgba(122, 25, 27, 0.3)' }}>
-            A
+        <div className="h-24 flex items-center justify-between px-8 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-cavite-maroon rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{ boxShadow: '0 10px 25px -5px rgba(122, 25, 27, 0.3)' }}>
+              A
+            </div>
+            <span className="hidden lg:block font-bold text-xl tracking-tight text-gray-800">
+              AMSIRS
+            </span>
           </div>
-          <span className="hidden lg:block ml-3 font-bold text-xl tracking-tight text-gray-800">
-            AMSIRS
-          </span>
+          <div className="hidden lg:block">
+            <NotificationBell roleKey={userInfo?.roleKey} />
+          </div>
         </div>
 
         {/* Nav Links */}

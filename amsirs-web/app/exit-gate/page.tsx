@@ -11,6 +11,7 @@ import {
   lookupStudent,
   checkDuplicateScan,
   uploadSnapshotAndLog,
+  notifyUnknownFace,
 } from "@/app/gate/actions";
 
 export default function ExitGatePage() {
@@ -42,6 +43,9 @@ export default function ExitGatePage() {
 
   // Temporary holding cell for the neutral snapshot
   const pendingSnapshotRef = useRef<string | null>(null);
+
+  // Throttle unknown face notifications (e.g. 15 seconds)
+  const lastUnknownNotificationRef = useRef<number>(0);
 
   const [verifiedStudent, setVerifiedStudent] = useState<VerifiedStudent | null>(null);
 
@@ -305,6 +309,14 @@ export default function ExitGatePage() {
         resetScanner(); // Clean up for the next person
       } else {
         setMessage("FACE NOT RECOGNIZED");
+        
+        // Notify guards of unknown face (throttle to once every 15 seconds)
+        const now = Date.now();
+        if (now - lastUnknownNotificationRef.current > 15000) {
+          lastUnknownNotificationRef.current = now;
+          notifyUnknownFace().catch(console.error);
+        }
+
         resetScanner();
       }
     } catch (error) {
