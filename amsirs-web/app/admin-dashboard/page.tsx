@@ -13,6 +13,8 @@ import FilterDropdown from '../components/FilterDropdown';
 import ConfirmChangesForm from './components/ConfirmChangesForm';
 import EditStudentModal from './EditStudentModal';
 import EditStaffModal from './EditStaffModal';
+import AnalyticsTab from './AnalyticsTab';
+import { ExportButtons } from '../components/ExportButtons';
 
 export default async function AdminDashboard(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = props.searchParams ? await props.searchParams : {};
@@ -105,6 +107,24 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
     studentTotalPages = Math.ceil(studentCount / ITEMS_PER_PAGE);
   }
 
+  // AUDIT LOGS TAB DATA
+  let auditLogs: any[] = [];
+  let auditCount = 0;
+  let auditTotalPages = 0;
+  const auditPage = Number(searchParams?.auditPage) || 1;
+
+  if (activeTab === 'audit') {
+    const { data, count } = await supabase
+      .from('audit_logs')
+      .select('*, admin:system_admins(role), user:user_profiles(first_name, last_name)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range((auditPage - 1) * ITEMS_PER_PAGE, auditPage * ITEMS_PER_PAGE - 1);
+    
+    auditLogs = data || [];
+    auditCount = count || 0;
+    auditTotalPages = Math.ceil(auditCount / ITEMS_PER_PAGE);
+  }
+
   // Helper to format timestamps cleanly
   const formatDate = (dateString: string) => {
     if (!dateString) return '—';
@@ -146,6 +166,26 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
             }`}
           >
             Student Body
+          </Link>
+          <Link 
+            href="?tab=audit"
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
+              activeTab === 'audit' 
+                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
+            }`}
+          >
+            Audit Logs
+          </Link>
+          <Link 
+            href="?tab=analytics"
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
+              activeTab === 'analytics' 
+                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
+            }`}
+          >
+            Analytics
           </Link>
         </div>
 
@@ -408,6 +448,88 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
             </div>
           </section>
           )}
+          {/* ==========================================
+              AUDIT LOGS SECTION
+              ========================================== */}
+          {activeTab === 'audit' && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                  <h2 className="sys-label">System Audit Logs</h2>
+                  <p className="text-sm text-zinc-500 mt-1">Immutable record of administrative actions (RA 10173 Compliance).</p>
+                </div>
+                <ExportButtons 
+                  data={auditLogs.map(log => ({
+                    Timestamp: new Date(log.created_at).toLocaleString('en-PH'),
+                    AdminID: log.admin_id,
+                    Action: log.action_type,
+                    TargetEntity: log.target_entity,
+                    TargetID: log.target_id,
+                    Details: JSON.stringify(log.details)
+                  }))} 
+                  filename="system_audit_logs"
+                />
+              </div>
+              <div className="sys-card">
+                <div className="sys-table-wrapper max-h-[600px] overflow-auto">
+                  <table className="sys-table">
+                    <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                      <tr className="table-header-row">
+                        <th className="table-th min-w-[160px]">Timestamp</th>
+                        <th className="table-th min-w-[140px]">Admin ID</th>
+                        <th className="table-th min-w-[140px]">Action</th>
+                        <th className="table-th min-w-[120px]">Target Entity</th>
+                        <th className="table-th min-w-[120px]">Target ID</th>
+                        <th className="table-th min-w-[200px]">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {auditLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-16 text-center text-zinc-400 bg-white">
+                            <p className="text-base font-medium">No audit logs found.</p>
+                          </td>
+                        </tr>
+                      ) : (auditLogs.map((log) => {
+                        return (
+                          <tr key={log.id} className="hover:bg-gray-50 group transition-colors">
+                            <td className="table-td text-sm whitespace-nowrap" data-label="Timestamp">
+                              {new Date(log.created_at).toLocaleString('en-PH')}
+                            </td>
+                            <td className="table-td" data-label="Admin ID">
+                              <span className="text-xs font-mono text-zinc-500" title={log.admin_id}>{log.admin_id.substring(0, 8)}...</span>
+                            </td>
+                            <td className="table-td" data-label="Action">
+                              <span className="inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-zinc-100 text-zinc-700">
+                                {log.action_type}
+                              </span>
+                            </td>
+                            <td className="table-td text-sm" data-label="Target Entity">
+                              {log.target_entity}
+                            </td>
+                            <td className="table-td" data-label="Target ID">
+                              <span className="text-xs font-mono text-zinc-500" title={log.target_id || ''}>{log.target_id ? log.target_id.substring(0, 8) + '...' : '-'}</span>
+                            </td>
+                            <td className="table-td" data-label="Details">
+                              <pre className="text-[10px] text-zinc-500 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                                {JSON.stringify(log.details)}
+                              </pre>
+                            </td>
+                          </tr>
+                        );
+                      }))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination totalPages={auditTotalPages} paramName="auditPage" />
+              </div>
+          </section>
+          )}
+
+          {/* ==========================================
+              ANALYTICS SECTION
+              ========================================== */}
+          {activeTab === 'analytics' && <AnalyticsTab />}
         </div>
       </main>
     </>

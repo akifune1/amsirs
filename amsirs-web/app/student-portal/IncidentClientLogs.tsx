@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ExportButtons } from '../components/ExportButtons';
 
 function LogTableRow({ record, onDecrypt }: { record: any, onDecrypt: () => void }) {
   const { incident, formattedDate } = record;
@@ -85,14 +86,26 @@ export default function IncidentClientLogs({ involvements }: { involvements: any
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sys-card-header">
+            <div className="sys-card-header flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <span className="sys-label !text-cavite-black">Classified Payload Decrypted</span>
-              <button 
-                onClick={() => setSelectedRecord(null)}
-                className="btn-text !text-gray-500 hover:!text-red-600"
-              >
-                Close ✕
-              </button>
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <ExportButtons 
+                  data={[{
+                    Date: selectedRecord.formattedDate,
+                    Status: selectedRecord.incident.status,
+                    Severity: selectedRecord.incident.severity,
+                    Location: selectedRecord.incident.location,
+                    Report: selectedRecord.incident.description
+                  }]} 
+                  filename={`incident_report_${selectedRecord.incident_id}`}
+                />
+                <button 
+                  onClick={() => setSelectedRecord(null)}
+                  className="btn-text !text-gray-500 hover:!text-red-600 print:hidden ml-auto"
+                >
+                  Close ✕
+                </button>
+              </div>
             </div>
 
             {/* Body (Form Grid) */}

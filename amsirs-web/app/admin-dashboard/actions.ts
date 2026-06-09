@@ -40,11 +40,33 @@ async function verifyAdminAccess() {
   if (!admin || admin.role === 'school_admin') {
     throw new Error('Forbidden');
   }
-  return supabase;
+  return { supabase, adminId: user.id };
+}
+
+async function insertAuditLog(
+  adminId: string,
+  actionType: string,
+  targetEntity: string,
+  targetId: string | null,
+  details: any
+) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return;
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+  
+  await supabaseAdmin.from('audit_logs').insert({
+    admin_id: adminId,
+    action_type: actionType,
+    target_entity: targetEntity,
+    target_id: targetId,
+    details: details
+  });
 }
 
 export async function updateStudent(formData: FormData) {
-  const supabase = await verifyAdminAccess();
+  const { supabase, adminId } = await verifyAdminAccess();
   const id = formData.get('id') as string;
 
   const { error } = await supabase
@@ -64,11 +86,17 @@ export async function updateStudent(formData: FormData) {
     .eq('id', id);
 
   if (error) throw error;
+  
+  await insertAuditLog(adminId, 'UPDATE_STUDENT', 'students', id, {
+    student_id: formData.get('studentId'),
+    is_approved: formData.get('isApproved') === 'true'
+  });
+
   revalidatePath('/admin-dashboard');
 }
 
 export async function updateStaff(formData: FormData) {
-  const supabase = await verifyAdminAccess();
+  const { supabase, adminId } = await verifyAdminAccess();
   const id = formData.get('id') as string;
 
   const { error } = await supabase
@@ -82,6 +110,12 @@ export async function updateStaff(formData: FormData) {
     .eq('id', id);
 
   if (error) throw error;
+  
+  await insertAuditLog(adminId, 'UPDATE_STAFF', 'user_profiles', id, {
+    role: formData.get('role'),
+    is_active: formData.get('isActive') === 'true'
+  });
+
   revalidatePath('/admin-dashboard');
 }
 
@@ -112,7 +146,7 @@ export async function createStaffAccount(prevState: any, formData: FormData) {
     console.log(`📋 Payload Received: ${firstName} ${lastName} | ${email} | Role: ${role}`);
 
     // VERIFY ADMIN ACCESS BEFORE PROCEEDING
-    await verifyAdminAccess();
+    const { adminId: creatorAdminId } = await verifyAdminAccess();
 
     // 1. Create the Auth user
     console.log("⏳ Step 1: Creating Auth User via Admin API...");
@@ -168,6 +202,11 @@ export async function createStaffAccount(prevState: any, formData: FormData) {
 
     console.log("✅ Profile Record Created Successfully!");
     
+    await insertAuditLog(creatorAdminId, 'CREATE_STAFF', 'user_profiles', authData.user.id, {
+      role: role,
+      email: email
+    });
+    
     revalidatePath('/admin-dashboard');
     return { success: true, message: `Successfully created ${role} account for ${firstName} ${lastName}` };
 
@@ -182,7 +221,7 @@ export async function createStaffAccount(prevState: any, formData: FormData) {
 // ==========================================
 export async function resetUserPassword(formData: FormData) {
   try {
-    await verifyAdminAccess();
+    const { adminId } = await verifyAdminAccess();
     
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return { error: "Server Configuration Error: Missing Service Role Key" };
@@ -208,6 +247,8 @@ export async function resetUserPassword(formData: FormData) {
       return { error: `Failed to reset password: ${error.message}` };
     }
 
+    await insertAuditLog(adminId, 'RESET_PASSWORD', 'auth.users', userId, {});
+
     return { success: true, message: 'Password reset successfully!' };
   } catch (err) {
     return { error: 'Unauthorized or unexpected error occurred.' };
@@ -219,7 +260,7 @@ export async function resetUserPassword(formData: FormData) {
 // ==========================================
 export async function bulkApproveStudents(studentIds: string[]) {
   try {
-    const supabase = await verifyAdminAccess();
+    const { supabase, adminId } = await verifyAdminAccess();
     
     if (!studentIds || studentIds.length === 0) return { success: true };
 
@@ -259,6 +300,8 @@ export async function bulkApproveStudents(studentIds: string[]) {
     }
     // ------------------------------
     
+    await insertAuditLog(adminId, 'BULK_APPROVE', 'students', null, { count: studentIds.length, ids: studentIds });
+
     revalidatePath('/admin-dashboard');
     return { success: true };
   } catch (err) {

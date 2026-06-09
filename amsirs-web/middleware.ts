@@ -1,11 +1,32 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { rateLimit } from '@/lib/rateLimit'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const path = request.nextUrl.pathname;
 
   console.log(`\n=== 🚦 MIDDLEWARE HIT: ${path} ===`);
+
+  // --- RATE LIMITING ---
+  if (path.startsWith('/api/') || path === '/login') {
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const isAllowed = rateLimit(ip, 10, 10000); // 10 req / 10 sec
+
+    if (!isAllowed) {
+      console.log(`🛑 Rate Limit Exceeded for IP: ${ip}`);
+      if (path.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Too Many Requests' }, { status: 429 });
+      } else {
+        return NextResponse.redirect(new URL('/login?error=Too%20many%20attempts.%20Please%20wait.', request.url));
+      }
+    }
+  }
+
+  // Skip auth checks for /api/ routes to avoid breaking them
+  if (path.startsWith('/api/')) {
+    return response;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,7 +70,7 @@ export async function proxy(request: NextRequest) {
 
     if (admin) {
       const { role } = admin;
-      
+
       if (role === 'it_admin') {
         if (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting') || path.startsWith('/student-support') || path.startsWith('/access-gate') || path.startsWith('/exit-gate')) {
           console.log(`🛑 Action: Redirecting to /unauthorized (IT Admin cannot access ${path})`);
@@ -90,27 +111,27 @@ export async function proxy(request: NextRequest) {
       }
 
       if (staff.role === 'guard' && path.startsWith('/student-support')) {
-         console.log("🛑 Action: Redirecting to /unauthorized (Guard cannot access Support)");
-         return NextResponse.redirect(new URL('/unauthorized', request.url));
+        console.log("🛑 Action: Redirecting to /unauthorized (Guard cannot access Support)");
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
-      
+
       // Guidance can access incident-dashboard but NOT incident-reporting
       if (staff.role === 'guidance' && path.startsWith('/incident-reporting')) {
-         console.log("🛑 Action: Redirecting to /unauthorized (Guidance cannot access reporting form)");
-         return NextResponse.redirect(new URL('/unauthorized', request.url));
+        console.log("🛑 Action: Redirecting to /unauthorized (Guidance cannot access reporting form)");
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
       // Guard can access incident-dashboard but NOT incident-reporting
       if (staff.role === 'guard' && path.startsWith('/incident-reporting')) {
-         console.log("🛑 Action: Redirecting to /unauthorized (Guard cannot access reporting form)");
-         return NextResponse.redirect(new URL('/unauthorized', request.url));
+        console.log("🛑 Action: Redirecting to /unauthorized (Guard cannot access reporting form)");
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
       if (staff.role === 'guidance' && path === '/') {
         console.log("↪️ Action: Rerouting Guidance to /student-support");
         return NextResponse.redirect(new URL('/student-support', request.url));
       }
-      
+
       if (staff.role === 'guard' && path === '/') {
         console.log("↪️ Action: Rerouting Guard to /incident-dashboard");
         return NextResponse.redirect(new URL('/incident-dashboard', request.url));
@@ -135,7 +156,7 @@ export async function proxy(request: NextRequest) {
         console.log("🛑 Action: Redirecting to /pending-approval (Not approved)");
         return NextResponse.redirect(new URL('/pending-approval', request.url));
       }
-      
+
       // Students can access their portal and incident-reporting
       if (isProtected && !path.startsWith('/incident-reporting')) {
         console.log(`🛑 Action: Redirecting to /unauthorized (Student tried accessing protected route: ${path})`);
@@ -144,7 +165,7 @@ export async function proxy(request: NextRequest) {
       console.log("✅ Action: Student Pass");
       return response;
     }
-    
+
     console.log("❓ Action: Default Pass (User has no known role in DB)");
   }
 
@@ -152,6 +173,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-matcher: [
-  '/((?!api|_next/static|_next/image|favicon.ico|pending-approval|unauthorized|models).*)',
-],}
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|pending-approval|unauthorized|models).*)',
+  ],
+}
