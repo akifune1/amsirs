@@ -129,6 +129,7 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
                   <th className="table-th">Student Involved</th>
                   <th className="table-th">Location</th>
                   <th className="table-th">Severity</th>
+                  <th className="table-th">Status</th>
                   <th className="table-th text-right">Actions</th>
                 </tr>
               </thead>

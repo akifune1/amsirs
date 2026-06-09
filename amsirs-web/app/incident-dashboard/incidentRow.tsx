@@ -13,7 +13,8 @@ import {
   getFaceEmbeddings,
   saveAiMatch,
   getAiMatches,
-  getStudentPhoto
+  getStudentPhoto,
+  updateIncidentStatus
 } from './actions';
 import { loadModels } from '@/lib/face/loadModels';
 import { compareFaces, getMatchPercentage } from '@/lib/face/compareFaces'; 
@@ -23,6 +24,7 @@ export default function IncidentRow({ report }: { report: any }) {
   const [decryptedText, setDecryptedText] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -96,6 +98,18 @@ export default function IncidentRow({ report }: { report: any }) {
 
   const handleUnlink = async (involvementId: string) => {
     await unlinkStudentFromIncident(involvementId);
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    setStatusLoading(true);
+    try {
+      await updateIncidentStatus(report.id, newStatus);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update status');
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   // 🧠 CORE FEATURE: Auto-Scan Evidence Picture
@@ -292,6 +306,33 @@ export default function IncidentRow({ report }: { report: any }) {
           <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${severityColors[report.severity]}`}>
             {report.severity}
           </span>
+        </td>
+
+        <td className="table-td" data-label="Status">
+          <div className="relative inline-block w-full">
+            <select
+              value={report.status || 'Pending'}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              disabled={statusLoading}
+              className={`appearance-none w-full border text-xs font-bold px-3 py-1.5 pr-8 rounded-md outline-none cursor-pointer focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-colors ${
+                report.status === 'Resolved' ? 'bg-green-50 border-green-200 text-green-700' :
+                report.status === 'Under Investigation' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                'bg-yellow-50 border-yellow-200 text-yellow-700'
+              } ${statusLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <option value="Pending">Pending</option>
+              <option value="Under Investigation">Under Investigation</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            {statusLoading && (
+              <div className="absolute -right-5 top-1/2 -translate-y-1/2">
+                <div className="w-3.5 h-3.5 border-2 border-zinc-300 border-t-cavite-maroon rounded-full animate-spin"></div>
+              </div>
+            )}
+          </div>
         </td>
         
         <td className="table-td text-right" data-label="Actions">

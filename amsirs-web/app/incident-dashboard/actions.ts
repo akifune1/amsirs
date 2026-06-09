@@ -421,28 +421,61 @@ export async function saveAiMatch(incidentId: string, studentId: string, matchPe
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
-  const { data, error } = await supabase
-    .from('incident_ai_matches')
-    .insert({
-      incident_id: incidentId,
-      student_id: studentId,
-      match_percentage: matchPercentage
-    })
-    .select(`*, students(id, first_name, last_name, student_id, face_photo_path)`)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('incident_ai_matches')
+      .insert({
+        incident_id: incidentId,
+        student_id: studentId,
+        match_percentage: matchPercentage
+      })
+      .select(`*, students(id, first_name, last_name, student_id, face_photo_path)`)
+      .single();
 
-  if (error) {
-    console.error("Error saving AI match:", error);
+    if (error) {
+      console.error("Error saving AI match:", error);
+      return null;
+    }
+    
+    let photoUrl = null;
+    if (data?.students?.face_photo_path) {
+      const { data: photoData } = await supabase.storage
+        .from('student_faces')
+        .createSignedUrl(data.students.face_photo_path, 3600);
+      if (photoData) photoUrl = photoData.signedUrl;
+    }
+
+    return { ...data, photoUrl };
+  } catch (err) {
+    console.error("AI Save Error:", err);
     return null;
   }
-  
-  let photoUrl = null;
-  if (data?.students?.face_photo_path) {
-    const { data: photoData } = await supabase.storage
-      .from('student_faces')
-      .createSignedUrl(data.students.face_photo_path, 3600);
-    if (photoData) photoUrl = photoData.signedUrl;
+}
+
+// ==========================================
+// 🔄 INCIDENT STATUS MANAGEMENT
+// ==========================================
+
+export async function updateIncidentStatus(incidentId: string, newStatus: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { error } = await supabase
+    .from('incident_reports')
+    .update({ status: newStatus })
+    .eq('id', incidentId);
+
+  if (error) {
+    console.error('Error updating status:', error);
+    throw new Error('Failed to update status');
   }
 
-  return { ...data, photoUrl };
+  revalidatePath('/incident-dashboard');
 }
