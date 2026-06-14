@@ -2,6 +2,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { encrypt, hashString } from '@/lib/encryption';
 
 export async function registerStudent(prevState: any, formData: FormData) {
@@ -151,6 +152,19 @@ export async function registerStudent(prevState: any, formData: FormData) {
     }
 
     // ==========================================
+    // 4. SAVE FACE EMBEDDING
+    // ==========================================
+    const descriptorStr = formData.get('facePhotoDescriptor') as string;
+    if (descriptorStr) {
+      try {
+        const descriptor = JSON.parse(descriptorStr);
+        await saveFaceEmbedding(studentData.id, descriptor);
+      } catch (err) {
+        console.error("Failed to parse and save descriptor from client", err);
+      }
+    }
+
+    // ==========================================
     // SUCCESS
     // ==========================================
 
@@ -165,4 +179,23 @@ export async function registerStudent(prevState: any, formData: FormData) {
       error: 'A critical system error occurred. Please try again later.',
     };
   }
+}
+
+export async function saveFaceEmbedding(studentId: string, descriptor: number[]) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Missing service role key");
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
+  const { error } = await supabaseAdmin.from('face_embeddings').insert({
+    student_id: studentId,
+    descriptor: descriptor
+  });
+
+  if (error) {
+    console.error("Embedding save error:", error);
+    throw new Error('Failed to save embedding');
+  }
+  return { success: true };
 }

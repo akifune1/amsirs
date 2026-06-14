@@ -90,8 +90,9 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
       studentQuery = studentQuery.or(orQuery);
     }
     if (studentGrade) studentQuery = studentQuery.eq('grade_level', studentGrade);
-    if (studentStatus === 'approved') studentQuery = studentQuery.eq('is_approved', true);
-    if (studentStatus === 'pending') studentQuery = studentQuery.eq('is_approved', false);
+    if (studentStatus === 'active') studentQuery = studentQuery.eq('status', 'active');
+    if (studentStatus === 'pending') studentQuery = studentQuery.eq('status', 'pending');
+    if (studentStatus === 'disabled') studentQuery = studentQuery.eq('status', 'disabled');
     
     const { data, count } = await studentQuery
       .order('last_name')
@@ -319,7 +320,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                   <h3 className="sys-label m-0 text-sm">Filter Students</h3>
                   <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                     <FilterDropdown paramName="studentGrade" placeholder="Grade" options={[{label:'All Grades', value:'All'}, {label:'Grade 11', value:'Grade 11'}, {label:'Grade 12', value:'Grade 12'}]} />
-                    <FilterDropdown paramName="studentStatus" placeholder="Status" options={[{label:'All Status', value:'All'}, {label:'Approved', value:'approved'}, {label:'Pending', value:'pending'}]} />
+                    <FilterDropdown paramName="studentStatus" placeholder="Status" options={[{label:'All Status', value:'All'}, {label:'Active', value:'active'}, {label:'Pending', value:'pending'}, {label:'Disabled', value:'disabled'}]} />
                     <div className="w-full sm:w-64">
                       <SearchBar paramName="studentQ" placeholder="Search by name or ID..." />
                     </div>
@@ -364,7 +365,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                           
                           {/* Checkbox for Bulk Approve */}
                           <td className="table-td text-center" data-label="Approve">
-                            {!student.is_approved && (
+                            {student.status === 'pending' && (
                               <input type="checkbox" name="studentIds" value={student.id} form="bulk-approve-form" className="rounded border-gray-300 text-cavite-maroon focus:ring-cavite-maroon cursor-pointer" />
                             )}
                           </td>
@@ -404,9 +405,11 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                           {/* Approval Status */}
                           <td className="table-td" data-label="Status">
                             <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${
-                                student.is_approved ? 'bg-success-bg text-success-text border-success-border' : 'bg-warning-bg text-warning-text border-warning-border'
+                                student.status === 'active' ? 'bg-success-bg text-success-text border-success-border' : 
+                                student.status === 'disabled' ? 'bg-error-bg text-error-text border-error-border' :
+                                'bg-warning-bg text-warning-text border-warning-border'
                               }`}>
-                              {student.is_approved ? 'Approved' : 'Pending'}
+                              {student.status === 'active' ? 'Active' : student.status === 'disabled' ? 'Disabled' : 'Pending'}
                             </span>
                           </td>
 

@@ -57,7 +57,8 @@ export async function proxy(request: NextRequest) {
     path.startsWith('/access-gate') ||
     path.startsWith('/exit-gate') ||
     path.startsWith('/access-logs') ||
-    path.startsWith('/campus-status');
+    path.startsWith('/campus-status') ||
+    path.startsWith('/recovery');
 
   if (isProtected && !user) {
     console.log("🛑 Action: Redirecting to / (Unauthenticated)");
@@ -102,14 +103,14 @@ export async function proxy(request: NextRequest) {
       const { role } = admin;
 
       if (role === 'it_admin') {
-        if (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting') || path.startsWith('/student-support') || path.startsWith('/access-gate') || path.startsWith('/exit-gate') || path.startsWith('/active-sessions')) {
+        if (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting') || path.startsWith('/student-support') || path.startsWith('/access-gate') || path.startsWith('/exit-gate') || path.startsWith('/active-sessions') || path.startsWith('/recovery')) {
           console.log(`🛑 Action: Redirecting to /unauthorized (IT Admin cannot access ${path})`);
           return NextResponse.redirect(new URL('/unauthorized', request.url));
         }
       }
 
       if (role === 'school_admin') {
-        if (path.startsWith('/admin-dashboard') || path.startsWith('/access-gate') || path.startsWith('/exit-gate') || path.startsWith('/active-sessions')) {
+        if (path.startsWith('/admin-dashboard') || path.startsWith('/access-gate') || path.startsWith('/exit-gate') || path.startsWith('/active-sessions') || path.startsWith('/recovery')) {
           console.log(`🛑 Action: Redirecting to /unauthorized (School Admin cannot access ${path})`);
           return NextResponse.redirect(new URL('/unauthorized', request.url));
         }
@@ -135,8 +136,8 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
-      if (path.startsWith('/admin-dashboard') || path.startsWith('/active-sessions')) {
-        console.log("🛑 Action: Redirecting to /unauthorized (Staff cannot access Admin/Sessions)");
+      if (path.startsWith('/admin-dashboard') || path.startsWith('/active-sessions') || path.startsWith('/recovery')) {
+        console.log("🛑 Action: Redirecting to /unauthorized (Staff cannot access Admin/Sessions/Recovery)");
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
@@ -174,7 +175,7 @@ export async function proxy(request: NextRequest) {
     // TIER 3: STUDENT CHECK
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .select('is_approved')
+      .select('status')
       .eq('account_id', user.id)
       .maybeSingle();
 
@@ -182,8 +183,13 @@ export async function proxy(request: NextRequest) {
     if (studentError) console.log("⚠️ Student Query Error:", studentError.message);
 
     if (student) {
-      if (!student.is_approved && path !== '/pending-approval') {
-        console.log("🛑 Action: Redirecting to /pending-approval (Not approved)");
+      if (student.status === 'disabled') {
+        console.log("🛑 Action: Redirecting to /unauthorized (Account Disabled)");
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
+      }
+
+      if (student.status === 'pending' && path !== '/pending-approval') {
+        console.log("🛑 Action: Redirecting to /pending-approval (Pending Account)");
         return NextResponse.redirect(new URL('/pending-approval', request.url));
       }
 

@@ -19,7 +19,7 @@ export function getMatchPercentage(
       Math.min(
         100,
         Math.round(
-          (1 - distance / 0.75) * 100
+          (1 - distance / 0.55) * 100
         )
       )
     );

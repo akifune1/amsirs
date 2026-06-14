@@ -28,55 +28,6 @@ function EnrollButton() {
 export default function StudentRegistrationPage() {
   const [state, formAction] = useActionState(registerStudent, null);
 
-  // ==========================================
-  // GENERATE FACE EMBEDDING
-  // ==========================================
-  async function generateFaceEmbedding(student: any) {
-    try {
-      await loadModels();
-
-      const imageUrl = supabase.storage
-        .from('student_faces')
-        .getPublicUrl(student.face_photo_path).data.publicUrl;
-
-      const image = new Image();
-      image.crossOrigin = 'anonymous';
-      image.src = imageUrl;
-
-      await new Promise((resolve) => {
-        image.onload = resolve;
-      });
-
-      const detection = await faceapi
-        .detectSingleFace(image, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-      if (!detection) {
-        console.error('No face detected in uploaded photo');
-        return;
-      }
-
-      await supabase.from('face_embeddings').insert({
-        student_id: student.id,
-        descriptor: Array.from(detection.descriptor),
-      });
-
-      console.log('Face embedding saved successfully');
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  // ==========================================
-  // AUTO GENERATE EMBEDDING AFTER REGISTRATION
-  // ==========================================
-  useEffect(() => {
-    if (state?.success && state?.student) {
-      generateFaceEmbedding(state.student);
-    }
-  }, [state]);
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
       {/* STUDENT NAVIGATION BAR */}

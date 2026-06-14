@@ -130,12 +130,13 @@ export async function login(prevState: any, formData: FormData) {
   // 3. Student
   const { data: student } = await supabase
     .from('students')
-    .select('is_approved')
+    .select('status')
     .eq('account_id', userId)
     .maybeSingle();
 
   if (student) {
-    if (!student.is_approved) redirect('/pending-approval');
+    if (student.status === 'disabled') return { error: "Your account is disabled. Please contact the administration." };
+    if (student.status === 'pending') redirect('/pending-approval');
     // ✅ This is the only line that needed changing
     redirect('/student-portal');
   }

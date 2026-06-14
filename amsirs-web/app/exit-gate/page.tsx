@@ -249,7 +249,7 @@ export default function ExitGatePage() {
 
       const matchPercentage = getMatchPercentage(lowestDistance);
 
-      if (bestMatch && lowestDistance < 0.75) {
+      if (bestMatch && lowestDistance < 0.55) {
         const studentResult = await lookupStudent(bestMatch.student_id);
 
         if (!studentResult.success || !studentResult.data) {

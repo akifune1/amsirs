@@ -42,6 +42,7 @@ amsirs/
     │   ├── active-sessions/     # Super Admin session monitoring & revocation
     │   ├── student-portal/      # Student self-service portal
     │   ├── notifications/       # In-app notification center
+    │   ├── recovery/            # Super Admin face embedding recovery tool
     │   ├── auth/                # Logout server action
     │   ├── login/               # Authentication entry point
     │   ├── register/            # Student registration

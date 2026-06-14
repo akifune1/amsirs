@@ -133,7 +133,7 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
   // 1. Fetch all involvements for this student where role is Offender
   const { data: involvements, error: invError } = await supabase
     .from('incident_involvements')
-    .select('incident_id, incident_reports(severity)')
+    .select('incident_id, incident_reports(severity, status)')
     .eq('student_id', studentId)
     .eq('role', 'Offender');
 
@@ -142,10 +142,13 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
     return;
   }
 
-  // 2. Tally up the severities
+  // 2. Tally up the severities (excluding Resolved incidents)
   let low = 0, medium = 0, high = 0;
   for (const inv of involvements || []) {
-    const severity = inv.incident_reports?.severity;
+    const report = inv.incident_reports;
+    if (!report || report.status === 'Resolved') continue;
+
+    const severity = report.severity;
     if (severity === 'Low') low++;
     else if (severity === 'Medium') medium++;
     else if (severity === 'High') high++;
@@ -475,6 +478,21 @@ export async function updateIncidentStatus(incidentId: string, newStatus: string
   if (error) {
     console.error('Error updating status:', error);
     throw new Error('Failed to update status');
+  }
+
+  // Recalculate flags for all involved offenders
+  const { data: involvements } = await supabase
+    .from('incident_involvements')
+    .select('student_id')
+    .eq('incident_id', incidentId)
+    .eq('role', 'Offender');
+
+  if (involvements) {
+    for (const inv of involvements) {
+      if (inv.student_id) {
+        await recalculateStudentFlags(inv.student_id, supabase);
+      }
+    }
   }
 
   revalidatePath('/incident-dashboard');

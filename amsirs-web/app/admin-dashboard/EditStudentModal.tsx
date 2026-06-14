@@ -86,10 +86,11 @@ export default function EditStudentModal({ student }: { student: any }) {
                   <input required type="text" name="studentId" defaultValue={student.student_id} className="w-full bg-white border border-cavite-border rounded-md p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-cavite-black">Approval Status</label>
-                  <select required name="isApproved" defaultValue={String(student.is_approved)} className="w-full bg-white border border-cavite-border rounded-md p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all">
-                    <option value="true">Approved</option>
-                    <option value="false">Pending</option>
+                  <label className="block text-sm font-medium text-cavite-black">Account Status</label>
+                  <select required name="status" defaultValue={student.status || 'pending'} className="w-full bg-white border border-cavite-border rounded-md p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all">
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="disabled">Disabled</option>
                   </select>
                 </div>
               </div>

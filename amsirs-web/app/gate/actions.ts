@@ -40,7 +40,8 @@ export async function fetchFaceEmbeddings(): Promise<{
 
     const { data, error } = await supabase
       .from('face_embeddings')
-      .select('id, student_id, descriptor');
+      .select('id, student_id, descriptor, students!inner(status)')
+      .eq('students.status', 'active');
 
     if (error) return { success: false, error: error.message };
 
@@ -61,7 +62,7 @@ export async function lookupStudent(studentId: string): Promise<{
     student_id: string;
     first_name: string;
     last_name: string;
-    is_approved: boolean;
+    status: string;
     grade_level?: string;
     section?: string;
     photoUrl?: string | null;
@@ -73,12 +74,13 @@ export async function lookupStudent(studentId: string): Promise<{
 
     const { data, error } = await supabase
       .from('students')
-      .select('id, student_id, first_name, last_name, is_approved, grade_level, section, face_photo_path')
+      .select('id, student_id, first_name, last_name, status, grade_level, section, face_photo_path')
       .eq('id', studentId)
       .single();
 
     if (error) return { success: false, error: error.message };
     if (!data) return { success: false, error: 'Student not found' };
+    if (data.status !== 'active') return { success: false, error: 'Account is not active' };
 
     let photoUrl = null;
     if (data.face_photo_path) {

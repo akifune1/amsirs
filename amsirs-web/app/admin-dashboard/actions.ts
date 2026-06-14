@@ -80,7 +80,7 @@ export async function updateStudent(formData: FormData) {
       gender: formData.get('gender') || null,
       birthday: formData.get('birthday') ? encrypt(formData.get('birthday') as string) : null,
       address: formData.get('address') ? encrypt(formData.get('address') as string) : null,
-      is_approved: formData.get('isApproved') === 'true',
+      status: formData.get('status') as string,
       face_photo_path: formData.get('facePhotoPath') || null
     })
     .eq('id', id);
@@ -89,7 +89,7 @@ export async function updateStudent(formData: FormData) {
   
   await insertAuditLog(adminId, 'UPDATE_STUDENT', 'students', id, {
     student_id: formData.get('studentId'),
-    is_approved: formData.get('isApproved') === 'true'
+    status: formData.get('status')
   });
 
   revalidatePath('/admin-dashboard');
@@ -266,7 +266,7 @@ export async function bulkApproveStudents(studentIds: string[]) {
 
     const { error } = await supabase
       .from('students')
-      .update({ is_approved: true })
+      .update({ status: 'active' })
       .in('id', studentIds)
       .select('account_id, first_name'); // Need account_id to notify them
 
