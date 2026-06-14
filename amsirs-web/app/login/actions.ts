@@ -1,6 +1,7 @@
 'use server';
 
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -56,14 +57,20 @@ export async function login(prevState: any, formData: FormData) {
   else if (userAgent.includes('Firefox')) device_info += ' (Firefox)';
   else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) device_info += ' (Safari)';
 
+  // Admin client to bypass RLS during login (since cookies aren't updated yet in the same request)
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   // 1. Invalidate previous sessions
-  await supabase
+  await supabaseAdmin
     .from('active_sessions')
     .update({ is_active: false })
     .eq('user_id', userId);
 
   // 2. Create new session
-  const { data: sessionData, error: sessionError } = await supabase
+  const { data: sessionData, error: sessionError } = await supabaseAdmin
     .from('active_sessions')
     .insert({
       user_id: userId,
@@ -72,6 +79,10 @@ export async function login(prevState: any, formData: FormData) {
     })
     .select('session_id')
     .single();
+
+  if (sessionError) {
+    console.error("Session creation error:", sessionError);
+  }
 
   if (sessionData && !sessionError) {
     // 3. Set custom session cookie
