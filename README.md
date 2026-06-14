@@ -28,7 +28,8 @@ AMSIRS rejects the vulnerability of "auto-approved" accounts. It enforces a **Ma
 
 ```
 amsirs/
-└── amsirs-web/          # Next.js 16.2 web application
+└── amsirs-web/              # Next.js 16.2 web application
+    ├── proxy.ts                 # Central middleware — auth, session control, rate limiting, routing
     ├── app/
     │   ├── access-gate/         # Facial recognition entry scanner
     │   ├── exit-gate/           # Facial recognition exit scanner
@@ -37,16 +38,24 @@ amsirs/
     │   ├── incident-dashboard/  # Staff view of all incident reports
     │   ├── incident-reporting/  # Encrypted incident submission form
     │   ├── student-support/     # Counselor dashboard & interventions
-    │   ├── admin-dashboard/     # Root admin control panel
+    │   ├── admin-dashboard/     # Root admin control panel & analytics
+    │   ├── active-sessions/     # Super Admin session monitoring & revocation
     │   ├── student-portal/      # Student self-service portal
+    │   ├── notifications/       # In-app notification center
+    │   ├── auth/                # Logout server action
     │   ├── login/               # Authentication entry point
     │   ├── register/            # Student registration
     │   ├── pending-approval/    # Holding state for unapproved students
     │   ├── unauthorized/        # Access-denied page
+    │   ├── gate/                # Shared gate actions
+    │   ├── components/          # Shared UI components (Sidebar, MobileNav, etc.)
+    │   ├── hooks/               # Custom React hooks (useNotifications)
+    │   ├── utils/               # Utility functions (cn, notification helpers)
     │   └── api/
     │       └── student-support/ # REST API endpoints for support module
     ├── lib/
     │   ├── encryption.ts        # AES-256-GCM encrypt/decrypt utilities
+    │   ├── rateLimit.ts         # In-memory rate limiter for API & login routes
     │   ├── supabase.ts          # Supabase client configuration
     │   └── face/
     │       ├── loadModels.ts    # face-api.js model loader
@@ -116,16 +125,18 @@ Run the following SQL in your **Supabase SQL Editor** to establish the Tiered Is
 -- Tier 1: Root Administrators
 CREATE TABLE public.system_admins (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  admin_level INTEGER DEFAULT 99
+  role TEXT NOT NULL DEFAULT 'super_admin',
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Tier 2: Institutional Staff (Guards & Guidance Counselors)
 CREATE TABLE public.user_profiles (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  internal_id SERIAL,
+  internal_id BIGINT GENERATED ALWAYS AS IDENTITY,
   first_name TEXT,
   last_name TEXT,
-  role TEXT CHECK (role IN ('guard', 'guidance')),
+  role TEXT DEFAULT 'guard',
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -133,11 +144,16 @@ CREATE TABLE public.user_profiles (
 CREATE TABLE public.students (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   account_id UUID REFERENCES auth.users(id),
-  student_id TEXT UNIQUE,
-  first_name TEXT,
-  last_name TEXT,
-  grade_level TEXT,
-  section TEXT,
+  student_id TEXT UNIQUE DEFAULT ('AMS-' || nextval('student_internal_id_seq')::TEXT),
+  lrn TEXT NOT NULL,
+  lrn_hash TEXT,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  grade_level TEXT NOT NULL,
+  section TEXT NOT NULL,
+  gender TEXT,
+  birthday TEXT,
+  address TEXT,
   is_approved BOOLEAN DEFAULT FALSE,
   face_photo_path TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -147,8 +163,8 @@ CREATE TABLE public.students (
 CREATE TABLE public.face_embeddings (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id UUID REFERENCES public.students(id),
-  descriptor FLOAT8[],
-  created_at TIMESTAMPTZ DEFAULT now()
+  descriptor JSONB NOT NULL,
+  created_at TIMESTAMP DEFAULT now()
 );
 
 -- Campus entry/exit log
@@ -156,7 +172,7 @@ CREATE TABLE public.access_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   student_id UUID REFERENCES public.students(id),
   action TEXT CHECK (action IN ('ENTRY', 'EXIT')),
-  match_percentage FLOAT8,
+  match_percentage INTEGER,
   face_distance FLOAT8,
   snapshot_path TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
@@ -165,11 +181,13 @@ CREATE TABLE public.access_logs (
 -- Incident reports (descriptions stored AES-256 encrypted)
 CREATE TABLE public.incident_reports (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  location TEXT,
-  severity TEXT CHECK (severity IN ('Low', 'Medium', 'High')),
-  description TEXT, -- AES-256-GCM ciphertext
-  status TEXT DEFAULT 'Open',
-  reporting_staff UUID REFERENCES auth.users(id),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  severity TEXT,
+  description TEXT NOT NULL, -- AES-256-GCM ciphertext
+  status TEXT DEFAULT 'Pending',
+  reported_by UUID REFERENCES auth.users(id),
   image_path TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -179,20 +197,78 @@ CREATE TABLE public.incident_involvements (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   incident_id UUID REFERENCES public.incident_reports(id),
   student_id UUID REFERENCES public.students(id),
+  role TEXT DEFAULT 'Offender',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- AI-matched incident suggestions
+CREATE TABLE public.incident_ai_matches (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  incident_id UUID REFERENCES public.incident_reports(id),
+  student_id UUID REFERENCES public.students(id),
+  match_percentage NUMERIC NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- Student support interventions (counseling sessions)
 CREATE TABLE public.support_interventions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID REFERENCES public.students(id),
-  counselor_id UUID REFERENCES auth.users(id),
-  intervention_type TEXT,
+  student_id UUID NOT NULL REFERENCES public.students(id),
+  counselor_id UUID NOT NULL REFERENCES auth.users(id),
+  intervention_type TEXT NOT NULL,
   notes TEXT,
   follow_up_date DATE,
-  case_status TEXT DEFAULT 'Active',
+  case_status TEXT DEFAULT 'ongoing',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Student risk flags (calculated by the system)
+CREATE TABLE public.student_flags (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  student_id UUID REFERENCES public.students(id),
+  is_flagged BOOLEAN DEFAULT false,
+  review_status TEXT DEFAULT 'Pending',
+  flag_reason TEXT,
+  low_severity_count INTEGER DEFAULT 0,
+  medium_severity_count INTEGER DEFAULT 0,
+  high_severity_count INTEGER DEFAULT 0,
+  last_calculated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- In-app notifications
+CREATE TABLE public.notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  category TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  icon TEXT NOT NULL,
+  link TEXT,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Active session tracking (concurrent session control)
+CREATE TABLE public.active_sessions (
+  session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  device_info TEXT,
+  ip_address TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  last_active_at TIMESTAMPTZ DEFAULT now(),
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Admin audit trail
+CREATE TABLE public.audit_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  admin_id UUID NOT NULL REFERENCES auth.users(id),
+  action_type TEXT NOT NULL,
+  target_entity TEXT NOT NULL,
+  target_id TEXT,
+  details JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (timezone('utc', now()))
 );
 ```
 
@@ -210,17 +286,19 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## 🔐 Identity & Access Management (IAM)
 
-AMSIRS uses an intelligent **Traffic Controller** login router that checks relational database tables in sequence after authentication. No role is self-declared by the user — access is determined entirely by server-side lookups.
+AMSIRS uses an intelligent **Traffic Controller** middleware (`proxy.ts`) that checks relational database tables in sequence after authentication. No role is self-declared by the user — access is determined entirely by server-side lookups.
 
-| User Role                | Database Source                    | Landing Page          |
-| ------------------------ | ---------------------------------- | --------------------- |
-| Root Admin               | `system_admins`                    | `/admin-dashboard`    |
-| Guard                    | `user_profiles` (role: `guard`)    | `/incident-dashboard` |
-| Guidance Counselor       | `user_profiles` (role: `guidance`) | `/student-support`    |
-| Approved Student         | `students` (`is_approved: true`)   | `/incident-reporting` |
-| Pending Student          | `students` (`is_approved: false`)  | `/pending-approval`   |
+| User Role                | Database Source                       | Landing Page          | Key Restrictions                                     |
+| ------------------------ | ------------------------------------- | --------------------- | ---------------------------------------------------- |
+| Super Admin              | `system_admins` (role: `super_admin`) | `/admin-dashboard`    | Full access to all routes                            |
+| IT Admin                 | `system_admins` (role: `it_admin`)    | `/admin-dashboard`    | No access to gates, incidents, support, or sessions  |
+| School Admin             | `system_admins` (role: `school_admin`)| `/admin-dashboard`    | No access to admin dashboard, gates, or sessions     |
+| Guard                    | `user_profiles` (role: `guard`)       | `/incident-dashboard` | No access to admin dashboard, support, or sessions   |
+| Guidance Counselor       | `user_profiles` (role: `guidance`)    | `/student-support`    | No access to admin dashboard, reporting, or sessions |
+| Approved Student         | `students` (`is_approved: true`)      | `/student-portal`     | Can only access student portal & incident reporting  |
+| Pending Student          | `students` (`is_approved: false`)     | `/pending-approval`   | Locked to pending page until approved                |
 
-> Staff accounts are created exclusively by Root Admins through the admin dashboard. Students self-register but cannot access the system until an admin sets `is_approved = true`.
+> Staff accounts are created exclusively by Admins through the admin dashboard. Students self-register but cannot access the system until an admin sets `is_approved = true`.
 
 ---
 
@@ -297,12 +375,22 @@ Exclusive to `system_admins`. Provides full inline-editable control over staff a
 - **Smart Modals & Visual Diffs:** All destructive actions (e.g., Reset Password) require explicit confirmation via custom safety modals. Inline row edits trigger a visual difference modal (showing red strikethroughs for old values vs. green for new) before committing to the database.
 - **Staff management** — View, edit name and role (guard/guidance), or create new staff accounts
 - **Student management** — Edit student name, grade level, section, and toggle approval status (`Approved` / `Pending`)
+- **Bulk Student Approval** — Select and approve multiple pending students at once
+- **Analytics Tab** — Visual charts powered by Chart.js for system-wide statistics
+- **CSV Export** — Export student and staff data tables as CSV files via PapaParse
+- **Password Reset** — Securely reset any user's password from the admin panel
 
 All changes are saved via Next.js Server Actions.
 
+### 🔐 Active Sessions (`/active-sessions`) — Root Only
+
+Exclusive to `super_admin`s. A dedicated UI to monitor and enforce the strict single-session policy.
+- **Live Device Tracking:** Displays the exact browser, OS, and IP address for all active staff and admin sessions.
+- **One-Click Revocation:** Admins can instantly terminate any suspicious or stale session. The targeted staff member will be forcefully logged out on their very next interaction with the system.
+
 ### 👤 Student Portal (`/student-portal`)
 
-A self-service view for approved students to see their own incident involvement logs.
+A self-service view for approved students to review their own incident involvement history. Students can also file new incident reports via the `/incident-reporting` form, which is accessible to both staff and students.
 
 ---
 
@@ -322,9 +410,19 @@ Incident descriptions are encrypted at the server layer before being written to 
 
 The authentication tag ensures ciphertext integrity — tampered data cannot be decrypted. The key is a base64-encoded 32-byte value stored exclusively in environment variables.
 
+### Concurrent Session Control
+
+AMSIRS enforces a strict **Single Active Session** policy across the board (Students, Staff, Admins). 
+- **Auto-Kickout:** Logging into a new device automatically invalidates any previously active sessions.
+- **Edge-Level Validation:** The Next.js middleware intercepts all requests to protected routes. It verifies the session state natively in under 10ms, instantly dropping requests and clearing cookies if a session has been revoked or superseded.
+
 ### Server-Side Authentication
 
 All protected pages use `@supabase/ssr` with `createServerClient` and cookie-based session tokens. Auth checks happen at the server component level before any data is fetched or rendered, preventing unauthorized data exposure.
+
+### Rate Limiting
+
+The central middleware (`proxy.ts`) enforces an in-memory rate limiter on all `/api/` routes and the `/login` page. Currently configured at **10 requests per 10 seconds** per IP address. Exceeding the limit returns a `429 Too Many Requests` response for API calls, or redirects to the login page with an error message for browser requests.
 
 ### No Self-Elevation
 
@@ -376,9 +474,17 @@ From inside `amsirs-web/`:
 | `@supabase/ssr`          | ^0.10.3   | Supabase server-side auth + cookie handling  |
 | `@supabase/supabase-js`  | ^2.105.4  | Supabase client SDK                          |
 | `face-api.js`            | ^0.22.2   | Client-side face detection & recognition     |
+| `framer-motion`          | ^12.40.0  | Page animations and transitions              |
+| `chart.js`               | ^4.5.1    | Analytics charts in admin dashboard          |
+| `react-chartjs-2`        | ^5.3.1    | React wrapper for Chart.js                   |
+| `react-hot-toast`        | ^2.6.0    | Toast notification system                    |
+| `papaparse`              | ^5.5.3    | CSV parsing for data export                  |
+| `date-fns`               | ^4.4.0    | Date formatting utilities                    |
 | `lucide-react`           | ^1.14.0   | Icon library                                 |
+| `@radix-ui/react-popover`| ^1.1.16   | Popover UI primitive                         |
 | `tailwindcss`            | ^4.3.0    | Utility-first CSS framework                  |
 | `typescript`             | ^5.9.0    | Static type checking                         |
+| `@playwright/test`       | ^1.60.0   | End-to-end testing framework (dev)           |
 
 ---
 

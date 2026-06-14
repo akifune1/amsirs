@@ -1,7 +1,7 @@
 'use server';
 
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 // Update the signature here: add 'prevState' as the first argument
@@ -36,6 +36,53 @@ export async function login(prevState: any, formData: FormData) {
   }
 
   const userId = authData.user.id;
+
+  // --- SESSION CONTROL LOGIC ---
+  const headersList = await headers();
+  const userAgent = headersList.get('user-agent') || 'Unknown Device';
+  const ip = headersList.get('x-forwarded-for') || 'Unknown IP';
+  
+  // Basic OS/Browser parsing to make it readable for Super Admin
+  let device_info = 'Unknown Device';
+  if (userAgent.includes('Windows')) device_info = 'Windows PC';
+  else if (userAgent.includes('Macintosh')) device_info = 'Mac';
+  else if (userAgent.includes('iPhone')) device_info = 'iPhone';
+  else if (userAgent.includes('Android')) device_info = 'Android Device';
+  else if (userAgent.includes('iPad')) device_info = 'iPad';
+  else if (userAgent.includes('Linux')) device_info = 'Linux PC';
+
+  if (userAgent.includes('Edge') || userAgent.includes('Edg/')) device_info += ' (Edge)';
+  else if (userAgent.includes('Chrome')) device_info += ' (Chrome)';
+  else if (userAgent.includes('Firefox')) device_info += ' (Firefox)';
+  else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) device_info += ' (Safari)';
+
+  // 1. Invalidate previous sessions
+  await supabase
+    .from('active_sessions')
+    .update({ is_active: false })
+    .eq('user_id', userId);
+
+  // 2. Create new session
+  const { data: sessionData, error: sessionError } = await supabase
+    .from('active_sessions')
+    .insert({
+      user_id: userId,
+      device_info,
+      ip_address: ip,
+    })
+    .select('session_id')
+    .single();
+
+  if (sessionData && !sessionError) {
+    // 3. Set custom session cookie
+    cookieStore.set('amsirs_session_token', sessionData.session_id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7 // 1 week
+    });
+  }
 
   // --- Redirect Logic ---
 

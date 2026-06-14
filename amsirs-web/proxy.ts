@@ -51,14 +51,44 @@ export async function proxy(request: NextRequest) {
   const isProtected = path.startsWith('/incident-dashboard') ||
     path.startsWith('/admin-dashboard') ||
     path.startsWith('/incident-reporting') ||
-    path.startsWith('/student-support');
+    path.startsWith('/student-support') ||
+    path.startsWith('/active-sessions') ||
+    path.startsWith('/student-portal') ||
+    path.startsWith('/access-gate') ||
+    path.startsWith('/exit-gate') ||
+    path.startsWith('/access-logs') ||
+    path.startsWith('/campus-status');
 
   if (isProtected && !user) {
-    console.log("🛑 Action: Redirecting to /login (Unauthenticated)");
-    return NextResponse.redirect(new URL('/login', request.url));
+    console.log("🛑 Action: Redirecting to / (Unauthenticated)");
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   if (user) {
+    if (isProtected) {
+      // --- CONCURRENT SESSION CHECK (FAST FAIL) ---
+      const sessionToken = request.cookies.get('amsirs_session_token')?.value;
+      if (!sessionToken) {
+        console.log("🛑 Action: Redirecting to / (Missing session token)");
+        const res = NextResponse.redirect(new URL('/?error=Session%20expired.', request.url));
+        res.cookies.delete('amsirs_session_token');
+        return res;
+      }
+
+      const { data: activeSession, error: sessionError } = await supabase
+        .from('active_sessions')
+        .select('is_active')
+        .eq('session_id', sessionToken)
+        .maybeSingle();
+
+      if (sessionError || !activeSession || !activeSession.is_active) {
+        console.log("🛑 Action: Redirecting to / (Session revoked or concurrent login detected)");
+        const res = NextResponse.redirect(new URL('/?error=Session%20expired%20or%20logged%20in%20from%20another%20device.', request.url));
+        res.cookies.delete('amsirs_session_token');
+        return res;
+      }
+    }
+
     // TIER 1: SYSTEM ADMIN CHECK
     const { data: admin } = await supabase
       .from('system_admins')
@@ -72,14 +102,14 @@ export async function proxy(request: NextRequest) {
       const { role } = admin;
 
       if (role === 'it_admin') {
-        if (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting') || path.startsWith('/student-support') || path.startsWith('/access-gate') || path.startsWith('/exit-gate')) {
+        if (path.startsWith('/incident-dashboard') || path.startsWith('/incident-reporting') || path.startsWith('/student-support') || path.startsWith('/access-gate') || path.startsWith('/exit-gate') || path.startsWith('/active-sessions')) {
           console.log(`🛑 Action: Redirecting to /unauthorized (IT Admin cannot access ${path})`);
           return NextResponse.redirect(new URL('/unauthorized', request.url));
         }
       }
 
       if (role === 'school_admin') {
-        if (path.startsWith('/admin-dashboard') || path.startsWith('/access-gate') || path.startsWith('/exit-gate')) {
+        if (path.startsWith('/admin-dashboard') || path.startsWith('/access-gate') || path.startsWith('/exit-gate') || path.startsWith('/active-sessions')) {
           console.log(`🛑 Action: Redirecting to /unauthorized (School Admin cannot access ${path})`);
           return NextResponse.redirect(new URL('/unauthorized', request.url));
         }
@@ -105,8 +135,8 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
-      if (path.startsWith('/admin-dashboard')) {
-        console.log("🛑 Action: Redirecting to /unauthorized (Staff cannot access Admin)");
+      if (path.startsWith('/admin-dashboard') || path.startsWith('/active-sessions')) {
+        console.log("🛑 Action: Redirecting to /unauthorized (Staff cannot access Admin/Sessions)");
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
 
@@ -158,7 +188,7 @@ export async function proxy(request: NextRequest) {
       }
 
       // Students can access their portal and incident-reporting
-      if (isProtected && !path.startsWith('/incident-reporting')) {
+      if (isProtected && !path.startsWith('/incident-reporting') && !path.startsWith('/student-portal')) {
         console.log(`🛑 Action: Redirecting to /unauthorized (Student tried accessing protected route: ${path})`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }

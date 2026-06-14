@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Grid, Users, Shield, AlertTriangle, LogOut,
-  DoorOpen, DoorClosed, FileText, User, Radio,
+  DoorOpen, DoorClosed, FileText, User, Radio, Activity,
 } from "lucide-react";
 import { logout } from "../auth/actions";
 import { motion } from "framer-motion";
@@ -24,6 +24,7 @@ interface MobileNavProps {
 
 const allNavLinks = [
   { name: "Dashboard", href: "/admin-dashboard", icon: Grid, roles: ["it_admin", "super_admin"] },
+  { name: "Active Sessions", href: "/active-sessions", icon: Activity, roles: ["super_admin"] },
   { name: "Access Gate", href: "/access-gate", icon: DoorOpen, roles: ["super_admin", "guard"] },
   { name: "Exit Gate", href: "/exit-gate", icon: DoorClosed, roles: ["super_admin", "guard"] },
   { name: "Access Logs", href: "/access-logs", icon: Shield, roles: ["it_admin", "school_admin", "super_admin", "guard"] },
