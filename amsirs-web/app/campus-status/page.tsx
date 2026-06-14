@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchCampusStatus } from "../access-logs/actions";
+import CampusStatusLoading from "./loading";
 
 export default function CampusStatusPage() {
 
@@ -46,6 +47,10 @@ export default function CampusStatusPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (loading) {
+    return <CampusStatusLoading />;
   }
 
   return (
@@ -128,23 +133,11 @@ export default function CampusStatusPage() {
 
         </div>
 
-        {/* LOADING */}
 
-        {loading && (
-
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-16 text-center">
-
-            <div className="text-2xl font-bold text-gray-700">
-              Loading campus status...
-            </div>
-
-          </div>
-        )}
 
         {/* EMPTY */}
 
-        {!loading &&
-          students.length === 0 && (
+        {students.length === 0 && (
 
           <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-16 text-center">
 
@@ -161,8 +154,7 @@ export default function CampusStatusPage() {
 
         {/* STUDENT TABLE */}
 
-        {!loading &&
-          students.length > 0 && (
+        {students.length > 0 && (
 
           <div className="sys-card mt-8">
             <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

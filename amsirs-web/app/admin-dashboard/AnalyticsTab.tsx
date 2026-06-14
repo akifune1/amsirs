@@ -50,12 +50,35 @@ export default function AnalyticsTab() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-zinc-400">
-        <svg className="animate-spin w-8 h-8 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <circle cx="12" cy="12" r="10" strokeWidth="4" className="opacity-25"></circle>
-          <path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" fill="currentColor"></path>
-        </svg>
-        <p>Crunching the numbers...</p>
+      <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="mb-6">
+          <div className="h-6 w-64 bg-gray-200 animate-pulse rounded-md mb-2"></div>
+          <div className="h-4 w-96 bg-gray-100 animate-pulse rounded-md"></div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Trend Chart Skeleton */}
+          <div className="sys-card p-6 flex flex-col h-[400px]">
+            <div className="h-5 w-48 bg-gray-200 animate-pulse rounded-md mb-4"></div>
+            <div className="flex-1 w-full bg-gray-100/50 rounded-lg border border-dashed border-gray-200 animate-pulse"></div>
+          </div>
+
+          {/* Late Chart Skeleton */}
+          <div className="sys-card p-6 flex flex-col h-[400px]">
+            <div className="h-5 w-56 bg-gray-200 animate-pulse rounded-md mb-4"></div>
+            <div className="flex-1 w-full bg-gray-100/50 rounded-lg border border-dashed border-gray-200 animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Summary Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="sys-card p-5 bg-white border border-gray-100">
+              <div className="h-3 w-24 bg-gray-200 animate-pulse rounded-md mb-2"></div>
+              <div className="h-8 w-16 bg-gray-300 animate-pulse rounded-md mt-2"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

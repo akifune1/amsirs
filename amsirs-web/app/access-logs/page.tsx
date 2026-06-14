@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchAccessLogs, getSnapshotSignedUrls } from "./actions";
+import AccessLogsLoading from "./loading";
 
 export default function AccessLogsPage() {
 
@@ -52,6 +53,10 @@ export default function AccessLogsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (loading) {
+    return <AccessLogsLoading />;
   }
 
   return (
@@ -121,14 +126,7 @@ export default function AccessLogsPage() {
 
               <tbody className="divide-y divide-gray-50">
 
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="table-td text-center py-10 text-zinc-400 font-medium text-sm">
-                      <div className="w-8 h-8 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin mx-auto mb-2"></div>
-                      Loading access logs...
-                    </td>
-                  </tr>
-                ) : logs.length === 0 ? (
+                {logs.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-16 text-center text-zinc-400 bg-white">
                       <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

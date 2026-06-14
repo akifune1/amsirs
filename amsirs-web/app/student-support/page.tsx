@@ -14,6 +14,7 @@ import {
   getStudentCaseDetails,
   getCurrentUserProfile // <-- New Import
 } from './actions';
+import StudentSupportLoading from './loading';
 
 interface StudentRecord {
   id: string;
@@ -182,18 +183,7 @@ export default function StudentSupportPage() {
   };
 
   if (loading && pageView === 'dashboard') {
-    return (
-      <>
-        <main className="sys-container">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="w-10 h-10 border-4 border-zinc-200 border-t-cavite-maroon rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-zinc-500 font-medium">Loading Student Support Dashboard...</p>
-            </div>
-          </div>
-        </main>
-      </>
-    );
+    return <StudentSupportLoading />;
   }
 
   return (
