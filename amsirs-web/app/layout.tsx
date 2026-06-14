@@ -5,6 +5,7 @@ import MobileNav from "./components/MobileNav";
 import ToasterProvider from "./components/ToasterProvider";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import NextTopLoader from "nextjs-toploader";
 
 export const metadata: Metadata = {
   title: "AMSIRS | Cavite National High School",
@@ -104,6 +105,7 @@ export default async function RootLayout({
       <body
         className={`font-sans bg-[#F3F5F8] text-[#2D3748] antialiased flex h-screen overflow-hidden`}
       >
+        <NextTopLoader color="#7A191B" showSpinner={true} />
         <ToasterProvider />
         <Sidebar userInfo={userInfo} />
         <MobileNav userInfo={userInfo} />
