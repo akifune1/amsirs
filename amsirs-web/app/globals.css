@@ -243,3 +243,101 @@
     @apply min-h-screen flex items-center justify-center px-4;
   }
 }
+
+/* =========================================
+   3. PRINT STYLES: Clean PDF Output
+========================================= */
+@media print {
+  /* Hide navigation, sidebar, and interactive UI */
+  nav,
+  aside,
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset page background & sizing */
+  html, body {
+    background: white !important;
+    font-size: 11px;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Full-width layout — remove all padding/margin/max-width */
+  .sys-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove card shadows, rounded corners, and UNLOCK overflow */
+  .sys-card {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid #e4e4e7 !important;
+    overflow: visible !important;
+    break-inside: auto !important;
+  }
+
+  /*
+   * CRITICAL: Override Tailwind's max-h-[600px] and overflow-auto
+   * on the table wrapper. These utility classes clip the table
+   * to a viewport box, which causes the content to be cut off in print.
+   * Using [class] for extra specificity to beat Tailwind utilities.
+   */
+  .sys-table-wrapper,
+  .sys-table-wrapper[class] {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  .sys-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 10px;
+  }
+
+  /* Repeat table headers on every printed page */
+  thead {
+    display: table-header-group !important;
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  /* Let table body flow naturally across pages */
+  tbody {
+    display: table-row-group !important;
+  }
+
+  /* Snapshot images: keep small for print */
+  .sys-table img {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  /* Avoid page breaks inside individual rows */
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Hide the inline loading overlay in print */
+  .sys-table-wrapper div[class*="absolute"] {
+    display: none !important;
+  }
+
+  /* Show print header */
+  .hidden.print\:block {
+    display: block !important;
+  }
+
+  /* Set reasonable page margins */
+  @page {
+    margin: 1cm;
+    size: landscape;
+  }
+}
+

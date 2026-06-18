@@ -347,10 +347,9 @@ export default function IncidentRow({ report }: { report: any }) {
           </button>
         </td>
       </tr>
-      
       {decryptedText && (
         <tr className="expansion-row">
-          <td colSpan={5} className="p-0 bg-zinc-50 border-b border-cavite-border shadow-inner">
+          <td colSpan={6} className="p-0 bg-zinc-50 border-b border-cavite-border shadow-inner">
             <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
               
               <div className="space-y-6">

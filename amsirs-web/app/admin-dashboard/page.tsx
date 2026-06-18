@@ -20,15 +20,15 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   const searchParams = props.searchParams ? await props.searchParams : {};
   const cookieStore = await cookies();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: { getAll() { return cookieStore.getAll() } }
     }
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   const { data: adminAuth } = await supabase
     .from('system_admins')
     .select('id, role')
@@ -60,11 +60,11 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
     if (staffRole) staffQuery = staffQuery.eq('role', staffRole);
     if (staffStatus === 'active') staffQuery = staffQuery.eq('is_active', true);
     if (staffStatus === 'suspended') staffQuery = staffQuery.eq('is_active', false);
-    
+
     const { data, count } = await staffQuery
       .order('last_name')
       .range((staffPage - 1) * ITEMS_PER_PAGE, staffPage * ITEMS_PER_PAGE - 1);
-    
+
     staff = data || [];
     staffCount = count || 0;
     staffTotalPages = Math.ceil(staffCount / ITEMS_PER_PAGE);
@@ -93,11 +93,11 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
     if (studentStatus === 'active') studentQuery = studentQuery.eq('status', 'active');
     if (studentStatus === 'pending') studentQuery = studentQuery.eq('status', 'pending');
     if (studentStatus === 'disabled') studentQuery = studentQuery.eq('status', 'disabled');
-    
+
     const { data, count } = await studentQuery
       .order('last_name')
       .range((studentPage - 1) * ITEMS_PER_PAGE, studentPage * ITEMS_PER_PAGE - 1);
-    
+
     students = (data || []).map((student: any) => ({
       ...student,
       lrn: student.lrn && student.lrn.includes(':') ? decrypt(student.lrn) : student.lrn,
@@ -113,15 +113,94 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   let auditCount = 0;
   let auditTotalPages = 0;
   const auditPage = Number(searchParams?.auditPage) || 1;
+  const auditAction = searchParams?.auditAction as string;
+  const auditTarget = searchParams?.auditTarget as string;
+  const auditTimeframe = searchParams?.auditTimeframe as string;
+  const auditQ = searchParams?.auditQ as string;
 
   if (activeTab === 'audit') {
-    const { data, count } = await supabase
-      .from('audit_logs')
-      .select('*, admin:system_admins(role), user:user_profiles(first_name, last_name)', { count: 'exact' })
+    let queryClient = supabase;
+
+    // Use service role key if available to bypass strict audit_logs RLS
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const { createClient } = await import('@supabase/supabase-js');
+      queryClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      ) as any;
+    }
+
+    let auditQuery = queryClient.from('audit_logs').select('*', { count: 'exact' });
+
+    if (auditAction && auditAction !== 'All') {
+      auditQuery = auditQuery.eq('action_type', auditAction);
+    }
+    if (auditTarget && auditTarget !== 'All') {
+      auditQuery = auditQuery.eq('target_entity', auditTarget);
+    }
+    if (auditTimeframe && auditTimeframe !== 'All') {
+      const now = new Date();
+      if (auditTimeframe === '24h') auditQuery = auditQuery.gte('created_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString());
+      if (auditTimeframe === '7d') auditQuery = auditQuery.gte('created_at', new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      if (auditTimeframe === '30d') auditQuery = auditQuery.gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString());
+    }
+    if (auditQ) {
+      // Search target_id or admin_id since we can't cast details::text in postgrest easily
+      auditQuery = auditQuery.or(`target_id.ilike.%${auditQ}%,admin_id.ilike.%${auditQ}%`);
+    }
+
+    const { data, count, error } = await auditQuery
       .order('created_at', { ascending: false })
       .range((auditPage - 1) * ITEMS_PER_PAGE, auditPage * ITEMS_PER_PAGE - 1);
-    
-    auditLogs = data || [];
+
+    if (error) console.error("Audit logs fetch error:", error.message, error.details, error.hint);
+
+    let rawLogs = data || [];
+
+    // Manually fetch user profiles & target details since audit_logs has no direct FK
+    if (rawLogs.length > 0) {
+      const adminIds = [...new Set(rawLogs.map(log => log.admin_id))];
+      const studentTargetIds = [...new Set(rawLogs.filter(log => log.target_entity === 'students' && log.target_id).map(l => l.target_id))];
+      const profileTargetIds = [...new Set(rawLogs.filter(log => log.target_entity === 'user_profiles' && log.target_id).map(l => l.target_id))];
+
+      const [
+        { data: adminProfiles },
+        { data: studentTargets },
+        { data: profileTargets }
+      ] = await Promise.all([
+        queryClient.from('user_profiles').select('id, first_name, last_name, role').in('id', adminIds),
+        studentTargetIds.length > 0 ? queryClient.from('students').select('id, first_name, last_name, student_id').in('id', studentTargetIds) : { data: [] },
+        profileTargetIds.length > 0 ? queryClient.from('user_profiles').select('id, first_name, last_name, role').in('id', profileTargetIds) : { data: [] }
+      ]);
+
+      const adminMap = new Map((adminProfiles || []).map(p => [p.id, p]));
+      const studentMap = new Map((studentTargets || []).map(s => [s.id, s]));
+      const profileTargetMap = new Map((profileTargets || []).map(p => [p.id, p]));
+
+      auditLogs = rawLogs.map(log => {
+        let targetDisplay = null;
+        if (log.target_entity === 'students' && log.target_id && studentMap.has(log.target_id)) {
+          const s = studentMap.get(log.target_id);
+          if (s) {
+            targetDisplay = { name: `${s.last_name}, ${s.first_name}`, identifier: s.student_id };
+          }
+        } else if (log.target_entity === 'user_profiles' && log.target_id && profileTargetMap.has(log.target_id)) {
+          const p = profileTargetMap.get(log.target_id);
+          if (p) {
+            targetDisplay = { name: `${p.last_name}, ${p.first_name}`, identifier: p.role?.replace('_', ' ') };
+          }
+        }
+
+        return {
+          ...log,
+          user_profiles: adminMap.get(log.admin_id) || null,
+          target_display: targetDisplay
+        };
+      });
+    } else {
+      auditLogs = [];
+    }
+
     auditCount = count || 0;
     auditTotalPages = Math.ceil(auditCount / ITEMS_PER_PAGE);
   }
@@ -129,10 +208,10 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
   // Helper to format timestamps cleanly
   const formatDate = (dateString: string) => {
     if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('en-PH', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(dateString).toLocaleDateString('en-PH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -140,7 +219,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
     <>
       {/* MAIN DASHBOARD CONTENT */}
       <main className="sys-container w-full">
-        
+
         <div className="mb-10">
           <h1 className="sys-title">Root Control</h1>
           <p className="sys-subtitle">Administrative Tier Isolation Active</p>
@@ -148,55 +227,51 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
 
         {/* TAB NAVIGATION */}
         <div className="flex items-center gap-1 mb-8 bg-gray-100 p-2 rounded-2xl w-fit border border-transparent">
-          <Link 
+          <Link
             href="?tab=staff"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
-              activeTab === 'staff' 
-                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'staff'
+                ? 'bg-white text-gray-900 shadow-sm font-bold'
                 : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-            }`}
+              }`}
           >
             Institutional Staff
           </Link>
-          <Link 
+          <Link
             href="?tab=students"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
-              activeTab === 'students' 
-                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'students'
+                ? 'bg-white text-gray-900 shadow-sm font-bold'
                 : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-            }`}
+              }`}
           >
             Student Body
           </Link>
-          <Link 
+          <Link
             href="?tab=audit"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
-              activeTab === 'audit' 
-                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'audit'
+                ? 'bg-white text-gray-900 shadow-sm font-bold'
                 : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-            }`}
+              }`}
           >
             Audit Logs
           </Link>
-          <Link 
+          <Link
             href="?tab=analytics"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${
-              activeTab === 'analytics' 
-                ? 'bg-white text-gray-900 shadow-sm font-bold' 
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'analytics'
+                ? 'bg-white text-gray-900 shadow-sm font-bold'
                 : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-            }`}
+              }`}
           >
             Analytics
           </Link>
         </div>
 
         <div className="space-y-12">
-          
+
           {/* ==========================================
               STAFF SECTION 
               ========================================== */}
           {activeTab === 'staff' && (
-          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-6">
                 <h2 className="sys-label">Institutional Staff Directory</h2>
               </div>
@@ -204,114 +279,114 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                 <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <h3 className="sys-label m-0 text-sm">Filter Directory</h3>
                   <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <FilterDropdown paramName="staffRole" placeholder="Role" options={[{label:'All Roles', value:'All'}, {label:'Guard', value:'guard'}, {label:'Guidance', value:'guidance'}, {label:'School Admin', value:'school_admin'}, {label:'IT Admin', value:'it_admin'}]} />
-                    <FilterDropdown paramName="staffStatus" placeholder="Status" options={[{label:'All Status', value:'All'}, {label:'Active', value:'active'}, {label:'Suspended', value:'suspended'}]} />
+                    <FilterDropdown paramName="staffRole" placeholder="Role" options={[{ label: 'All Roles', value: 'All' }, { label: 'Guard', value: 'guard' }, { label: 'Guidance', value: 'guidance' }, { label: 'School Admin', value: 'school_admin' }, { label: 'IT Admin', value: 'it_admin' }]} />
+                    <FilterDropdown paramName="staffStatus" placeholder="Status" options={[{ label: 'All Status', value: 'All' }, { label: 'Active', value: 'active' }, { label: 'Suspended', value: 'suspended' }]} />
                     <div className="w-full sm:w-64">
                       <SearchBar paramName="staffQ" placeholder="Search staff..." />
                     </div>
-                    <CreateStaffModal /> 
+                    <CreateStaffModal />
                   </div>
                 </div>
                 <div className="sys-table-wrapper max-h-[600px] overflow-auto">
                   <table className="sys-table">
                     <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
-                    <tr className="table-header-row">
-                      <th className="table-th w-16">ID</th>
-                      <th className="table-th min-w-[180px]">Last Name</th>
-                      <th className="table-th min-w-[180px]">First Name</th>
-                      <th className="table-th min-w-[120px]">Date Added</th>
-                      <th className="table-th min-w-[140px]">Role</th>
-                      <th className="table-th min-w-[120px]">Status</th>
-                      <th className="table-th min-w-[120px] text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {staff.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="p-16 text-center text-zinc-400 bg-white">
-                          <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                          <p className="text-base font-medium">No staff members found.</p>
-                          <p className="text-sm mt-1">Try adjusting your search or filters.</p>
-                        </td>
+                      <tr className="table-header-row">
+                        <th className="table-th w-16">ID</th>
+                        <th className="table-th min-w-[180px]">Last Name</th>
+                        <th className="table-th min-w-[180px]">First Name</th>
+                        <th className="table-th min-w-[120px]">Date Added</th>
+                        <th className="table-th min-w-[140px]">Role</th>
+                        <th className="table-th min-w-[120px]">Status</th>
+                        <th className="table-th min-w-[120px] text-right">Actions</th>
                       </tr>
-                    ) : (staff.map((member) => {
-                      return (
-                        <tr key={member.id} className="hover:bg-gray-50 group transition-colors">
-                          
-                          {/* ID Column */}
-                          <td className="table-td" data-label="ID">
-                            <span className="text-zinc-500 font-mono text-xs">
-                              {member.internal_id}
-                            </span>
-                          </td>
-
-                          {/* Last Name */}
-                          <td className="table-td" data-label="Last Name">
-                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{member.last_name}</span>
-                          </td>
-
-                          {/* First Name */}
-                          <td className="table-td" data-label="First Name">
-                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{member.first_name}</span>
-                          </td>
-
-                          {/* Created At */}
-                          <td className="table-td text-zinc-500 text-sm whitespace-nowrap" data-label="Date Added">
-                            {formatDate(member.created_at)}
-                          </td>
-
-                          {/* Role */}
-                          <td className="table-td" data-label="Role">
-                            <span className="text-sm font-medium px-2 py-1 block w-full max-w-[120px]">
-                              {member.role === 'guard' ? 'Guard' :
-                               member.role === 'guidance' ? 'Guidance' :
-                               member.role === 'school_admin' ? 'School Admin' :
-                               member.role === 'it_admin' ? 'IT Admin' : member.role}
-                            </span>
-                          </td>
-
-                          {/* Status */}
-                          <td className="table-td" data-label="Status">
-                            <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${member.is_active !== false ? 'bg-success-bg text-success-text border-success-border' : 'bg-danger-bg text-danger-text border-danger-border'}`}>
-                              {member.is_active !== false ? 'Active' : 'Suspended'}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="table-td text-right" data-label="Actions">
-                            <div className="flex justify-end gap-2 items-center">
-                              {(() => {
-                                const defaultStaffPw = `Mabuhay${(member.last_name || '').toUpperCase()}1902`;
-                                return (
-                                  <ActionForm action={resetUserPassword} confirmMessage={`Reset this user's password to '${defaultStaffPw}'?`}>
-                                    <input type="hidden" name="userId" value={member.id} />
-                                    <input type="hidden" name="newPassword" value={defaultStaffPw} />
-                                    <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg> 
-                                      <span className="hidden sm:inline">Reset PW</span>
-                                    </button>
-                                  </ActionForm>
-                                );
-                              })()}
-                              <EditStaffModal staff={member} />
-                            </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {staff.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="p-16 text-center text-zinc-400 bg-white">
+                            <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                            <p className="text-base font-medium">No staff members found.</p>
+                            <p className="text-sm mt-1">Try adjusting your search or filters.</p>
                           </td>
                         </tr>
-                      );
-                    }))}
-                  </tbody>
-                </table>
+                      ) : (staff.map((member) => {
+                        return (
+                          <tr key={member.id} className="hover:bg-gray-50 group transition-colors">
+
+                            {/* ID Column */}
+                            <td className="table-td" data-label="ID">
+                              <span className="text-zinc-500 font-mono text-xs">
+                                {member.internal_id}
+                              </span>
+                            </td>
+
+                            {/* Last Name */}
+                            <td className="table-td" data-label="Last Name">
+                              <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{member.last_name}</span>
+                            </td>
+
+                            {/* First Name */}
+                            <td className="table-td" data-label="First Name">
+                              <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{member.first_name}</span>
+                            </td>
+
+                            {/* Created At */}
+                            <td className="table-td text-zinc-500 text-sm whitespace-nowrap" data-label="Date Added">
+                              {formatDate(member.created_at)}
+                            </td>
+
+                            {/* Role */}
+                            <td className="table-td" data-label="Role">
+                              <span className="text-sm font-medium px-2 py-1 block w-full max-w-[120px]">
+                                {member.role === 'guard' ? 'Guard' :
+                                  member.role === 'guidance' ? 'Guidance' :
+                                    member.role === 'school_admin' ? 'School Admin' :
+                                      member.role === 'it_admin' ? 'IT Admin' : member.role}
+                              </span>
+                            </td>
+
+                            {/* Status */}
+                            <td className="table-td" data-label="Status">
+                              <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${member.is_active !== false ? 'bg-success-bg text-success-text border-success-border' : 'bg-danger-bg text-danger-text border-danger-border'}`}>
+                                {member.is_active !== false ? 'Active' : 'Suspended'}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="table-td text-right" data-label="Actions">
+                              <div className="flex justify-end gap-2 items-center">
+                                {(() => {
+                                  const defaultStaffPw = `Mabuhay${(member.last_name || '').toUpperCase()}1902`;
+                                  return (
+                                    <ActionForm action={resetUserPassword} confirmMessage={`Reset this user's password to '${defaultStaffPw}'?`}>
+                                      <input type="hidden" name="userId" value={member.id} />
+                                      <input type="hidden" name="newPassword" value={defaultStaffPw} />
+                                      <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                        <span className="hidden sm:inline">Reset PW</span>
+                                      </button>
+                                    </ActionForm>
+                                  );
+                                })()}
+                                <EditStaffModal staff={member} />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination totalPages={staffTotalPages} paramName="staffPage" />
               </div>
-              <Pagination totalPages={staffTotalPages} paramName="staffPage" />
-            </div>
-          </section>
+            </section>
           )}
 
           {/* ==========================================
               STUDENT SECTION
               ========================================== */}
           {activeTab === 'students' && (
-          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-6">
                 <h2 className="sys-label">Student Body Database</h2>
               </div>
@@ -319,23 +394,23 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                 <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <h3 className="sys-label m-0 text-sm">Filter Students</h3>
                   <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                    <FilterDropdown paramName="studentGrade" placeholder="Grade" options={[{label:'All Grades', value:'All'}, {label:'Grade 11', value:'Grade 11'}, {label:'Grade 12', value:'Grade 12'}]} />
-                    <FilterDropdown paramName="studentStatus" placeholder="Status" options={[{label:'All Status', value:'All'}, {label:'Active', value:'active'}, {label:'Pending', value:'pending'}, {label:'Disabled', value:'disabled'}]} />
+                    <FilterDropdown paramName="studentGrade" placeholder="Grade" options={[{ label: 'All Grades', value: 'All' }, { label: 'Grade 11', value: 'Grade 11' }, { label: 'Grade 12', value: 'Grade 12' }]} />
+                    <FilterDropdown paramName="studentStatus" placeholder="Status" options={[{ label: 'All Status', value: 'All' }, { label: 'Active', value: 'active' }, { label: 'Pending', value: 'pending' }, { label: 'Disabled', value: 'disabled' }]} />
                     <div className="w-full sm:w-64">
                       <SearchBar paramName="studentQ" placeholder="Search by name or ID..." />
                     </div>
                   </div>
                 </div>
-              <form id="bulk-approve-form" action={async (formData) => {
-                'use server';
-                const ids = formData.getAll('studentIds') as string[];
-                await bulkApproveStudents(ids);
-              }} />
-              <div className="p-4 border-b border-cavite-border bg-zinc-50 flex justify-between items-center">
-                <span className="text-sm text-zinc-500 font-medium">Select pending students to approve them all at once.</span>
-                <button type="submit" form="bulk-approve-form" className="btn-primary m-0 py-1.5 px-4 text-xs">Bulk Approve Selected</button>
-              </div>
-              <div className="sys-table-wrapper max-h-[600px] overflow-auto">
+                <form id="bulk-approve-form" action={async (formData) => {
+                  'use server';
+                  const ids = formData.getAll('studentIds') as string[];
+                  await bulkApproveStudents(ids);
+                }} />
+                <div className="p-4 border-b border-cavite-border bg-zinc-50 flex justify-between items-center">
+                  <span className="text-sm text-zinc-500 font-medium">Select pending students to approve them all at once.</span>
+                  <button type="submit" form="bulk-approve-form" className="btn-primary m-0 py-1.5 px-4 text-xs">Bulk Approve Selected</button>
+                </div>
+                <div className="sys-table-wrapper max-h-[600px] overflow-auto">
                   <table className="sys-table">
                     <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
                       <tr className="table-header-row">
@@ -350,140 +425,155 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                         <th className="table-th min-w-[120px] text-right">Actions</th>
                       </tr>
                     </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {students.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="p-16 text-center text-zinc-400 bg-white">
-                          <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                          <p className="text-base font-medium">No students found.</p>
-                          <p className="text-sm mt-1">Try adjusting your search or filters.</p>
-                        </td>
-                      </tr>
-                    ) : (students.map((student) => {
-                      return (
-                        <tr key={student.id} className="hover:bg-gray-50 group transition-colors">
-                          
-                          {/* Checkbox for Bulk Approve */}
-                          <td className="table-td text-center" data-label="Approve">
-                            {student.status === 'pending' && (
-                              <input type="checkbox" name="studentIds" value={student.id} form="bulk-approve-form" className="rounded border-gray-300 text-cavite-maroon focus:ring-cavite-maroon cursor-pointer" />
-                            )}
-                          </td>
-                          
-                          {/* Student ID */}
-                          <td className="table-td" data-label="Student ID">
-                            <span className="text-zinc-500 font-mono text-xs">
-                              {student.student_id}
-                            </span>
-                          </td>
-
-                          {/* Last Name */}
-                          <td className="table-td" data-label="Last Name">
-                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{student.last_name}</span>
-                          </td>
-
-                          {/* First Name */}
-                          <td className="table-td" data-label="First Name">
-                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{student.first_name}</span>
-                          </td>
-
-                          {/* Created At */}
-                          <td className="table-td text-zinc-500 text-sm whitespace-nowrap" data-label="Date Reg.">
-                            {formatDate(student.created_at)}
-                          </td>
-
-                          {/* Grade Level */}
-                          <td className="table-td" data-label="Grade Level">
-                            <span className="text-sm font-medium px-2 py-1 block w-full max-w-[110px]">{student.grade_level}</span>
-                          </td>
-
-                          {/* Section */}
-                          <td className="table-td" data-label="Section">
-                            <span className="text-sm font-medium px-2 py-1 block w-full min-w-[120px]">{student.section || '-'}</span>
-                          </td>
-
-                          {/* Approval Status */}
-                          <td className="table-td" data-label="Status">
-                            <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${
-                                student.status === 'active' ? 'bg-success-bg text-success-text border-success-border' : 
-                                student.status === 'disabled' ? 'bg-error-bg text-error-text border-error-border' :
-                                'bg-warning-bg text-warning-text border-warning-border'
-                              }`}>
-                              {student.status === 'active' ? 'Active' : student.status === 'disabled' ? 'Disabled' : 'Pending'}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="table-td text-right" data-label="Actions">
-                            <div className="flex justify-end gap-2 items-center">
-                              {(() => {
-                                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                let monthStr = "Jan";
-                                if (student.birthday && student.birthday.includes('-')) {
-                                  const parts = student.birthday.split('-');
-                                  if (parts.length >= 2) {
-                                    const monthIdx = parseInt(parts[1], 10) - 1;
-                                    if (monthIdx >= 0 && monthIdx <= 11) monthStr = monthNames[monthIdx];
-                                  }
-                                }
-                                const defaultStudentPw = `${monthStr}${student.student_id}`;
-                                return (
-                                  <ActionForm action={resetUserPassword} confirmMessage={`Reset this student's password to '${defaultStudentPw}'?`}>
-                                    <input type="hidden" name="userId" value={student.account_id} />
-                                    <input type="hidden" name="newPassword" value={defaultStudentPw} />
-                                    <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                                      <span className="hidden sm:inline">Reset PW</span>
-                                    </button>
-                                  </ActionForm>
-                                );
-                              })()}
-                              <EditStudentModal student={student} />
-                            </div>
+                    <tbody className="divide-y divide-gray-50">
+                      {students.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} className="p-16 text-center text-zinc-400 bg-white">
+                            <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <p className="text-base font-medium">No students found.</p>
+                            <p className="text-sm mt-1">Try adjusting your search or filters.</p>
                           </td>
                         </tr>
-                      );
-                    }))}
-                  </tbody>
-                </table>
+                      ) : (students.map((student) => {
+                        return (
+                          <tr key={student.id} className="hover:bg-gray-50 group transition-colors">
+
+                            {/* Checkbox for Bulk Approve */}
+                            <td className="table-td text-center" data-label="Approve">
+                              {student.status === 'pending' && (
+                                <input type="checkbox" name="studentIds" value={student.id} form="bulk-approve-form" className="rounded border-gray-300 text-cavite-maroon focus:ring-cavite-maroon cursor-pointer" />
+                              )}
+                            </td>
+
+                            {/* Student ID */}
+                            <td className="table-td" data-label="Student ID">
+                              <span className="text-zinc-500 font-mono text-xs">
+                                {student.student_id}
+                              </span>
+                            </td>
+
+                            {/* Last Name */}
+                            <td className="table-td" data-label="Last Name">
+                              <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{student.last_name}</span>
+                            </td>
+
+                            {/* First Name */}
+                            <td className="table-td" data-label="First Name">
+                              <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px]">{student.first_name}</span>
+                            </td>
+
+                            {/* Created At */}
+                            <td className="table-td text-zinc-500 text-sm whitespace-nowrap" data-label="Date Reg.">
+                              {formatDate(student.created_at)}
+                            </td>
+
+                            {/* Grade Level */}
+                            <td className="table-td" data-label="Grade Level">
+                              <span className="text-sm font-medium px-2 py-1 block w-full max-w-[110px]">{student.grade_level}</span>
+                            </td>
+
+                            {/* Section */}
+                            <td className="table-td" data-label="Section">
+                              <span className="text-sm font-medium px-2 py-1 block w-full min-w-[120px]">{student.section || '-'}</span>
+                            </td>
+
+                            {/* Approval Status */}
+                            <td className="table-td" data-label="Status">
+                              <span className={`inline-flex text-xs font-medium px-2.5 py-1.5 rounded-full border ${student.status === 'active' ? 'bg-success-bg text-success-text border-success-border' :
+                                  student.status === 'disabled' ? 'bg-error-bg text-error-text border-error-border' :
+                                    'bg-warning-bg text-warning-text border-warning-border'
+                                }`}>
+                                {student.status === 'active' ? 'Active' : student.status === 'disabled' ? 'Disabled' : 'Pending'}
+                              </span>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="table-td text-right" data-label="Actions">
+                              <div className="flex justify-end gap-2 items-center">
+                                {(() => {
+                                  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                                  let monthStr = "Jan";
+                                  if (student.birthday && student.birthday.includes('-')) {
+                                    const parts = student.birthday.split('-');
+                                    if (parts.length >= 2) {
+                                      const monthIdx = parseInt(parts[1], 10) - 1;
+                                      if (monthIdx >= 0 && monthIdx <= 11) monthStr = monthNames[monthIdx];
+                                    }
+                                  }
+                                  const defaultStudentPw = `${monthStr}${student.student_id}`;
+                                  return (
+                                    <ActionForm action={resetUserPassword} confirmMessage={`Reset this student's password to '${defaultStudentPw}'?`}>
+                                      <input type="hidden" name="userId" value={student.account_id} />
+                                      <input type="hidden" name="newPassword" value={defaultStudentPw} />
+                                      <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                        <span className="hidden sm:inline">Reset PW</span>
+                                      </button>
+                                    </ActionForm>
+                                  );
+                                })()}
+                                <EditStudentModal student={student} />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination totalPages={studentTotalPages} paramName="studentPage" />
               </div>
-              <Pagination totalPages={studentTotalPages} paramName="studentPage" />
-            </div>
-          </section>
+            </section>
           )}
           {/* ==========================================
               AUDIT LOGS SECTION
               ========================================== */}
           {activeTab === 'audit' && (
-          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
                   <h2 className="sys-label">System Audit Logs</h2>
                   <p className="text-sm text-zinc-500 mt-1">Immutable record of administrative actions (RA 10173 Compliance).</p>
                 </div>
-                <ExportButtons 
-                  data={auditLogs.map(log => ({
-                    Timestamp: new Date(log.created_at).toLocaleString('en-PH'),
-                    AdminID: log.admin_id,
-                    Action: log.action_type,
-                    TargetEntity: log.target_entity,
-                    TargetID: log.target_id,
-                    Details: JSON.stringify(log.details)
-                  }))} 
-                  filename="system_audit_logs"
-                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <ExportButtons
+                    data={auditLogs.map(log => ({
+                      Timestamp: new Date(log.created_at).toLocaleString('en-PH'),
+                      AdminID: log.admin_id,
+                      Action: log.action_type,
+                      TargetEntity: log.target_entity,
+                      TargetID: log.target_id,
+                      Details: JSON.stringify(log.details)
+                    }))}
+                    filename="system_audit_logs"
+                  />
+                </div>
               </div>
+
+              {/* FILTER BAR */}
+              <div className="p-4 border border-cavite-border rounded-xl bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                <h3 className="sys-label m-0 text-sm hidden lg:block">Filter Logs</h3>
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                  <FilterDropdown paramName="auditAction" placeholder="Action" options={[{ label: 'All Actions', value: 'All' }, { label: 'Create Staff', value: 'CREATE_STAFF' }, { label: 'Update Staff', value: 'UPDATE_STAFF' }, { label: 'Update Student', value: 'UPDATE_STUDENT' }, { label: 'Bulk Approve', value: 'BULK_APPROVE' }, { label: 'Reset Password', value: 'RESET_PASSWORD' }]} />
+                  <FilterDropdown paramName="auditTarget" placeholder="Target" options={[{ label: 'All Targets', value: 'All' }, { label: 'Staff Profiles', value: 'user_profiles' }, { label: 'Student Records', value: 'students' }, { label: 'Auth Accounts', value: 'auth.users' }]} />
+                  <FilterDropdown paramName="auditTimeframe" placeholder="Timeframe" options={[{ label: 'All Time', value: 'All' }, { label: 'Last 24 Hours', value: '24h' }, { label: 'Last 7 Days', value: '7d' }, { label: 'Last 30 Days', value: '30d' }]} />
+                  <div className="w-full sm:w-64">
+                    <SearchBar paramName="auditQ" placeholder="Search Target ID..." />
+                  </div>
+                </div>
+              </div>
+
               <div className="sys-card">
                 <div className="sys-table-wrapper max-h-[600px] overflow-auto">
                   <table className="sys-table">
                     <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
                       <tr className="table-header-row">
                         <th className="table-th min-w-[160px]">Timestamp</th>
-                        <th className="table-th min-w-[140px]">Admin ID</th>
+                        <th className="table-th min-w-[180px]">Admin</th>
                         <th className="table-th min-w-[140px]">Action</th>
-                        <th className="table-th min-w-[120px]">Target Entity</th>
-                        <th className="table-th min-w-[120px]">Target ID</th>
-                        <th className="table-th min-w-[200px]">Details</th>
+                        <th className="table-th min-w-[140px]">Target</th>
+                        <th className="table-th min-w-[200px]">Target Name / ID</th>
+                        <th className="table-th min-w-[250px]">Details</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -494,29 +584,102 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                           </td>
                         </tr>
                       ) : (auditLogs.map((log) => {
+                        // Formatting helpers
+                        const adminName = log.user_profiles
+                          ? `${log.user_profiles.first_name} ${log.user_profiles.last_name}`
+                          : 'Unknown Admin';
+                        const adminRole = log.user_profiles?.role
+                          ? log.user_profiles.role.replace('_', ' ')
+                          : '';
+
+                        const actionMap: any = {
+                          CREATE_STAFF: 'Create Staff',
+                          UPDATE_STAFF: 'Update Staff',
+                          UPDATE_STUDENT: 'Update Student',
+                          BULK_APPROVE: 'Bulk Approve',
+                          RESET_PASSWORD: 'Reset Password'
+                        };
+                        const actionText = actionMap[log.action_type] || log.action_type;
+
+                        const entityMap: any = {
+                          user_profiles: 'Staff Profile',
+                          students: 'Student Record',
+                          'auth.users': 'Auth Account'
+                        };
+                        const entityText = entityMap[log.target_entity] || log.target_entity;
+
+                        const getDetailBadgeStyle = (key: string, value: any) => {
+                          const vStr = String(value).toLowerCase();
+                          if (vStr === 'active' || vStr === 'true') return 'bg-green-100 text-green-700 border-green-200';
+                          if (vStr === 'disabled' || vStr === 'false') return 'bg-red-100 text-red-700 border-red-200';
+                          if (vStr === 'pending') return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                          if (key === 'role' || key === 'status') {
+                            if (vStr === 'guard') return 'bg-blue-100 text-blue-700 border-blue-200';
+                            if (vStr === 'guidance') return 'bg-purple-100 text-purple-700 border-purple-200';
+                            if (vStr.includes('admin')) return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+                          }
+                          if (key === 'count') return 'bg-orange-100 text-orange-700 border-orange-200';
+                          return 'bg-zinc-50 text-zinc-600 border-zinc-200';
+                        };
+
                         return (
                           <tr key={log.id} className="hover:bg-gray-50 group transition-colors">
                             <td className="table-td text-sm whitespace-nowrap" data-label="Timestamp">
-                              {new Date(log.created_at).toLocaleString('en-PH')}
+                              {new Date(log.created_at).toLocaleString('en-PH', {
+                                month: 'short', day: 'numeric', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })}
                             </td>
-                            <td className="table-td" data-label="Admin ID">
-                              <span className="text-xs font-mono text-zinc-500" title={log.admin_id}>{log.admin_id.substring(0, 8)}...</span>
+                            <td className="table-td" data-label="Admin">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-cavite-black">{adminName}</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  {adminRole && (
+                                    <span className="text-[9px] uppercase tracking-wider font-bold text-cavite-maroon bg-cavite-maroon/10 px-1.5 py-0.5 rounded">
+                                      {adminRole}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] font-mono text-zinc-400" title={log.admin_id}>
+                                    #{log.admin_id.substring(0, 5)}
+                                  </span>
+                                </div>
+                              </div>
                             </td>
                             <td className="table-td" data-label="Action">
-                              <span className="inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded bg-zinc-100 text-zinc-700">
-                                {log.action_type}
+                              <span className="inline-flex text-[11px] font-bold px-2 py-1 rounded bg-zinc-100 border border-zinc-200 text-zinc-700 shadow-sm">
+                                {actionText}
                               </span>
                             </td>
-                            <td className="table-td text-sm" data-label="Target Entity">
-                              {log.target_entity}
+                            <td className="table-td" data-label="Target">
+                              <span className="text-sm font-medium text-zinc-600">{entityText}</span>
                             </td>
-                            <td className="table-td" data-label="Target ID">
-                              <span className="text-xs font-mono text-zinc-500" title={log.target_id || ''}>{log.target_id ? log.target_id.substring(0, 8) + '...' : '-'}</span>
+                            <td className="table-td" data-label="Target Name / ID">
+                              {log.target_display ? (
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-cavite-black">{log.target_display.name}</span>
+                                  <span className="text-[10px] font-mono text-zinc-400 mt-0.5 uppercase tracking-wide">
+                                    {log.target_display.identifier}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs font-mono text-zinc-500 bg-zinc-50 px-1.5 py-1 rounded border border-zinc-100" title={log.target_id || ''}>
+                                  {log.target_id ? log.target_id.substring(0, 8) + '...' : '-'}
+                                </span>
+                              )}
                             </td>
                             <td className="table-td" data-label="Details">
-                              <pre className="text-[10px] text-zinc-500 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                                {JSON.stringify(log.details)}
-                              </pre>
+                              <div className="flex flex-wrap gap-1.5 max-w-sm">
+                                {log.details && typeof log.details === 'object' ? (
+                                  Object.entries(log.details).map(([k, v]) => (
+                                    <span key={k} className={`inline-flex items-center gap-1 px-1.5 py-0.5 border rounded text-[10px] ${getDetailBadgeStyle(k, v)}`}>
+                                      <span className="font-bold opacity-75">{k}:</span>
+                                      <span className="font-semibold truncate max-w-[100px]" title={String(v)}>{String(v)}</span>
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[10px] text-zinc-400 italic">No details</span>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -526,7 +689,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                 </div>
                 <Pagination totalPages={auditTotalPages} paramName="auditPage" />
               </div>
-          </section>
+            </section>
           )}
 
           {/* ==========================================

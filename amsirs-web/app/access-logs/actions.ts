@@ -26,7 +26,7 @@ async function getAuthenticatedClient() {
 }
 
 // ==========================================
-// 📋 FETCH ACCESS LOGS (paginated, with optional filter)
+// 📋 FETCH ACCESS LOGS (paginated, with filters)
 // ==========================================
 
 export async function fetchAccessLogs(params: {
@@ -34,6 +34,10 @@ export async function fetchAccessLogs(params: {
   itemsPerPage: number;
   actionFilter: string;
   dateFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sectionFilter?: string;
+  studentIdFilter?: string;
 }): Promise<{
   success: boolean;
   data?: any[];
@@ -43,14 +47,23 @@ export async function fetchAccessLogs(params: {
   try {
     const { supabase } = await getAuthenticatedClient();
 
+    // Use INNER JOIN when filtering on student fields to exclude non-matching parent rows
+    const hasStudentFilter =
+      (params.sectionFilter && params.sectionFilter !== 'All') ||
+      (params.studentIdFilter && params.studentIdFilter.trim() !== '');
+
+    const studentJoin = hasStudentFilter ? 'students!inner' : 'students';
+
     let query = supabase
       .from('access_logs')
       .select(`
         *,
-        students (
+        ${studentJoin} (
           first_name,
           last_name,
           student_id,
+          section,
+          grade_level,
           face_photo_path
         )
       `, { count: 'exact' });
@@ -59,10 +72,28 @@ export async function fetchAccessLogs(params: {
       query = query.eq('action', params.actionFilter);
     }
 
-    if (params.dateFilter && params.dateFilter !== 'All') {
+    if (params.sectionFilter && params.sectionFilter !== 'All') {
+      query = query.eq('students.section', params.sectionFilter);
+    }
+
+    if (params.studentIdFilter && params.studentIdFilter.trim() !== '') {
+      query = query.eq('students.student_id', params.studentIdFilter.trim());
+    }
+
+    // Custom date range takes precedence over presets
+    if (params.dateFrom || params.dateTo) {
+      if (params.dateFrom) {
+        query = query.gte('created_at', new Date(params.dateFrom).toISOString());
+      }
+      if (params.dateTo) {
+        const end = new Date(params.dateTo);
+        end.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', end.toISOString());
+      }
+    } else if (params.dateFilter && params.dateFilter !== 'All') {
       const now = new Date();
-      const startOfDay = new Date(now.setHours(0,0,0,0));
-      
+      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+
       if (params.dateFilter === 'Today') {
         query = query.gte('created_at', startOfDay.toISOString());
       } else if (params.dateFilter === 'Yesterday') {
@@ -88,6 +119,159 @@ export async function fetchAccessLogs(params: {
     return { success: true, data: data || [], count: count || 0 };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch logs' };
+  }
+}
+
+// ==========================================
+// 📤 FETCH ALL FILTERED LOGS (for export, max 5000)
+// ==========================================
+
+export async function fetchAllFilteredLogs(params: {
+  actionFilter: string;
+  dateFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sectionFilter?: string;
+  studentIdFilter?: string;
+}): Promise<{
+  success: boolean;
+  data?: any[];
+  error?: string;
+}> {
+  try {
+    const { supabase } = await getAuthenticatedClient();
+
+    const hasStudentFilter =
+      (params.sectionFilter && params.sectionFilter !== 'All') ||
+      (params.studentIdFilter && params.studentIdFilter.trim() !== '');
+
+    const studentJoin = hasStudentFilter ? 'students!inner' : 'students';
+
+    let query = supabase
+      .from('access_logs')
+      .select(`
+        *,
+        ${studentJoin} (
+          first_name,
+          last_name,
+          student_id,
+          section,
+          grade_level,
+          face_photo_path
+        )
+      `);
+
+    if (params.actionFilter !== 'All') {
+      query = query.eq('action', params.actionFilter);
+    }
+
+    if (params.sectionFilter && params.sectionFilter !== 'All') {
+      query = query.eq('students.section', params.sectionFilter);
+    }
+
+    if (params.studentIdFilter && params.studentIdFilter.trim() !== '') {
+      query = query.eq('students.student_id', params.studentIdFilter.trim());
+    }
+
+    if (params.dateFrom || params.dateTo) {
+      if (params.dateFrom) {
+        query = query.gte('created_at', new Date(params.dateFrom).toISOString());
+      }
+      if (params.dateTo) {
+        const end = new Date(params.dateTo);
+        end.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', end.toISOString());
+      }
+    } else if (params.dateFilter && params.dateFilter !== 'All') {
+      const now = new Date();
+      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+
+      if (params.dateFilter === 'Today') {
+        query = query.gte('created_at', startOfDay.toISOString());
+      } else if (params.dateFilter === 'Yesterday') {
+        const yesterday = new Date(startOfDay);
+        yesterday.setDate(yesterday.getDate() - 1);
+        query = query.gte('created_at', yesterday.toISOString()).lt('created_at', startOfDay.toISOString());
+      } else if (params.dateFilter === 'This Week') {
+        const thisWeek = new Date(startOfDay);
+        thisWeek.setDate(thisWeek.getDate() - 7);
+        query = query.gte('created_at', thisWeek.toISOString());
+      }
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(5000);
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data: data || [] };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch logs for export' };
+  }
+}
+
+
+// ==========================================
+// 🏫 FETCH DISTINCT SECTIONS (for filter dropdown)
+// ==========================================
+
+export async function fetchDistinctSections(): Promise<{
+  success: boolean;
+  sections?: string[];
+  error?: string;
+}> {
+  try {
+    const { supabase } = await getAuthenticatedClient();
+
+    const { data, error } = await supabase
+      .from('students')
+      .select('section')
+      .not('section', 'is', null)
+      .neq('section', '');
+
+    if (error) return { success: false, error: error.message };
+
+    // Deduplicate and sort alphabetically
+    const unique = Array.from(new Set((data || []).map((r: any) => r.section as string)))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+
+    return { success: true, sections: unique };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch sections' };
+  }
+}
+
+// ==========================================
+// 🔍 SEARCH STUDENTS BY NAME (autocomplete, max 8)
+// ==========================================
+
+export async function searchStudentsByName(query: string): Promise<{
+  success: boolean;
+  students?: { id: string; first_name: string; last_name: string; student_id: string; section?: string }[];
+  error?: string;
+}> {
+  if (!query || query.trim().length < 2) {
+    return { success: true, students: [] };
+  }
+
+  try {
+    const { supabase } = await getAuthenticatedClient();
+    const term = query.trim();
+
+    const { data, error } = await supabase
+      .from('students')
+      .select('id, first_name, last_name, student_id, section')
+      .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
+      .order('last_name', { ascending: true })
+      .limit(8);
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, students: data || [] };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Search failed' };
   }
 }
 

@@ -1,81 +1,202 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import IncidentRow from './incidentRow';
-import SearchBar from '../components/SearchBar';
-import Pagination from '../components/Pagination';
-import FilterDropdown from '../components/FilterDropdown';
-import { logout } from '../auth/actions';
+"use client";
 
-// This forces the page to always fetch fresh data (no caching)
-export const revalidate = 0; 
+import { useState, useEffect, useRef } from "react";
+import IncidentRow from "./incidentRow";
+import IncidentDashboardLoading from "./loading";
+import {
+  fetchIncidentReports,
+  fetchIncidentStats,
+  searchStudentsForFilter,
+} from "./actions";
 
-export default async function DashboardPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const searchParams = props.searchParams ? await props.searchParams : {};
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { 
-      cookies: { 
-        getAll() { return cookieStore.getAll() } 
-      } 
-    }
-  );
+// Lucide-style inline SVGs
+const SearchIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+);
+const XIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+// ==========================================
+// 📋 INCIDENT DASHBOARD PAGE (client component)
+// ==========================================
+export default function DashboardPage() {
+  // ---- Table data ----
+  const [reports, setReports] = useState<any[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalReports, setTotalReports] = useState(0);
 
-  // ==========================================
-  // UPDATED NESTED QUERY: 
-  // We are grabbing the report AND the linked students
-  // ==========================================
-  const q = (searchParams?.q as string) || '';
-  const page = Number(searchParams?.page) || 1;
-  const severity = (searchParams?.severity as string) || '';
-  const timeframe = (searchParams?.timeframe as string) || '';
+  // ---- Stat cards ----
+  const [stats, setStats] = useState({ today: 0, week: 0, month: 0 });
+
+  // ---- Filters ----
+  const [severityFilter, setSeverityFilter] = useState("All");
+  const [timeframeFilter, setTimeframeFilter] = useState("All");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationDebounced, setLocationDebounced] = useState("");
+
+  // ---- Student search ----
+  const [studentNameInput, setStudentNameInput] = useState("");
+  const [studentResults, setStudentResults] = useState<any[]>([]);
+  const [studentSearching, setStudentSearching] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [nameDropdownOpen, setNameDropdownOpen] = useState(false);
+  const nameRef = useRef<HTMLDivElement>(null);
+
   const ITEMS_PER_PAGE = 10;
 
-  let query = supabase
-    .from('incident_reports')
-    .select(`
-      *,
-      incident_involvements (
-        id,
-        role,
-        students ( 
-          id, 
-          student_id, 
-          first_name, 
-          last_name, 
-          grade_level,
-          face_photo_path
-        )
-      )
-    `, { count: 'exact' });
+  // ---- Load stats on mount ----
+  useEffect(() => {
+    fetchIncidentStats().then((res) => {
+      if (res.success) setStats({ today: res.today, week: res.week, month: res.month });
+    });
+  }, []);
 
-  if (q) {
-    query = query.or(`location.ilike.%${q}%,severity.ilike.%${q}%`);
-  }
-  if (severity) {
-    query = query.eq('severity', severity);
-  }
-  if (timeframe) {
-    const now = new Date();
-    let dateRange = null;
-    if (timeframe === '7days') dateRange = new Date(now.setDate(now.getDate() - 7));
-    else if (timeframe === '30days') dateRange = new Date(now.setDate(now.getDate() - 30));
-    
-    if (dateRange) {
-      query = query.gte('created_at', dateRange.toISOString());
+  // ---- Click-outside to close student dropdown ----
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (nameRef.current && !nameRef.current.contains(e.target as Node)) {
+        setNameDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // ---- Debounce location search ----
+  useEffect(() => {
+    const t = setTimeout(() => setLocationDebounced(locationSearch), 300);
+    return () => clearTimeout(t);
+  }, [locationSearch]);
+
+  // ---- Student name autocomplete (debounced) ----
+  useEffect(() => {
+    if (selectedStudent) return; // already pinned
+    const t = setTimeout(async () => {
+      if (studentNameInput.trim().length >= 2) {
+        setStudentSearching(true);
+        const res = await searchStudentsForFilter(studentNameInput.trim());
+        if (res.success && res.students) {
+          setStudentResults(res.students);
+          setNameDropdownOpen(true);
+        }
+        setStudentSearching(false);
+      } else {
+        setStudentResults([]);
+        setNameDropdownOpen(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [studentNameInput, selectedStudent]);
+
+  // ---- Fetch reports when any filter or page changes ----
+  useEffect(() => {
+    loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, severityFilter, timeframeFilter, dateFrom, dateTo, locationDebounced, selectedStudent]);
+
+  async function loadReports() {
+    try {
+      setTableLoading(true);
+
+      const result = await fetchIncidentReports({
+        page: currentPage,
+        itemsPerPage: ITEMS_PER_PAGE,
+        severityFilter,
+        timeframeFilter,
+        dateFrom,
+        dateTo,
+        locationSearch: locationDebounced,
+        studentId: selectedStudent?.id,
+        studentName: selectedStudent
+          ? `${selectedStudent.first_name} ${selectedStudent.last_name}`
+          : undefined,
+      });
+
+      if (!result.success) {
+        console.error("Failed to fetch reports:", result.error);
+        setReports([]);
+        return;
+      }
+
+      setReports(result.data || []);
+      setTotalReports(result.count || 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInitialLoading(false);
+      setTableLoading(false);
     }
   }
 
-  const { data: reports, count } = await query
-    .order('created_at', { ascending: false })
-    .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
+  // ---- Filter helpers ----
+  const hasActiveFilters =
+    severityFilter !== "All" ||
+    timeframeFilter !== "All" ||
+    dateFrom !== "" ||
+    dateTo !== "" ||
+    locationDebounced !== "" ||
+    selectedStudent !== null;
 
-  const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
+  function clearFilters() {
+    setSeverityFilter("All");
+    setTimeframeFilter("All");
+    setDateFrom("");
+    setDateTo("");
+    setLocationSearch("");
+    setLocationDebounced("");
+    setStudentNameInput("");
+    setStudentResults([]);
+    setSelectedStudent(null);
+    setCurrentPage(1);
+  }
+
+  function handleSelectStudent(s: any) {
+    setSelectedStudent(s);
+    setStudentNameInput(`${s.first_name} ${s.last_name}`);
+    setStudentResults([]);
+    setNameDropdownOpen(false);
+    setCurrentPage(1);
+  }
+
+  function handleClearStudent() {
+    setSelectedStudent(null);
+    setStudentNameInput("");
+    setStudentResults([]);
+    setCurrentPage(1);
+  }
+
+  // ---- Pagination helpers ----
+  const totalPages = Math.ceil(totalReports / ITEMS_PER_PAGE);
+
+  // ---- Date range clears preset and vice versa ----
+  function handleDateFromChange(v: string) {
+    setDateFrom(v);
+    if (v) setTimeframeFilter("All");
+    setCurrentPage(1);
+  }
+  function handleDateToChange(v: string) {
+    setDateTo(v);
+    if (v) setTimeframeFilter("All");
+    setCurrentPage(1);
+  }
+  function handleTimeframeChange(v: string) {
+    setTimeframeFilter(v);
+    if (v !== "All") {
+      setDateFrom("");
+      setDateTo("");
+    }
+    setCurrentPage(1);
+  }
+
+  // ---- Initial loading ----
+  if (initialLoading) {
+    return <IncidentDashboardLoading />;
+  }
 
   return (
     <>
@@ -83,45 +204,174 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
         <div className="mb-10">
           <h2 className="sys-title">Recent Incident Reports</h2>
           <p className="sys-subtitle mt-1">
-            Official security logs for Cavite National High School. All descriptions are stored with <span className="font-semibold text-cavite-maroon">AES-256 Encryption</span>.
+            Official security logs for Cavite National High School. All descriptions are stored with{" "}
+            <span className="font-semibold text-cavite-maroon">AES-256 Encryption</span>.
           </p>
         </div>
 
+        {/* ---- STAT CARDS ---- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {/* Total Reports - Primary Gradient */}
           <div className="stat-card-primary">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl z-0"></div>
-            <p className="stat-label-light">Total Reports</p>
-            <p className="stat-value-light">{reports?.length || 0}</p>
+            <p className="stat-label-light">Total Reports Last Month</p>
+            <p className="stat-value-light">{stats.month}</p>
           </div>
-          
-          {/* High Severity - Orange Gradient */}
           <div className="stat-card-orange">
-            <p className="stat-label-light">High Severity</p>
-            <p className="stat-value-light">
-              {reports?.filter(r => r.severity === 'High').length || 0}
-            </p>
+            <p className="stat-label-light">Total Reports Last Week</p>
+            <p className="stat-value-light">{stats.week}</p>
           </div>
-          
-          {/* Status - Standard Soft Card */}
           <div className="stat-card">
-            <p className="stat-label">Status</p>
-            <p className="stat-value text-green-500">Secure</p>
+            <p className="stat-label">Total Reports Today</p>
+            <p className="stat-value">{stats.today}</p>
           </div>
         </div>
 
+        {/* ---- FILTERS + TABLE CARD ---- */}
         <div className="sys-card">
-          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h3 className="sys-label m-0 text-sm">Filter Reports</h3>
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              <FilterDropdown paramName="timeframe" placeholder="Time" options={[{label:'All Time', value:'All'}, {label:'Last 7 Days', value:'7days'}, {label:'Last 30 Days', value:'30days'}]} />
-              <FilterDropdown paramName="severity" placeholder="Severity" options={[{label:'All Severity', value:'All'}, {label:'High', value:'High'}, {label:'Medium', value:'Medium'}, {label:'Low', value:'Low'}]} />
-              <div className="w-full sm:w-72">
-                <SearchBar placeholder="Search by location or severity..." />
+          {/* FILTER BAR */}
+          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 print:hidden">
+            {/* Row 1: label + dropdowns */}
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <h3 className="sys-label m-0 text-sm text-zinc-400 uppercase tracking-wider font-bold flex items-center gap-2">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                Filters
+              </h3>
+
+              {/* Time */}
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Time</span>
+              <select
+                value={timeframeFilter}
+                onChange={(e) => handleTimeframeChange(e.target.value)}
+                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
+              >
+                <option value="All">All Time</option>
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+              </select>
+
+              {/* Severity */}
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Severity</span>
+              <select
+                value={severityFilter}
+                onChange={(e) => { setSeverityFilter(e.target.value); setCurrentPage(1); }}
+                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
+              >
+                <option value="All">All Severity</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+
+            {/* Row 2: date range + location search + student search */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Date range */}
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">From</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => handleDateFromChange(e.target.value)}
+                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all"
+              />
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">To</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => handleDateToChange(e.target.value)}
+                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all"
+              />
+
+              {/* Location search */}
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Location</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search location..."
+                  value={locationSearch}
+                  onChange={(e) => { setLocationSearch(e.target.value); setCurrentPage(1); }}
+                  className="bg-white border border-cavite-border rounded-lg pl-8 pr-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all w-44"
+                />
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400">
+                  <SearchIcon />
+                </div>
               </div>
+
+              {/* Student name search */}
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Student</span>
+              <div className="relative" ref={nameRef}>
+                <input
+                  type="text"
+                  placeholder="Search name or ID..."
+                  value={studentNameInput}
+                  onChange={(e) => {
+                    setStudentNameInput(e.target.value);
+                    if (selectedStudent) {
+                      setSelectedStudent(null);
+                    }
+                  }}
+                  className={`bg-white border rounded-lg pl-8 pr-8 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all w-52 ${selectedStudent
+                    ? "border-green-300 bg-green-50/50 text-green-800"
+                    : "border-cavite-border text-cavite-black"
+                    }`}
+                />
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400">
+                  <SearchIcon />
+                </div>
+                {studentSearching && (
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    <div className="w-3 h-3 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin" />
+                  </div>
+                )}
+                {selectedStudent && !studentSearching && (
+                  <button
+                    onClick={handleClearStudent}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 transition-colors"
+                    title="Clear student filter"
+                  >
+                    <XIcon />
+                  </button>
+                )}
+
+                {/* Dropdown */}
+                {nameDropdownOpen && studentResults.length > 0 && (
+                  <div className="absolute z-30 w-72 mt-1 bg-white border border-cavite-border rounded-xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                    {studentResults.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleSelectStudent(s)}
+                        className="w-full text-left px-4 py-3 hover:bg-zinc-50 flex items-center gap-3 transition-colors border-b border-zinc-100 last:border-0"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-cavite-maroon/10 flex items-center justify-center text-xs font-bold text-cavite-maroon shrink-0">
+                          {s.first_name?.[0]}{s.last_name?.[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-cavite-black truncate">
+                            {s.first_name} {s.last_name}
+                          </p>
+                          <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                            {s.student_id}{s.section ? ` • ${s.section}` : ""}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Clear filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-cavite-maroon hover:bg-cavite-hover border border-transparent rounded-lg shadow-sm transition-all"
+                >
+                  <XIcon /> Clear Filters
+                </button>
+              )}
             </div>
           </div>
-          <div className="sys-table-wrapper max-h-[600px] overflow-auto">
+
+          {/* ---- TABLE ---- */}
+          <div className="sys-table-wrapper max-h-[600px] overflow-auto relative">
             <table className="sys-table">
               <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
                 <tr className="table-header-row">
@@ -134,16 +384,30 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
+                {/* Inline loading overlay */}
+                {tableLoading && (
+                  <tr>
+                    <td colSpan={6} className="p-0 border-0">
+                      <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-[1px] flex items-center justify-center rounded-b-3xl transition-opacity">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-6 h-6 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin" />
+                          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Loading…</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {reports && reports.length > 0 ? (
                   reports.map((report) => (
                     <IncidentRow key={report.id} report={report} />
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="p-16 text-center bg-white border-b-0">
+                    <td colSpan={6} className="p-16 text-center bg-white border-b-0">
                       <div className="flex flex-col items-center text-zinc-400">
                         <svg className="w-8 h-8 mb-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
                         <p className="text-sm font-medium">No reports found in the secure vault.</p>
+                        {hasActiveFilters && <p className="text-xs mt-1">Try adjusting your filters.</p>}
                       </div>
                     </td>
                   </tr>
@@ -151,8 +415,47 @@ export default async function DashboardPage(props: { searchParams?: Promise<{ [k
               </tbody>
             </table>
           </div>
-          <Pagination totalPages={totalPages} />
+
+          {/* ---- PAGINATION ---- */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-cavite-border bg-white px-5 py-3 rounded-b-lg">
+              <p className="text-sm text-zinc-500 font-medium">
+                Page <span className="font-semibold text-cavite-black">{currentPage}</span> of{" "}
+                <span className="font-semibold text-cavite-black">{totalPages}</span>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="bg-zinc-100 border border-cavite-border text-cavite-black px-4 py-1.5 text-sm font-medium rounded-md hover:bg-zinc-200 hover:border-zinc-300 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="bg-zinc-100 border border-cavite-border text-cavite-black px-4 py-1.5 text-sm font-medium rounded-md hover:bg-zinc-200 hover:border-zinc-300 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* ---- Match type legend (only when student filter is active) ---- */}
+        {selectedStudent && reports.length > 0 && (
+          <div className="mt-4 flex items-center gap-4 text-xs font-semibold">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+              <span className="text-green-700">Verified Link</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-zinc-400" />
+              <span className="text-zinc-500">Unverified — Name Match</span>
+            </span>
+          </div>
+        )}
 
         <footer className="mt-12 text-center pb-12">
           <p className="sys-label tracking-[0.4em]">

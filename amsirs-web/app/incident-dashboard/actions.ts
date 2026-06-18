@@ -6,6 +6,289 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 // ==========================================
+// 🔐 HELPER: Create authenticated Supabase client
+// ==========================================
+
+async function getAuthClient() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized: No active session');
+  return { supabase, user };
+}
+
+// ==========================================
+// 📋 FETCH INCIDENT REPORTS (paginated, with filters + student two-pass)
+// ==========================================
+
+export async function fetchIncidentReports(params: {
+  page: number;
+  itemsPerPage: number;
+  severityFilter?: string;
+  timeframeFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  locationSearch?: string;
+  studentId?: string;      // DB id of selected student (for verified link pass)
+  studentName?: string;    // Name string (for unverified name match pass)
+}): Promise<{
+  success: boolean;
+  data?: any[];
+  count?: number;
+  error?: string;
+}> {
+  try {
+    const { supabase } = await getAuthClient();
+
+    // ---- Student filter active → two-pass query ----
+    if (params.studentId || params.studentName) {
+      return await fetchWithStudentFilter(supabase, params);
+    }
+
+    // ---- Standard query (no student filter) ----
+    let query = supabase
+      .from('incident_reports')
+      .select(`
+        *,
+        incident_involvements (
+          id,
+          role,
+          students (
+            id,
+            student_id,
+            first_name,
+            last_name,
+            grade_level,
+            face_photo_path
+          )
+        )
+      `, { count: 'exact' });
+
+    query = applyCommonFilters(query, params);
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(
+        (params.page - 1) * params.itemsPerPage,
+        params.page * params.itemsPerPage - 1
+      );
+
+    if (error) return { success: false, error: error.message };
+
+    return { success: true, data: data || [], count: count || 0 };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to fetch reports' };
+  }
+}
+
+// ---- Helper: apply severity, timeframe, date range, location filters ----
+function applyCommonFilters(query: any, params: {
+  severityFilter?: string;
+  timeframeFilter?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  locationSearch?: string;
+}) {
+  if (params.severityFilter && params.severityFilter !== 'All') {
+    query = query.eq('severity', params.severityFilter);
+  }
+
+  if (params.locationSearch && params.locationSearch.trim()) {
+    query = query.ilike('location', `%${params.locationSearch.trim()}%`);
+  }
+
+  // Custom date range takes precedence over preset
+  if (params.dateFrom || params.dateTo) {
+    if (params.dateFrom) {
+      query = query.gte('created_at', new Date(params.dateFrom).toISOString());
+    }
+    if (params.dateTo) {
+      const end = new Date(params.dateTo);
+      end.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', end.toISOString());
+    }
+  } else if (params.timeframeFilter && params.timeframeFilter !== 'All') {
+    const now = new Date();
+    if (params.timeframeFilter === '7days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 7);
+      query = query.gte('created_at', d.toISOString());
+    } else if (params.timeframeFilter === '30days') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 30);
+      query = query.gte('created_at', d.toISOString());
+    }
+  }
+
+  return query;
+}
+
+// ---- Helper: Two-pass student search ----
+async function fetchWithStudentFilter(supabase: any, params: any) {
+  const selectFields = `
+    *,
+    incident_involvements (
+      id,
+      role,
+      students (
+        id,
+        student_id,
+        first_name,
+        last_name,
+        grade_level,
+        face_photo_path
+      )
+    )
+  `;
+
+  // Pass 1: Verified links (via incident_involvements)
+  let verifiedIds: string[] = [];
+  if (params.studentId) {
+    const { data: involvements } = await supabase
+      .from('incident_involvements')
+      .select('incident_id')
+      .eq('student_id', params.studentId);
+
+    verifiedIds = (involvements || []).map((inv: any) => inv.incident_id);
+  }
+
+  let verifiedReports: any[] = [];
+  if (verifiedIds.length > 0) {
+    let q = supabase
+      .from('incident_reports')
+      .select(selectFields)
+      .in('id', verifiedIds);
+
+    q = applyCommonFilters(q, params);
+
+    const { data } = await q.order('created_at', { ascending: false });
+    verifiedReports = (data || []).map((r: any) => ({ ...r, _matchType: 'verified' }));
+  }
+
+  // Pass 2: Unverified name matches (free-text first_name / last_name on the report)
+  let unverifiedReports: any[] = [];
+  if (params.studentName && params.studentName.trim()) {
+    const name = params.studentName.trim();
+    const nameParts = name.split(/\s+/);
+    
+    // Build OR filter for each name part against both first_name and last_name
+    const orClauses = nameParts
+      .filter((p: string) => p.length >= 2)
+      .flatMap((p: string) => [`first_name.ilike.%${p}%`, `last_name.ilike.%${p}%`]);
+
+    if (orClauses.length > 0) {
+      let q = supabase
+        .from('incident_reports')
+        .select(selectFields)
+        .or(orClauses.join(','));
+
+      // Exclude already-found verified IDs
+      if (verifiedIds.length > 0) {
+        // Supabase doesn't have a direct .not('id', 'in', ...) for arrays easily,
+        // so we filter client-side
+      }
+
+      q = applyCommonFilters(q, params);
+
+      const { data } = await q.order('created_at', { ascending: false });
+      const verifiedIdSet = new Set(verifiedIds);
+      unverifiedReports = (data || [])
+        .filter((r: any) => !verifiedIdSet.has(r.id))
+        .map((r: any) => ({ ...r, _matchType: 'unverified' }));
+    }
+  }
+
+  // Merge: verified first, then unverified
+  const merged = [...verifiedReports, ...unverifiedReports];
+
+  // Client-side pagination on merged results
+  const total = merged.length;
+  const start = (params.page - 1) * params.itemsPerPage;
+  const paged = merged.slice(start, start + params.itemsPerPage);
+
+  return { success: true, data: paged, count: total };
+}
+
+// ==========================================
+// 📊 FETCH INCIDENT STATS (for stat cards)
+// ==========================================
+
+export async function fetchIncidentStats(): Promise<{
+  success: boolean;
+  today: number;
+  week: number;
+  month: number;
+  error?: string;
+}> {
+  try {
+    const { supabase } = await getAuthClient();
+
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+    const startOfMonth = new Date(startOfToday);
+    startOfMonth.setMonth(startOfMonth.getMonth() - 1);
+
+    const [todayRes, weekRes, monthRes] = await Promise.all([
+      supabase.from('incident_reports').select('id', { count: 'exact', head: true })
+        .gte('created_at', startOfToday.toISOString()),
+      supabase.from('incident_reports').select('id', { count: 'exact', head: true })
+        .gte('created_at', startOfWeek.toISOString()),
+      supabase.from('incident_reports').select('id', { count: 'exact', head: true })
+        .gte('created_at', startOfMonth.toISOString()),
+    ]);
+
+    return {
+      success: true,
+      today: todayRes.count ?? 0,
+      week: weekRes.count ?? 0,
+      month: monthRes.count ?? 0,
+    };
+  } catch (err) {
+    return { success: false, today: 0, week: 0, month: 0, error: err instanceof Error ? err.message : 'Failed' };
+  }
+}
+
+// ==========================================
+// 🔍 SEARCH STUDENTS FOR FILTER (lightweight autocomplete)
+// ==========================================
+
+export async function searchStudentsForFilter(query: string): Promise<{
+  success: boolean;
+  students?: { id: string; first_name: string; last_name: string; student_id: string; section?: string }[];
+  error?: string;
+}> {
+  if (!query || query.trim().length < 2) {
+    return { success: true, students: [] };
+  }
+
+  try {
+    const { supabase } = await getAuthClient();
+    const term = query.trim();
+
+    const { data, error } = await supabase
+      .from('students')
+      .select('id, first_name, last_name, student_id, section')
+      .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,student_id.ilike.%${term}%`)
+      .order('last_name', { ascending: true })
+      .limit(8);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, students: data || [] };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Search failed' };
+  }
+}
+
+// ==========================================
 // 🔒 DATA SECURITY & DECRYPTION
 // ==========================================
 
