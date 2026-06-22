@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { logout } from "../auth/actions";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 interface UserInfo {
   email: string;
@@ -45,15 +46,28 @@ export default function Sidebar({ userInfo }: SidebarProps) {
   const navLinks = allNavLinks.filter((link) => link.roles.includes(roleKey));
 
   return (
-    <aside className="hidden lg:flex w-24 lg:w-64 bg-white flex-col justify-between rounded-r-[32px] my-4 ml-4 z-20 overflow-hidden flex-shrink-0" style={{ boxShadow: '0 10px 40px -10px rgba(0,0,0,0.05)' }}>
+    <aside
+      className="hidden lg:flex w-24 lg:w-64 flex-col justify-between rounded-r-[32px] my-4 ml-4 z-20 overflow-hidden flex-shrink-0 transition-colors duration-200"
+      style={{
+        backgroundColor: 'var(--sys-nav-bg)',
+        borderRight: '1px solid var(--sys-nav-border)',
+        boxShadow: '0 10px 40px -10px rgba(0,0,0,0.08)',
+      }}
+    >
       <div>
         {/* Logo Area */}
-        <div className="h-24 flex items-center justify-between px-8 border-b border-gray-100">
+        <div
+          className="h-24 flex items-center justify-between px-8"
+          style={{ borderBottom: '1px solid var(--sys-nav-border)' }}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-cavite-maroon rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{ boxShadow: '0 10px 25px -5px rgba(122, 25, 27, 0.3)' }}>
+            <div
+              className="w-10 h-10 bg-cavite-maroon rounded-xl flex items-center justify-center text-white font-bold text-xl"
+              style={{ boxShadow: '0 10px 25px -5px rgba(122, 25, 27, 0.3)' }}
+            >
               A
             </div>
-            <span className="hidden lg:block font-bold text-xl tracking-tight text-gray-800">
+            <span className="hidden lg:block font-bold text-xl tracking-tight" style={{ color: 'var(--sys-text-primary)' }}>
               AMSIRS
             </span>
           </div>
@@ -74,9 +88,10 @@ export default function Sidebar({ userInfo }: SidebarProps) {
                 href={link.href}
                 className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all ${
                   isActive
-                    ? "bg-cavite-light text-cavite-maroon font-semibold"
-                    : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 font-medium"
+                    ? "bg-[var(--sys-maroon-tint)] text-cavite-maroon font-semibold"
+                    : "font-medium hover:text-cavite-maroon hover:bg-[var(--sys-maroon-tint)]"
                 }`}
+                style={!isActive ? { color: 'var(--sys-text-muted)' } : undefined}
               >
                 <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                 <span className="hidden lg:block">{link.name}</span>
@@ -87,11 +102,14 @@ export default function Sidebar({ userInfo }: SidebarProps) {
       </div>
 
       <div className="p-4">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Sign Out — calls server action to clear auth session */}
         <form action={logout}>
           <button
             type="submit"
-            className="flex items-center gap-4 px-4 py-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all font-medium mb-4 w-full cursor-pointer"
+            className="flex items-center gap-4 px-4 py-3 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all font-medium mb-4 w-full cursor-pointer mt-1"
           >
             <LogOut className="w-5 h-5" />
             <span className="hidden lg:block">Sign Out</span>
@@ -99,13 +117,16 @@ export default function Sidebar({ userInfo }: SidebarProps) {
         </form>
         
         {/* Dynamic User Profile */}
-        <div className="bg-zinc-50 p-4 rounded-2xl flex items-center gap-3">
+        <div
+          className="p-4 rounded-2xl flex items-center gap-3"
+          style={{ backgroundColor: 'var(--sys-surface-muted)' }}
+        >
           <div className="w-10 h-10 rounded-full bg-cavite-maroon flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-sm flex-shrink-0">
             {userInfo?.initials || "??"}
           </div>
           <div className="hidden lg:block overflow-hidden">
-            <p className="text-sm font-bold text-zinc-800 truncate">{userInfo?.email || "Not signed in"}</p>
-            <p className="text-xs text-zinc-400 font-medium truncate">{userInfo?.role || "—"}</p>
+            <p className="text-sm font-bold truncate" style={{ color: 'var(--sys-text-primary)' }}>{userInfo?.email || "Not signed in"}</p>
+            <p className="text-xs font-medium truncate" style={{ color: 'var(--sys-text-muted)' }}>{userInfo?.role || "—"}</p>
           </div>
         </div>
       </div>

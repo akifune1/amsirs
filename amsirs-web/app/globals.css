@@ -34,11 +34,112 @@
 }
 
 /* =========================================
+   0. CSS CUSTOM PROPERTIES (DARK MODE)
+   Variables flip when .dark is on <html>
+========================================= */
+:root {
+  /* Page & Surface */
+  --sys-page-bg: #F3F5F8;
+  --sys-surface: #FFFFFF;
+  --sys-surface-subtle: #FAFAFA;
+  --sys-surface-muted: #F4F4F5;
+  --sys-border: #E4E4E7;
+  --sys-border-subtle: #F0F0F2;
+
+  /* Text */
+  --sys-text-primary: #2D3748;
+  --sys-text-secondary: #6B7280;
+  --sys-text-muted: #A0AEC0;
+  --sys-text-on-dark: #E8E8EC;
+
+  /* Sidebar / Nav */
+  --sys-nav-bg: #FFFFFF;
+  --sys-nav-border: #F0F0F0;
+
+  /* Inputs */
+  --sys-input-bg: #FFFFFF;
+  --sys-input-bg-alt: #F9FAFB;
+  --sys-input-border: #E5E7EB;
+  --sys-input-text: #1F2937;
+
+  /* Table */
+  --sys-table-bg: #FFFFFF;
+  --sys-table-header-bg: #FFFFFF;
+  --sys-table-row-hover: #F9FAFB;
+  --sys-table-divider: #F9FAFB;
+
+  /* Semantic — dark-mode friendly overrides below */
+  --sys-success-bg: #DCFCE7;
+  --sys-success-text: #166534;
+  --sys-success-border: #BBF7D0;
+  --sys-warning-bg: #FEF9C3;
+  --sys-warning-text: #854D0E;
+  --sys-warning-border: #FEF08A;
+  --sys-danger-bg: #FEE2E2;
+  --sys-danger-text: #991B1B;
+  --sys-danger-border: #FECACA;
+
+  /* Maroon tint */
+  --sys-maroon-tint: #F8E8E8;
+  --sys-maroon-tint-text: #7A191B;
+}
+
+.dark {
+  /* Page & Surface */
+  --sys-page-bg: #0F0F10;
+  --sys-surface: #1A1A1D;
+  --sys-surface-subtle: #1E1E21;
+  --sys-surface-muted: #27272A;
+  --sys-border: #2E2E32;
+  --sys-border-subtle: #252528;
+
+  /* Text */
+  --sys-text-primary: #E8E8EC;
+  --sys-text-secondary: #9CA3AF;
+  --sys-text-muted: #71717A;
+  --sys-text-on-dark: #E8E8EC;
+
+  /* Sidebar / Nav */
+  --sys-nav-bg: #141416;
+  --sys-nav-border: #242428;
+
+  /* Inputs */
+  --sys-input-bg: #232326;
+  --sys-input-bg-alt: #1E1E21;
+  --sys-input-border: #3F3F46;
+  --sys-input-text: #E4E4E8;
+
+  /* Table */
+  --sys-table-bg: #1A1A1D;
+  --sys-table-header-bg: #1E1E21;
+  --sys-table-row-hover: #232326;
+  --sys-table-divider: #252528;
+
+  /* Semantic — softer tones for dark bg */
+  --sys-success-bg: #14532D33;
+  --sys-success-text: #4ADE80;
+  --sys-success-border: #16A34A55;
+  --sys-warning-bg: #78350F33;
+  --sys-warning-text: #FCD34D;
+  --sys-warning-border: #D9770655;
+  --sys-danger-bg: #450A0A33;
+  --sys-danger-text: #F87171;
+  --sys-danger-border: #DC262655;
+
+  /* Maroon tint */
+  --sys-maroon-tint: #2D1213;
+  --sys-maroon-tint-text: #F87171;
+}
+
+/* =========================================
    1. BASE LAYER: Global Document Setup
 ========================================= */
 @layer base {
   body {
-    @apply bg-ui-bg text-ui-text font-sans antialiased min-h-screen selection:bg-cavite-maroon selection:text-white;
+    background-color: var(--sys-page-bg);
+    color: var(--sys-text-primary);
+    @apply font-sans antialiased min-h-screen selection:bg-cavite-maroon selection:text-white;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -51,7 +152,7 @@
 }
 
 /* =========================================
-   2. COMPONENTS LAYER: UI Design System (Premium V2)
+   2. COMPONENTS LAYER: UI Design System (Premium V2 + Dark Mode)
 ========================================= */
 @layer components {
 
@@ -61,37 +162,55 @@
   }
 
   .sys-card {
-    @apply bg-white rounded-3xl border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] overflow-hidden;
+    background-color: var(--sys-surface);
+    border-color: var(--sys-border);
+    @apply rounded-3xl border shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] overflow-hidden;
   }
 
   .sys-card-header {
-    @apply px-8 py-6 flex justify-between items-center border-b border-gray-100;
+    border-color: var(--sys-border);
+    @apply px-8 py-6 flex justify-between items-center border-b;
   }
 
   /* --- Typography --- */
   .sys-title {
-    @apply text-3xl font-extrabold text-gray-900 tracking-tight mb-1;
+    color: var(--sys-text-primary);
+    @apply text-3xl font-extrabold tracking-tight mb-1;
   }
 
   .sys-subtitle {
-    @apply text-gray-500 text-sm font-medium;
+    color: var(--sys-text-muted);
+    @apply text-sm font-medium;
   }
 
   .sys-label {
-    @apply text-xs font-semibold text-gray-400 uppercase tracking-wider;
+    color: var(--sys-text-muted);
+    @apply text-xs font-semibold uppercase tracking-wider;
   }
 
   /* --- Forms & Inputs --- */
   .form-label {
-    @apply block text-sm font-medium text-gray-700 mb-2;
+    color: var(--sys-text-secondary);
+    @apply block text-sm font-medium mb-2;
   }
 
   .input-field {
-    @apply w-full bg-white border border-gray-200 rounded-2xl p-3.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all shadow-sm disabled:bg-zinc-100 disabled:text-zinc-500 placeholder:text-gray-400;
+    background-color: var(--sys-input-bg);
+    border-color: var(--sys-input-border);
+    color: var(--sys-input-text);
+    @apply w-full rounded-2xl p-3.5 text-sm border focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all shadow-sm placeholder:text-zinc-400;
+  }
+
+  .input-field:disabled {
+    background-color: var(--sys-surface-muted);
+    color: var(--sys-text-muted);
   }
 
   .input-field-alt {
-    @apply w-full bg-gray-50 border border-transparent rounded-2xl p-3.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon focus:bg-white transition-all placeholder:text-gray-400;
+    background-color: var(--sys-input-bg-alt);
+    border-color: transparent;
+    color: var(--sys-input-text);
+    @apply w-full rounded-2xl p-3.5 text-sm border focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon focus:bg-[var(--sys-input-bg)] transition-all placeholder:text-zinc-400;
   }
 
   /* --- Buttons --- */
@@ -100,11 +219,21 @@
   }
 
   .btn-outline {
-    @apply border-2 border-gray-100 text-gray-600 px-6 py-3 font-semibold text-sm rounded-2xl cursor-pointer transition-all hover:bg-gray-50 hover:text-gray-900 hover:border-gray-200 w-fit;
+    border-color: var(--sys-border);
+    color: var(--sys-text-secondary);
+    @apply border-2 px-6 py-3 font-semibold text-sm rounded-2xl cursor-pointer transition-all w-fit;
+  }
+  .btn-outline:hover {
+    background-color: var(--sys-surface-muted);
+    color: var(--sys-text-primary);
   }
 
   .btn-ghost {
-    @apply flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-cavite-maroon hover:bg-cavite-light px-4 py-2 rounded-2xl transition-all cursor-pointer;
+    color: var(--sys-text-muted);
+    @apply flex items-center gap-2 text-sm font-medium hover:text-cavite-maroon px-4 py-2 rounded-2xl transition-all cursor-pointer;
+  }
+  .btn-ghost:hover {
+    background-color: var(--sys-maroon-tint);
   }
 
   .btn-text {
@@ -112,12 +241,16 @@
   }
 
   .btn-icon-danger {
-    @apply absolute bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all z-10;
+    background-color: var(--sys-surface);
+    border-color: var(--sys-border);
+    @apply absolute text-zinc-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-all z-10 border;
   }
 
   /* --- Badges & Alerts --- */
   .badge-primary {
-    @apply bg-gray-100 text-gray-800 px-3 py-1 rounded-xl font-bold text-xs border border-transparent;
+    background-color: var(--sys-surface-muted);
+    color: var(--sys-text-primary);
+    @apply px-3 py-1 rounded-xl font-bold text-xs border border-transparent;
   }
 
   .badge-outline {
@@ -126,21 +259,31 @@
 
   /* Semantic Feedback Badges */
   .badge-success {
-    @apply px-3 py-1.5 rounded-lg text-xs font-bold bg-green-100 text-green-700 inline-block;
+    background-color: var(--sys-success-bg);
+    color: var(--sys-success-text);
+    @apply px-3 py-1.5 rounded-lg text-xs font-bold inline-block;
   }
   .badge-warning {
-    @apply px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-100 text-orange-700 inline-block;
+    background-color: var(--sys-warning-bg);
+    color: var(--sys-warning-text);
+    @apply px-3 py-1.5 rounded-lg text-xs font-bold inline-block;
   }
   .badge-danger {
-    @apply px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-700 inline-block;
+    background-color: var(--sys-danger-bg);
+    color: var(--sys-danger-text);
+    @apply px-3 py-1.5 rounded-lg text-xs font-bold inline-block;
   }
 
   .alert-success {
-    @apply bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-r-2xl text-sm font-medium;
+    background-color: var(--sys-success-bg);
+    color: var(--sys-success-text);
+    @apply border-l-4 border-green-500 p-4 rounded-r-2xl text-sm font-medium;
   }
 
   .alert-error {
-    @apply bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-2xl text-sm font-medium;
+    background-color: var(--sys-danger-bg);
+    color: var(--sys-danger-text);
+    @apply border-l-4 border-red-500 p-4 rounded-r-2xl text-sm font-medium;
   }
 
   /* --- Premium Gradients & Shadows --- */
@@ -156,7 +299,9 @@
 
   /* --- Dashboard Stats --- */
   .stat-card {
-    @apply bg-white p-6 rounded-3xl border border-gray-100 flex flex-col justify-center transition-transform hover:-translate-y-1 relative overflow-hidden;
+    background-color: var(--sys-surface);
+    border-color: var(--sys-border);
+    @apply p-6 rounded-3xl border flex flex-col justify-center transition-transform hover:-translate-y-1 relative overflow-hidden;
     box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
   }
 
@@ -171,7 +316,8 @@
   }
 
   .stat-label {
-    @apply text-gray-400 text-sm font-semibold uppercase tracking-wider mb-2 relative z-10;
+    color: var(--sys-text-muted);
+    @apply text-sm font-semibold uppercase tracking-wider mb-2 relative z-10;
   }
 
   .stat-label-light {
@@ -179,7 +325,8 @@
   }
 
   .stat-value {
-    @apply text-4xl font-bold text-gray-900 mt-2 relative z-10;
+    color: var(--sys-text-primary);
+    @apply text-4xl font-bold mt-2 relative z-10;
   }
   
   .stat-value-light {
@@ -187,11 +334,11 @@
   }
   
   .stat-value-danger {
-    @apply text-4xl font-bold text-red-600 mt-2 relative z-10;
+    @apply text-4xl font-bold text-red-500 mt-2 relative z-10;
   }
   
   .stat-value-success {
-    @apply text-4xl font-bold text-green-600 mt-2 relative z-10;
+    @apply text-4xl font-bold text-green-500 mt-2 relative z-10;
   }
 
   /* --- Data Tables --- */
@@ -204,7 +351,8 @@
   }
 
   .sys-table thead {
-    @apply border-b border-gray-100;
+    border-color: var(--sys-border);
+    @apply border-b;
   }
 
   .table-header-row {
@@ -212,15 +360,20 @@
   }
 
   .table-th {
-    @apply py-2 px-4 sm:pb-4 sm:pt-2 sm:px-5 text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap;
+    color: var(--sys-text-muted);
+    @apply py-2 px-4 sm:pb-4 sm:pt-2 sm:px-5 text-[10px] sm:text-xs font-semibold uppercase tracking-wider whitespace-nowrap;
   }
 
   .table-td {
-    @apply py-2 px-4 sm:py-5 sm:px-5 text-gray-800 bg-white transition-colors border-b border-gray-50 whitespace-nowrap sm:whitespace-normal;
+    background-color: var(--sys-table-bg);
+    color: var(--sys-text-primary);
+    border-color: var(--sys-border-subtle);
+    @apply py-2 px-4 sm:py-5 sm:px-5 transition-colors border-b whitespace-nowrap sm:whitespace-normal;
   }
   
   .sys-table tbody {
-    @apply divide-y divide-gray-50;
+    @apply divide-y;
+    divide-color: var(--sys-border-subtle);
   }
   
   /* Make rows highlight slightly on hover in table body */
@@ -229,14 +382,12 @@
   }
 
   .sys-table tbody tr:hover .table-td {
-    @apply bg-gray-50;
+    background-color: var(--sys-table-row-hover);
   }
   
   .sys-table tbody tr:last-child .table-td {
     @apply border-b-0;
   }
-
-
 
   /* --- Layout Utilities --- */
   .layout-center {
@@ -259,6 +410,7 @@
   /* Reset page background & sizing */
   html, body {
     background: white !important;
+    color: black !important;
     font-size: 11px;
     height: auto !important;
     overflow: visible !important;
@@ -278,6 +430,7 @@
     border: 1px solid #e4e4e7 !important;
     overflow: visible !important;
     break-inside: auto !important;
+    background: white !important;
   }
 
   /*
@@ -340,4 +493,3 @@
     size: landscape;
   }
 }
-

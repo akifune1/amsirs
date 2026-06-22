@@ -18,7 +18,7 @@ function EnrollButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full bg-cavite-maroon hover:bg-[#600000] text-white font-black py-5 rounded-xl transition-all shadow-xl shadow-maroon-900/10 hover:shadow-maroon-900/20 active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
+      className="w-full bg-cavite-maroon hover:bg-[#600000] text-white font-black py-5 rounded-xl transition-all shadow-xl shadow-maroon-900/10 hover:shadow-maroon-900/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-sm"
     >
       {pending ? 'Uploading Data...' : 'Submit Registration'}
     </button>
@@ -29,7 +29,7 @@ export default function StudentRegistrationPage() {
   const [state, formAction] = useActionState(registerStudent, null);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen font-sans" style={{ backgroundColor: 'var(--sys-page-bg)', color: 'var(--sys-text-primary)' }}>
       {/* STUDENT NAVIGATION BAR */}
       
 
@@ -39,12 +39,12 @@ export default function StudentRegistrationPage() {
             <h1 className="text-4xl font-extrabold text-cavite-maroon tracking-tighter">
               STUDENT ENROLLMENT
             </h1>
-            <p className="text-gray-500 text-sm font-medium mt-2">
+            <p className="text-sm font-medium mt-2" style={{ color: 'var(--sys-text-muted)' }}>
               Please fill out your details below to register for the campus integrated system.
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-200 overflow-hidden">
+          <div className="rounded-2xl shadow-xl border overflow-hidden" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
             <form action={formAction} className="p-8 md:p-10 space-y-10">
               {/* ALERTS / FEEDBACK */}
               {state?.success && (
@@ -60,13 +60,13 @@ export default function StudentRegistrationPage() {
               )}
 
               {/* ACCOUNT CREDENTIALS */}
-              <div className="space-y-4 border-b border-gray-100 pb-8">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+              <div className="space-y-4 border-b pb-8" style={{ borderColor: 'var(--sys-border)' }}>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4" style={{ color: 'var(--sys-text-secondary)' }}>
                   Account Credentials
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Email Address
                     </label>
                     <input
@@ -74,11 +74,12 @@ export default function StudentRegistrationPage() {
                       type="email"
                       required
                       placeholder="student@example.com"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Secure Password
                     </label>
                     <input
@@ -87,76 +88,81 @@ export default function StudentRegistrationPage() {
                       required
                       minLength={6}
                       placeholder="••••••••"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                 </div>
-                <p className="text-[10px] text-gray-400 font-medium italic mt-2">
+                <p className="text-[10px] font-medium italic mt-2" style={{ color: 'var(--sys-text-muted)' }}>
                   Will be used for logging in.
                 </p>
               </div>
 
               {/* PERSONAL INFORMATION */}
-              <div className="space-y-4 border-b border-gray-100 pb-8">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+              <div className="space-y-4 border-b pb-8" style={{ borderColor: 'var(--sys-border)' }}>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4" style={{ color: 'var(--sys-text-secondary)' }}>
                   Your Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Learner Reference Number (LRN)
                     </label>
                     <input
                       name="lrn"
                       required
                       placeholder="e.g. 123456789012"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       First Name
                     </label>
                     <input
                       name="firstName"
                       required
                       placeholder="e.g. Juan"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Last Name
                     </label>
                     <input
                       name="lastName"
                       required
                       placeholder="e.g. Dela Cruz"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                 </div>
               </div>
 
               {/* DEMOGRAPHICS & CONTACT (NEW SECTION) */}
-              <div className="space-y-4 border-b border-gray-100 pb-8">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+              <div className="space-y-4 border-b pb-8" style={{ borderColor: 'var(--sys-border)' }}>
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-4" style={{ color: 'var(--sys-text-secondary)' }}>
                   Demographics & Contact
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Date of Birth
                     </label>
                     <input
                       name="birthday"
                       type="date"
                       required
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Gender
                     </label>
                     <div className="relative">
@@ -164,7 +170,8 @@ export default function StudentRegistrationPage() {
                         name="gender"
                         required
                         defaultValue=""
-                        className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all appearance-none cursor-pointer"
+                        className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all appearance-none cursor-pointer border"
+                        style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                       >
                         <option value="" disabled>Select Gender</option>
                         <option value="Male">Male</option>
@@ -177,7 +184,7 @@ export default function StudentRegistrationPage() {
                     </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Complete Address
                     </label>
                     <textarea
@@ -185,23 +192,25 @@ export default function StudentRegistrationPage() {
                       required
                       rows={2}
                       placeholder="e.g. 123 Main St, Brgy. San Jose, Trece Martires City"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all resize-y"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all resize-y border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                 </div>
               </div>
 
               {/* ACADEMIC PLACEMENT */}
-              <div className="space-y-4 border-b border-gray-100 pb-8">
+              <div className="space-y-4 border-b pb-8" style={{ borderColor: 'var(--sys-border)' }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Grade Level
                     </label>
                     <div className="relative">
                       <select
                         name="gradeLevel"
-                        className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all appearance-none cursor-pointer"
+                        className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all appearance-none cursor-pointer border"
+                        style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                       >
                         <option value="Grade 11">Grade 11</option>
                         <option value="Grade 12">Grade 12</option>
@@ -212,14 +221,15 @@ export default function StudentRegistrationPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <label className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--sys-text-primary)' }}>
                       Section Name
                     </label>
                     <input
                       name="section"
                       required
                       placeholder="e.g. Einstein"
-                      className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-black font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all"
+                      className="w-full rounded-lg p-3 font-medium focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-all border"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                   </div>
                 </div>
@@ -228,7 +238,7 @@ export default function StudentRegistrationPage() {
               {/* BIOMETRIC UPLOAD */}
               <div className="space-y-2 pt-2">
                 <div className="flex justify-between items-end mb-2">
-                  <label className="text-sm font-bold text-gray-700">
+                  <label className="text-sm font-bold" style={{ color: 'var(--sys-text-primary)' }}>
                     ID Photo
                   </label>
                   <span className="text-[10px] font-black bg-cavite-maroon/10 text-cavite-maroon px-2 py-0.5 rounded border border-cavite-maroon/20 uppercase tracking-tighter">
@@ -236,7 +246,7 @@ export default function StudentRegistrationPage() {
                   </span>
                 </div>
                   <CameraCapture name="facePhoto" required={true} />
-                <ul className="text-xs text-gray-500 font-medium mt-3 space-y-1 pl-4 list-disc marker:text-cavite-maroon">
+                <ul className="text-xs font-medium mt-3 space-y-1 pl-4 list-disc marker:text-cavite-maroon" style={{ color: 'var(--sys-text-muted)' }}>
                   <li>Ensure you are in a well-lit area.</li>
                   <li>Do not wear face masks, sunglasses, or hats.</li>
                   <li>Look directly at the camera.</li>

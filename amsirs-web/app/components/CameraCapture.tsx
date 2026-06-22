@@ -243,15 +243,16 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
     <div className="space-y-4">
       {descriptor && <input type="hidden" name={`${name}Descriptor`} value={JSON.stringify(descriptor)} />}
       {/* Toggles */}
-      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-full max-w-sm">
+      <div className="flex gap-2 p-1 rounded-lg w-full max-w-sm" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}>
         <button
           type="button"
           onClick={switchToUpload}
           className={`flex-1 py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
             mode === 'upload' 
-              ? 'bg-white shadow-sm text-cavite-maroon' 
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'shadow-sm' 
+              : 'hover:bg-black/5 dark:hover:bg-white/5'
           }`}
+          style={mode === 'upload' ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' } : { color: 'var(--sys-text-muted)' }}
         >
           Upload File
         </button>
@@ -260,9 +261,10 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
           onClick={startCamera}
           className={`flex-1 py-2 px-3 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
             mode === 'camera' 
-              ? 'bg-white shadow-sm text-cavite-maroon' 
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'shadow-sm' 
+              : 'hover:bg-black/5 dark:hover:bg-white/5'
           }`}
+          style={mode === 'camera' ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' } : { color: 'var(--sys-text-muted)' }}
         >
           Use Camera
         </button>
@@ -278,7 +280,8 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
           accept="image/jpeg, image/png"
           onChange={handleFileChange}
           disabled={isProcessing || !isAiReady}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-widest file:bg-cavite-maroon/10 file:text-cavite-maroon hover:file:bg-cavite-maroon/20 transition-all cursor-pointer border border-gray-300 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon disabled:opacity-50 disabled:cursor-not-allowed"
+          className="block w-full text-sm file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-widest file:bg-cavite-maroon/10 file:text-cavite-maroon hover:file:bg-cavite-maroon/20 transition-all cursor-pointer border rounded-xl focus:outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
         />
         {!isAiReady && mode === 'upload' && (
           <p className="text-xs text-amber-600 mt-2 font-medium">Initializing AI verification...</p>
@@ -311,7 +314,8 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
             type="button"
             onClick={capturePhoto}
             disabled={!faceDetected}
-            className={`absolute bottom-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full border-4 shadow-lg transition-all ${faceDetected ? 'bg-white border-green-500 hover:scale-105 active:scale-95 cursor-pointer' : 'bg-gray-300 border-gray-400 opacity-50 cursor-not-allowed'}`}
+            className={`absolute bottom-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full border-4 shadow-lg transition-all ${faceDetected ? 'border-green-500 hover:scale-105 active:scale-95 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+            style={faceDetected ? { backgroundColor: 'var(--sys-surface)' } : { backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)' }}
             aria-label="Take Photo"
           />
           <canvas ref={canvasRef} className="hidden" />
@@ -321,7 +325,7 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
       {/* Preview Mode */}
       {previewUrl && (
         <div className="space-y-3">
-          <div className="relative rounded-xl overflow-hidden bg-gray-100 aspect-[4/3] flex items-center justify-center border border-gray-300">
+          <div className="relative rounded-xl overflow-hidden aspect-[4/3] flex items-center justify-center border" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
             <img 
               src={previewUrl} 
               alt="Preview" 
@@ -332,7 +336,8 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
             <button
               type="button"
               onClick={handleRetake}
-              className="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors"
+              className="w-full py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+              style={{ backgroundColor: 'var(--sys-surface-muted)', color: 'var(--sys-text-primary)' }}
             >
               Retake Photo
             </button>
@@ -341,7 +346,8 @@ export default function CameraCapture({ name, required = false, onCapture }: Cam
              <button
               type="button"
               onClick={switchToUpload}
-              className="w-full py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors"
+              className="w-full py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+              style={{ backgroundColor: 'var(--sys-surface-muted)', color: 'var(--sys-text-primary)' }}
            >
              Choose Another File
            </button>

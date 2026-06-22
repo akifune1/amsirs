@@ -40,7 +40,14 @@ export function ExportButtons({
     <div className="flex items-center gap-2 print:hidden">
       <button 
         onClick={handlePrint}
-        className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-md shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md shadow-sm transition-colors border"
+        style={{
+          backgroundColor: 'var(--sys-surface)',
+          borderColor: 'var(--sys-border)',
+          color: 'var(--sys-text-secondary)',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--sys-surface-muted)')}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--sys-surface)')}
       >
         <Printer className="w-3.5 h-3.5" />
         Print PDF

@@ -327,22 +327,22 @@ export default function ExitGatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen font-sans" style={{ backgroundColor: 'var(--sys-page-bg)', color: 'var(--sys-text-primary)' }}>
       
 
       <main className="p-6 md:p-10">
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">Facial Recognition Exit Scanner</h1>
-          <p className="text-gray-500 font-medium mt-2">Real-time biometric campus exit verification powered by AI facial recognition.</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight" style={{ color: 'var(--sys-text-primary)' }}>Facial Recognition Exit Scanner</h1>
+          <p className="font-medium mt-2" style={{ color: 'var(--sys-text-secondary)' }}>Real-time biometric campus exit verification powered by AI facial recognition.</p>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <div className="xl:col-span-2">
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-100 px-6 py-5 flex items-center justify-between">
+            <div className="rounded-3xl shadow-xl border overflow-hidden" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+              <div className="border-b px-6 py-5 flex items-center justify-between" style={{ borderColor: 'var(--sys-border)' }}>
                 <div>
-                  <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">Live Security Feed</p>
-                  <h2 className="text-xl font-bold text-gray-900 mt-1">Exit Gate Camera</h2>
+                  <p className="text-xs font-black tracking-[0.2em] uppercase" style={{ color: 'var(--sys-text-muted)' }}>Live Security Feed</p>
+                  <h2 className="text-xl font-bold mt-1" style={{ color: 'var(--sys-text-primary)' }}>Exit Gate Camera</h2>
                 </div>
                 <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
@@ -358,74 +358,74 @@ export default function ExitGatePage() {
           <div className="space-y-6">
             
             {/* IDENTITY VERIFICATION PANEL */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-100 px-6 py-5">
-                <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">Recognition Result</p>
-                <h2 className="text-xl font-bold text-gray-900 mt-1">Identity Profile</h2>
+            <div className="rounded-3xl shadow-xl border overflow-hidden" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+              <div className="border-b px-6 py-5" style={{ borderColor: 'var(--sys-border)' }}>
+                <p className="text-xs font-black tracking-[0.2em] uppercase" style={{ color: 'var(--sys-text-muted)' }}>Recognition Result</p>
+                <h2 className="text-xl font-bold mt-1" style={{ color: 'var(--sys-text-primary)' }}>Identity Profile</h2>
               </div>
               <div className="p-6">
                 {verifiedStudent ? (
                   <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                    <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                       <div className="w-20 h-20 rounded-2xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0">
+                    <div className="flex items-center gap-4 border-b pb-6" style={{ borderColor: 'var(--sys-border)' }}>
+                       <div className="w-20 h-20 rounded-2xl border overflow-hidden shrink-0" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)' }}>
                          {verifiedStudent.photoUrl ? (
                            <img src={verifiedStudent.photoUrl} alt="Face" className="w-full h-full object-cover" />
                          ) : (
-                           <div className="w-full h-full flex items-center justify-center text-gray-400">
+                           <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--sys-text-muted)' }}>
                              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                            </div>
                          )}
                        </div>
                        <div>
-                         <p className="text-2xl font-black text-gray-900 leading-tight">{verifiedStudent.first_name} {verifiedStudent.last_name}</p>
-                         <p className="text-sm font-bold text-cavite-maroon mt-1">{verifiedStudent.student_id}</p>
+                         <p className="text-2xl font-black leading-tight" style={{ color: 'var(--sys-text-primary)' }}>{verifiedStudent.first_name} {verifiedStudent.last_name}</p>
+                         <p className="text-sm font-bold mt-1" style={{ color: 'var(--sys-accent)' }}>{verifiedStudent.student_id}</p>
                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Match Confidence</p>
+                      <div className="rounded-xl p-3 border" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border-subtle)' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--sys-text-muted)' }}>Match Confidence</p>
                         <p className="text-lg font-black text-green-600">{verifiedStudent.matchPercentage}%</p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</p>
+                      <div className="rounded-xl p-3 border" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border-subtle)' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--sys-text-muted)' }}>Status</p>
                         <p className={`text-lg font-black ${verifiedStudent.status === 'VERIFIED' ? 'text-green-600' : 'text-orange-500'}`}>
                           {verifiedStudent.status}
                         </p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Grade Level</p>
-                        <p className="text-sm font-bold text-gray-700">{verifiedStudent.grade_level || 'N/A'}</p>
+                      <div className="rounded-xl p-3 border" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border-subtle)' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--sys-text-muted)' }}>Grade Level</p>
+                        <p className="text-sm font-bold" style={{ color: 'var(--sys-text-primary)' }}>{verifiedStudent.grade_level || 'N/A'}</p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Section</p>
-                        <p className="text-sm font-bold text-gray-700">{verifiedStudent.section || 'N/A'}</p>
+                      <div className="rounded-xl p-3 border" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border-subtle)' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--sys-text-muted)' }}>Section</p>
+                        <p className="text-sm font-bold" style={{ color: 'var(--sys-text-primary)' }}>{verifiedStudent.section || 'N/A'}</p>
                       </div>
                     </div>
                     
                     <div className="pt-2 text-center">
-                      <p className="text-[10px] text-gray-400 font-medium">Recorded at: {verifiedStudent.timestamp.toLocaleTimeString()}</p>
+                      <p className="text-[10px] font-medium" style={{ color: 'var(--sys-text-muted)' }}>Recorded at: {verifiedStudent.timestamp.toLocaleTimeString()}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 min-h-[250px] flex flex-col items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12 mb-3 text-gray-300 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z"></path></svg>
-                    <p className="font-bold tracking-tight text-gray-500">Awaiting Scan</p>
-                    <p className="text-xs text-center mt-1 max-w-[200px] text-gray-400">Identity profile will securely appear here once a face is successfully matched.</p>
+                  <div className="border rounded-2xl p-6 min-h-[250px] flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>
+                    <svg className="w-12 h-12 mb-3 animate-pulse" style={{ color: 'var(--sys-surface-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z"></path></svg>
+                    <p className="font-bold tracking-tight" style={{ color: 'var(--sys-text-primary)' }}>Awaiting Scan</p>
+                    <p className="text-xs text-center mt-1 max-w-[200px]" style={{ color: 'var(--sys-text-muted)' }}>Identity profile will securely appear here once a face is successfully matched.</p>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="border-b border-gray-100 px-6 py-5">
-                <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">System Status</p>
-                <h2 className="text-xl font-bold text-gray-900 mt-1">Exit Scanner</h2>
+            <div className="rounded-3xl shadow-xl border overflow-hidden" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+              <div className="border-b px-6 py-5" style={{ borderColor: 'var(--sys-border)' }}>
+                <p className="text-xs font-black tracking-[0.2em] uppercase" style={{ color: 'var(--sys-text-muted)' }}>System Status</p>
+                <h2 className="text-xl font-bold mt-1" style={{ color: 'var(--sys-text-primary)' }}>Exit Scanner</h2>
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500 font-medium">Scanner Status</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--sys-text-muted)' }}>Scanner Status</p>
                     <p className="text-2xl font-black text-green-600 mt-1">ACTIVE</p>
                   </div>
                   <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center">
@@ -447,7 +447,7 @@ export default function ExitGatePage() {
               </div>
             </div>
             <div className="mt-auto pt-8">
-              <p className="text-center text-[10px] text-gray-500 font-medium px-4">
+              <p className="text-center text-[10px] font-medium px-4" style={{ color: 'var(--sys-text-muted)' }}>
                 This area is monitored by AMSIRS biometric tracking. By proceeding, you consent to the processing of your biometric data for security purposes in compliance with the Data Privacy Act of 2012 (RA 10173).
               </p>
             </div>

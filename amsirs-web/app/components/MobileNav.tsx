@@ -10,6 +10,7 @@ import { logout } from "../auth/actions";
 import { motion } from "framer-motion";
 import { cn } from "../utils/cn";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 interface UserInfo {
   email: string;
@@ -46,17 +47,28 @@ export default function MobileNav({ userInfo }: MobileNavProps) {
   return (
     <>
       {/* Top Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 z-40" style={{ boxShadow: '0 4px 20px -10px rgba(0,0,0,0.05)' }}>
+      <header
+        className="lg:hidden fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-4 z-40 transition-colors duration-200"
+        style={{
+          backgroundColor: 'var(--sys-nav-bg)',
+          borderBottom: '1px solid var(--sys-nav-border)',
+          boxShadow: '0 4px 20px -10px rgba(0,0,0,0.08)',
+        }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-cavite-maroon rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ boxShadow: '0 5px 15px -3px rgba(122, 25, 27, 0.3)' }}>
+          <div
+            className="w-8 h-8 bg-cavite-maroon rounded-lg flex items-center justify-center text-white font-bold text-sm"
+            style={{ boxShadow: '0 5px 15px -3px rgba(122, 25, 27, 0.3)' }}
+          >
             A
           </div>
-          <span className="font-bold text-lg tracking-tight text-gray-800">
+          <span className="font-bold text-lg tracking-tight" style={{ color: 'var(--sys-text-primary)' }}>
             AMSIRS
           </span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <ThemeToggle compact />
           <NotificationBell roleKey={userInfo?.roleKey} />
           <div className="w-8 h-8 rounded-full bg-cavite-maroon flex items-center justify-center text-white font-bold text-xs border-2 border-white shadow-sm ml-1">
             {userInfo?.initials || "??"}
@@ -64,7 +76,7 @@ export default function MobileNav({ userInfo }: MobileNavProps) {
           <form action={logout}>
             <button
               type="submit"
-              className="text-red-400 hover:text-red-600 transition-colors p-1"
+              className="text-red-400 hover:text-red-500 transition-colors p-1"
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -73,7 +85,15 @@ export default function MobileNav({ userInfo }: MobileNavProps) {
       </header>
 
       {/* Bottom Navigation Bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 pb-safe z-40" style={{ paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -4px 20px -10px rgba(0,0,0,0.05)' }}>
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 pb-safe z-40 transition-colors duration-200"
+        style={{
+          backgroundColor: 'var(--sys-nav-bg)',
+          borderTop: '1px solid var(--sys-nav-border)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          boxShadow: '0 -4px 20px -10px rgba(0,0,0,0.08)',
+        }}
+      >
         <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory">
           <div className="flex items-center justify-around w-full px-2 py-2 min-w-max mx-auto max-w-md">
             {navLinks.map((link) => {
@@ -86,13 +106,15 @@ export default function MobileNav({ userInfo }: MobileNavProps) {
                   href={link.href}
                   className={cn(
                     "relative flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all snap-center mx-1",
-                    isActive ? "text-cavite-maroon" : "text-zinc-400 hover:text-zinc-600"
+                    isActive ? "text-cavite-maroon" : "hover:text-cavite-maroon"
                   )}
+                  style={!isActive ? { color: 'var(--sys-text-muted)' } : undefined}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="bottom-nav-indicator"
-                      className="absolute inset-0 bg-cavite-light rounded-xl -z-10"
+                      className="absolute inset-0 rounded-xl -z-10"
+                      style={{ backgroundColor: 'var(--sys-maroon-tint)' }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}

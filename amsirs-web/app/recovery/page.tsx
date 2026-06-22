@@ -79,10 +79,10 @@ export default function RecoveryPage() {
   return (
     <div className="p-10 max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">Face Embedding Recovery Tool</h1>
-      <div className="p-4 bg-gray-100 rounded-lg">
+      <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}>
         <p className="font-semibold text-lg">{status}</p>
         {progress.total > 0 && (
-          <p className="text-gray-600 mt-2">
+          <p className="mt-2" style={{ color: 'var(--sys-text-secondary)' }}>
             Progress: {progress.current} / {progress.total}
           </p>
         )}

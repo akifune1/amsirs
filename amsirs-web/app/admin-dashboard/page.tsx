@@ -226,40 +226,44 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
         </div>
 
         {/* TAB NAVIGATION */}
-        <div className="flex items-center gap-1 mb-8 bg-gray-100 p-2 rounded-2xl w-fit border border-transparent">
+        <div className="flex items-center gap-1 mb-8 p-2 rounded-2xl w-fit border border-transparent" style={{ backgroundColor: 'var(--sys-surface-muted)' }}>
           <Link
             href="?tab=staff"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'staff'
-                ? 'bg-white text-gray-900 shadow-sm font-bold'
-                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-              }`}
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl font-semibold ${activeTab === 'staff' ? 'shadow-sm font-bold' : 'hover:opacity-80'}`}
+            style={activeTab === 'staff'
+              ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' }
+              : { color: 'var(--sys-text-muted)' }
+            }
           >
             Institutional Staff
           </Link>
           <Link
             href="?tab=students"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'students'
-                ? 'bg-white text-gray-900 shadow-sm font-bold'
-                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-              }`}
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl font-semibold ${activeTab === 'students' ? 'shadow-sm font-bold' : 'hover:opacity-80'}`}
+            style={activeTab === 'students'
+              ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' }
+              : { color: 'var(--sys-text-muted)' }
+            }
           >
             Student Body
           </Link>
           <Link
             href="?tab=audit"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'audit'
-                ? 'bg-white text-gray-900 shadow-sm font-bold'
-                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-              }`}
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl font-semibold ${activeTab === 'audit' ? 'shadow-sm font-bold' : 'hover:opacity-80'}`}
+            style={activeTab === 'audit'
+              ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' }
+              : { color: 'var(--sys-text-muted)' }
+            }
           >
             Audit Logs
           </Link>
           <Link
             href="?tab=analytics"
-            className={`px-6 py-2.5 text-sm transition-all rounded-xl ${activeTab === 'analytics'
-                ? 'bg-white text-gray-900 shadow-sm font-bold'
-                : 'text-gray-500 hover:text-gray-900 font-semibold hover:bg-gray-200/50'
-              }`}
+            className={`px-6 py-2.5 text-sm transition-all rounded-xl font-semibold ${activeTab === 'analytics' ? 'shadow-sm font-bold' : 'hover:opacity-80'}`}
+            style={activeTab === 'analytics'
+              ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' }
+              : { color: 'var(--sys-text-muted)' }
+            }
           >
             Analytics
           </Link>
@@ -276,7 +280,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                 <h2 className="sys-label">Institutional Staff Directory</h2>
               </div>
               <div className="sys-card">
-                <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style={{ borderColor: 'var(--sys-border)', backgroundColor: 'var(--sys-surface-subtle)' }}>
                   <h3 className="sys-label m-0 text-sm">Filter Directory</h3>
                   <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                     <FilterDropdown paramName="staffRole" placeholder="Role" options={[{ label: 'All Roles', value: 'All' }, { label: 'Guard', value: 'guard' }, { label: 'Guidance', value: 'guidance' }, { label: 'School Admin', value: 'school_admin' }, { label: 'IT Admin', value: 'it_admin' }]} />
@@ -289,7 +293,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                 </div>
                 <div className="sys-table-wrapper max-h-[600px] overflow-auto">
                   <table className="sys-table">
-                    <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                    <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.08)]" style={{ backgroundColor: 'var(--sys-table-header-bg)' }}>
                       <tr className="table-header-row">
                         <th className="table-th w-16">ID</th>
                         <th className="table-th min-w-[180px]">Last Name</th>
@@ -303,7 +307,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                     <tbody className="divide-y divide-gray-50">
                       {staff.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="p-16 text-center text-zinc-400 bg-white">
+                          <td colSpan={7} className="p-16 text-center" style={{ color: 'var(--sys-text-muted)', backgroundColor: 'var(--sys-table-bg)' }}>
                             <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
                             <p className="text-base font-medium">No staff members found.</p>
                             <p className="text-sm mt-1">Try adjusting your search or filters.</p>
@@ -311,7 +315,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                         </tr>
                       ) : (staff.map((member) => {
                         return (
-                          <tr key={member.id} className="hover:bg-gray-50 group transition-colors">
+                          <tr key={member.id} className="hover:bg-black/5 dark:hover:bg-white/5 group transition-colors">
 
                             {/* ID Column */}
                             <td className="table-td" data-label="ID">
@@ -361,7 +365,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                                     <ActionForm action={resetUserPassword} confirmMessage={`Reset this user's password to '${defaultStaffPw}'?`}>
                                       <input type="hidden" name="userId" value={member.id} />
                                       <input type="hidden" name="newPassword" value={defaultStaffPw} />
-                                      <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
+                                      <button type="submit" className="px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-secondary)' }}>
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                                         <span className="hidden sm:inline">Reset PW</span>
                                       </button>
@@ -391,7 +395,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                 <h2 className="sys-label">Student Body Database</h2>
               </div>
               <div className="sys-card">
-                <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style={{ borderColor: 'var(--sys-border)', backgroundColor: 'var(--sys-surface-subtle)' }}>
                   <h3 className="sys-label m-0 text-sm">Filter Students</h3>
                   <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                     <FilterDropdown paramName="studentGrade" placeholder="Grade" options={[{ label: 'All Grades', value: 'All' }, { label: 'Grade 11', value: 'Grade 11' }, { label: 'Grade 12', value: 'Grade 12' }]} />
@@ -406,13 +410,13 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                   const ids = formData.getAll('studentIds') as string[];
                   await bulkApproveStudents(ids);
                 }} />
-                <div className="p-4 border-b border-cavite-border bg-zinc-50 flex justify-between items-center">
-                  <span className="text-sm text-zinc-500 font-medium">Select pending students to approve them all at once.</span>
+                <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--sys-border)', backgroundColor: 'var(--sys-surface-muted)' }}>
+                  <span className="text-sm font-medium" style={{ color: 'var(--sys-text-muted)' }}>Select pending students to approve them all at once.</span>
                   <button type="submit" form="bulk-approve-form" className="btn-primary m-0 py-1.5 px-4 text-xs">Bulk Approve Selected</button>
                 </div>
                 <div className="sys-table-wrapper max-h-[600px] overflow-auto">
                   <table className="sys-table">
-                    <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                    <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.08)]" style={{ backgroundColor: 'var(--sys-table-header-bg)' }}>
                       <tr className="table-header-row">
                         <th className="table-th w-10 text-center">✓</th>
                         <th className="table-th min-w-[160px]">Student ID</th>
@@ -428,7 +432,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                     <tbody className="divide-y divide-gray-50">
                       {students.length === 0 ? (
                         <tr>
-                          <td colSpan={9} className="p-16 text-center text-zinc-400 bg-white">
+                          <td colSpan={9} className="p-16 text-center" style={{ color: 'var(--sys-text-muted)', backgroundColor: 'var(--sys-table-bg)' }}>
                             <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                             <p className="text-base font-medium">No students found.</p>
                             <p className="text-sm mt-1">Try adjusting your search or filters.</p>
@@ -436,7 +440,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                         </tr>
                       ) : (students.map((student) => {
                         return (
-                          <tr key={student.id} className="hover:bg-gray-50 group transition-colors">
+                          <tr key={student.id} className="hover:bg-black/5 dark:hover:bg-white/5 group transition-colors">
 
                             {/* Checkbox for Bulk Approve */}
                             <td className="table-td text-center" data-label="Approve">
@@ -505,7 +509,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                                     <ActionForm action={resetUserPassword} confirmMessage={`Reset this student's password to '${defaultStudentPw}'?`}>
                                       <input type="hidden" name="userId" value={student.account_id} />
                                       <input type="hidden" name="newPassword" value={defaultStudentPw} />
-                                      <button type="submit" className="px-3 py-1.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-zinc-200">
+                                      <button type="submit" className="px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-secondary)' }}>
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                                         <span className="hidden sm:inline">Reset PW</span>
                                       </button>
@@ -551,7 +555,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
               </div>
 
               {/* FILTER BAR */}
-              <div className="p-4 border border-cavite-border rounded-xl bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div className="p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 border" style={{ borderColor: 'var(--sys-border)', backgroundColor: 'var(--sys-surface-subtle)' }}>
                 <h3 className="sys-label m-0 text-sm hidden lg:block">Filter Logs</h3>
                 <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                   <FilterDropdown paramName="auditAction" placeholder="Action" options={[{ label: 'All Actions', value: 'All' }, { label: 'Create Staff', value: 'CREATE_STAFF' }, { label: 'Update Staff', value: 'UPDATE_STAFF' }, { label: 'Update Student', value: 'UPDATE_STUDENT' }, { label: 'Bulk Approve', value: 'BULK_APPROVE' }, { label: 'Reset Password', value: 'RESET_PASSWORD' }]} />
@@ -566,7 +570,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
               <div className="sys-card">
                 <div className="sys-table-wrapper max-h-[600px] overflow-auto">
                   <table className="sys-table">
-                    <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                    <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.08)]" style={{ backgroundColor: 'var(--sys-table-header-bg)' }}>
                       <tr className="table-header-row">
                         <th className="table-th min-w-[160px]">Timestamp</th>
                         <th className="table-th min-w-[180px]">Admin</th>
@@ -579,7 +583,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                     <tbody className="divide-y divide-gray-50">
                       {auditLogs.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-16 text-center text-zinc-400 bg-white">
+                          <td colSpan={6} className="p-16 text-center" style={{ color: 'var(--sys-text-muted)', backgroundColor: 'var(--sys-table-bg)' }}>
                             <p className="text-base font-medium">No audit logs found.</p>
                           </td>
                         </tr>
@@ -619,11 +623,11 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                             if (vStr.includes('admin')) return 'bg-indigo-100 text-indigo-700 border-indigo-200';
                           }
                           if (key === 'count') return 'bg-orange-100 text-orange-700 border-orange-200';
-                          return 'bg-zinc-50 text-zinc-600 border-zinc-200';
+                          return 'bg-zinc-50 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700';
                         };
 
                         return (
-                          <tr key={log.id} className="hover:bg-gray-50 group transition-colors">
+                          <tr key={log.id} className="hover:bg-black/5 dark:hover:bg-white/5 group transition-colors">
                             <td className="table-td text-sm whitespace-nowrap" data-label="Timestamp">
                               {new Date(log.created_at).toLocaleString('en-PH', {
                                 month: 'short', day: 'numeric', year: 'numeric',
@@ -632,7 +636,7 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                             </td>
                             <td className="table-td" data-label="Admin">
                               <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-cavite-black">{adminName}</span>
+                                <span className="text-sm font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{adminName}</span>
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                   {adminRole && (
                                     <span className="text-[9px] uppercase tracking-wider font-bold text-cavite-maroon bg-cavite-maroon/10 px-1.5 py-0.5 rounded">
@@ -646,23 +650,23 @@ export default async function AdminDashboard(props: { searchParams?: Promise<{ [
                               </div>
                             </td>
                             <td className="table-td" data-label="Action">
-                              <span className="inline-flex text-[11px] font-bold px-2 py-1 rounded bg-zinc-100 border border-zinc-200 text-zinc-700 shadow-sm">
+                              <span className="inline-flex text-[11px] font-bold px-2 py-1 rounded shadow-sm border" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-secondary)' }}>
                                 {actionText}
                               </span>
                             </td>
                             <td className="table-td" data-label="Target">
-                              <span className="text-sm font-medium text-zinc-600">{entityText}</span>
+                              <span className="text-sm font-medium" style={{ color: 'var(--sys-text-secondary)' }}>{entityText}</span>
                             </td>
                             <td className="table-td" data-label="Target Name / ID">
                               {log.target_display ? (
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-cavite-black">{log.target_display.name}</span>
+                                  <span className="text-sm font-bold" style={{ color: 'var(--sys-text-primary)' }}>{log.target_display.name}</span>
                                   <span className="text-[10px] font-mono text-zinc-400 mt-0.5 uppercase tracking-wide">
                                     {log.target_display.identifier}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-xs font-mono text-zinc-500 bg-zinc-50 px-1.5 py-1 rounded border border-zinc-100" title={log.target_id || ''}>
+                                <span className="text-xs font-mono px-1.5 py-1 rounded border" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border-subtle)', color: 'var(--sys-text-secondary)' }} title={log.target_id || ''}>
                                   {log.target_id ? log.target_id.substring(0, 8) + '...' : '-'}
                                 </span>
                               )}

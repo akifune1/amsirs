@@ -78,28 +78,29 @@ export default function ConfirmChangesForm({
           onClick={() => !isSubmitting && setShowModal(false)}
         >
           <div 
-            className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+            className="rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+            style={{ backgroundColor: 'var(--sys-surface)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-5 py-4 border-b border-zinc-100 bg-zinc-50 flex items-center gap-2">
+            <div className="px-5 py-4 border-b flex items-center gap-2" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
               <svg className="w-5 h-5 text-cavite-maroon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
               </svg>
-              <h3 className="font-bold text-zinc-800 text-base">Review Changes</h3>
+              <h3 className="font-bold text-base" style={{ color: 'var(--sys-text-primary)' }}>Review Changes</h3>
             </div>
             
             <div className="p-5 max-h-[60vh] overflow-y-auto space-y-4">
-              <p className="text-sm text-zinc-500 mb-2">You are about to modify the following fields. Please review your changes before confirming.</p>
+              <p className="text-sm mb-2" style={{ color: 'var(--sys-text-muted)' }}>You are about to modify the following fields. Please review your changes before confirming.</p>
               
               {changes.map(c => (
-                <div key={c.field} className="flex flex-col text-sm border border-zinc-100 rounded-lg p-3 bg-zinc-50/50">
-                  <span className="text-zinc-700 font-bold mb-1.5">{formatFieldLabel(c.field)}</span>
+                <div key={c.field} className="flex flex-col text-sm border rounded-lg p-3" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)' }}>
+                  <span className="font-bold mb-1.5" style={{ color: 'var(--sys-text-primary)' }}>{formatFieldLabel(c.field)}</span>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                    <div className="flex-1 px-3 py-2 bg-red-50 text-red-700 border border-red-100 rounded-md line-through opacity-80 break-words font-medium">
+                    <div className="flex-1 px-3 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-md line-through opacity-80 break-words font-medium">
                       {c.old === 'true' ? 'Approved/Active' : c.old === 'false' ? 'Pending/Suspended' : c.old || '(empty)'}
                     </div>
-                    <div className="hidden sm:block text-zinc-300 font-bold">➔</div>
-                    <div className="flex-1 px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md shadow-sm break-words font-bold">
+                    <div className="hidden sm:block font-bold" style={{ color: 'var(--sys-text-muted)' }}>➔</div>
+                    <div className="flex-1 px-3 py-2 bg-green-500/10 text-green-500 border border-green-500/20 rounded-md shadow-sm break-words font-bold">
                       {c.new === 'true' ? 'Approved/Active' : c.new === 'false' ? 'Pending/Suspended' : c.new || '(empty)'}
                     </div>
                   </div>
@@ -107,12 +108,12 @@ export default function ConfirmChangesForm({
               ))}
             </div>
             
-            <div className="px-5 py-4 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-3">
+            <div className="px-5 py-4 border-t flex justify-end gap-3" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderTopColor: 'var(--sys-border)' }}>
               <button 
                 type="button" 
                 onClick={() => setShowModal(false)} 
                 disabled={isSubmitting}
-                className="btn-text !text-zinc-500 hover:!text-zinc-800 disabled:opacity-50"
+                className="btn-text !text-zinc-500 hover:!text-zinc-800 dark:hover:!text-zinc-200 disabled:opacity-50"
               >
                 Cancel
               </button>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { Bell, Check, CheckCheck, Link as LinkIcon } from "lucide-react";
+import { Bell, Check, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,19 +14,22 @@ export default function NotificationBell({ roleKey }: { roleKey?: string }) {
   const { notifications, unreadCount, markAsRead, markAllAsRead, ICON_MAP } = useNotifications();
 
   const getSeverityColors = (severity: string, isRead: boolean) => {
-    if (isRead) return "bg-gray-50 text-gray-400";
+    if (isRead) return "opacity-50";
     switch (severity) {
-      case "critical": return "bg-red-50 text-red-600";
-      case "warning": return "bg-amber-50 text-amber-600";
-      case "info": return "bg-blue-50 text-blue-600";
-      default: return "bg-zinc-50 text-zinc-600";
+      case "critical": return "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400";
+      case "warning": return "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400";
+      case "info": return "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
+      default: return "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400";
     }
   };
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <button className="relative flex items-center justify-center p-2 rounded-xl text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 transition-all outline-none">
+        <button
+          className="relative flex items-center justify-center p-2 rounded-xl transition-all outline-none hover:bg-[var(--sys-surface-muted)]"
+          style={{ color: 'var(--sys-text-muted)' }}
+        >
           <Bell className="w-6 h-6" />
           <AnimatePresence>
             {unreadCount > 0 && (
@@ -57,10 +60,14 @@ export default function NotificationBell({ roleKey }: { roleKey?: string }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                className="w-screen max-w-[360px] lg:max-w-[400px] bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh]"
+                className="w-screen max-w-[360px] lg:max-w-[400px] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                style={{
+                  backgroundColor: 'var(--sys-surface)',
+                  border: '1px solid var(--sys-border)',
+                }}
               >
                 {/* Header */}
-                <div className="p-4 bg-zinc-900 text-white flex flex-col gap-3 rounded-t-3xl relative overflow-hidden">
+                <div className="p-4 bg-zinc-900 dark:bg-zinc-950 text-white flex flex-col gap-3 rounded-t-3xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-cavite-maroon/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
                   
                   <div className="flex items-center justify-between z-10">
@@ -90,9 +97,15 @@ export default function NotificationBell({ roleKey }: { roleKey?: string }) {
                 </div>
 
                 {/* Notifications List */}
-                <div className="overflow-y-auto flex-1 bg-zinc-50 p-2 hide-scrollbar">
+                <div
+                  className="overflow-y-auto flex-1 p-2 hide-scrollbar"
+                  style={{ backgroundColor: 'var(--sys-surface-subtle)' }}
+                >
                   {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-zinc-400 flex flex-col items-center gap-2">
+                    <div
+                      className="p-8 text-center flex flex-col items-center gap-2"
+                      style={{ color: 'var(--sys-text-muted)' }}
+                    >
                       <Bell className="w-8 h-8 opacity-20" />
                       <p className="text-sm">No notifications</p>
                     </div>
@@ -106,37 +119,44 @@ export default function NotificationBell({ roleKey }: { roleKey?: string }) {
                             onClick={() => {
                               markAsRead(notif.id);
                               if (notif.link) {
-                                setOpen(false); // Close popover if they might navigate manually via a link handler if added later
+                                setOpen(false);
                               }
                             }}
                             className={cn(
                               "relative group p-3 rounded-2xl flex gap-3 cursor-pointer transition-all border",
                               notif.is_read 
-                                ? "bg-white border-transparent opacity-70 hover:opacity-100" 
-                                : "bg-white border-cavite-light shadow-sm"
+                                ? "opacity-70 hover:opacity-100" 
+                                : "shadow-sm"
                             )}
+                            style={{
+                              backgroundColor: 'var(--sys-surface)',
+                              borderColor: notif.is_read ? 'transparent' : 'var(--sys-maroon-tint)',
+                            }}
                           >
                             <div className={cn("w-12 h-12 shrink-0 rounded-xl flex items-center justify-center", getSeverityColors(notif.severity, notif.is_read))}>
                               <Icon className="w-6 h-6" strokeWidth={notif.is_read ? 1.5 : 2} />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                               <div className="flex items-start justify-between gap-2">
-                                <span className="text-[10px] font-bold tracking-wider uppercase text-zinc-400 mb-0.5">
+                                <span className="text-[10px] font-bold tracking-wider uppercase mb-0.5" style={{ color: 'var(--sys-text-muted)' }}>
                                   {notif.category}
                                 </span>
-                                <span className="text-[10px] font-medium text-zinc-400 shrink-0 whitespace-nowrap">
+                                <span className="text-[10px] font-medium shrink-0 whitespace-nowrap" style={{ color: 'var(--sys-text-muted)' }}>
                                   {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                                 </span>
                               </div>
-                              <p className={cn("text-sm mb-1 truncate", notif.is_read ? "font-medium text-zinc-700" : "font-bold text-zinc-900")}>
+                              <p
+                                className={cn("text-sm mb-1 truncate", notif.is_read ? "font-medium" : "font-bold")}
+                                style={{ color: 'var(--sys-text-primary)' }}
+                              >
                                 {notif.title}
                               </p>
                               <div className="flex items-center justify-between">
-                                <p className="text-xs text-zinc-500 line-clamp-1 mr-2 leading-relaxed">
+                                <p className="text-xs line-clamp-1 mr-2 leading-relaxed" style={{ color: 'var(--sys-text-muted)' }}>
                                   {notif.message}
                                 </p>
                                 {notif.is_read && (
-                                  <Check className="w-4 h-4 text-zinc-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  <Check className="w-4 h-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--sys-text-muted)' }} />
                                 )}
                               </div>
                             </div>

@@ -229,7 +229,7 @@ export default function DashboardPage() {
         {/* ---- FILTERS + TABLE CARD ---- */}
         <div className="sys-card">
           {/* FILTER BAR */}
-          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 print:hidden">
+          <div className="p-4 border-b border-cavite-border print:hidden" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
             {/* Row 1: label + dropdowns */}
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <h3 className="sys-label m-0 text-sm text-zinc-400 uppercase tracking-wider font-bold flex items-center gap-2">
@@ -242,7 +242,8 @@ export default function DashboardPage() {
               <select
                 value={timeframeFilter}
                 onChange={(e) => handleTimeframeChange(e.target.value)}
-                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
+                className="border rounded-lg px-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
+                style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
               >
                 <option value="All">All Time</option>
                 <option value="7days">Last 7 Days</option>
@@ -254,7 +255,8 @@ export default function DashboardPage() {
               <select
                 value={severityFilter}
                 onChange={(e) => { setSeverityFilter(e.target.value); setCurrentPage(1); }}
-                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
+                className="border rounded-lg px-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
+                style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
               >
                 <option value="All">All Severity</option>
                 <option value="High">High</option>
@@ -271,14 +273,16 @@ export default function DashboardPage() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => handleDateFromChange(e.target.value)}
-                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all"
+                className="border rounded-lg px-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all"
+                style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
               />
               <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">To</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => handleDateToChange(e.target.value)}
-                className="bg-white border border-cavite-border rounded-lg px-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all"
+                className="border rounded-lg px-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all"
+                style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
               />
 
               {/* Location search */}
@@ -289,7 +293,8 @@ export default function DashboardPage() {
                   placeholder="Search location..."
                   value={locationSearch}
                   onChange={(e) => { setLocationSearch(e.target.value); setCurrentPage(1); }}
-                  className="bg-white border border-cavite-border rounded-lg pl-8 pr-3 py-2 text-xs font-semibold text-cavite-black shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all w-44"
+                  className="border rounded-lg pl-8 pr-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all w-44"
+                  style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                 />
                 <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400">
                   <SearchIcon />
@@ -309,10 +314,11 @@ export default function DashboardPage() {
                       setSelectedStudent(null);
                     }
                   }}
-                  className={`bg-white border rounded-lg pl-8 pr-8 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all w-52 ${selectedStudent
-                    ? "border-green-300 bg-green-50/50 text-green-800"
-                    : "border-cavite-border text-cavite-black"
+                  className={`border rounded-lg pl-8 pr-8 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all w-52 ${selectedStudent
+                    ? "border-green-300 bg-green-500/20 text-green-500"
+                    : ""
                     }`}
+                  style={!selectedStudent ? { backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' } : {}}
                 />
                 <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400">
                   <SearchIcon />
@@ -334,18 +340,19 @@ export default function DashboardPage() {
 
                 {/* Dropdown */}
                 {nameDropdownOpen && studentResults.length > 0 && (
-                  <div className="absolute z-30 w-72 mt-1 bg-white border border-cavite-border rounded-xl shadow-xl overflow-hidden max-h-64 overflow-y-auto">
+                  <div className="absolute z-30 w-72 mt-1 border rounded-xl shadow-xl overflow-hidden max-h-64 overflow-y-auto" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
                     {studentResults.map((s) => (
                       <button
                         key={s.id}
                         onClick={() => handleSelectStudent(s)}
-                        className="w-full text-left px-4 py-3 hover:bg-zinc-50 flex items-center gap-3 transition-colors border-b border-zinc-100 last:border-0"
+                        className="w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b last:border-0 hover:bg-black/5 dark:hover:bg-white/5"
+                        style={{ borderColor: 'var(--sys-border-subtle)' }}
                       >
                         <div className="w-8 h-8 rounded-full bg-cavite-maroon/10 flex items-center justify-center text-xs font-bold text-cavite-maroon shrink-0">
                           {s.first_name?.[0]}{s.last_name?.[0]}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-cavite-black truncate">
+                          <p className="text-sm font-semibold truncate" style={{ color: 'var(--sys-text-primary)' }}>
                             {s.first_name} {s.last_name}
                           </p>
                           <p className="text-xs text-zinc-400 font-mono mt-0.5">
@@ -373,7 +380,7 @@ export default function DashboardPage() {
           {/* ---- TABLE ---- */}
           <div className="sys-table-wrapper max-h-[600px] overflow-auto relative">
             <table className="sys-table">
-              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+              <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]" style={{ backgroundColor: 'var(--sys-surface)' }}>
                 <tr className="table-header-row">
                   <th className="table-th">Date & Time</th>
                   <th className="table-th">Student Involved</th>
@@ -383,12 +390,12 @@ export default function DashboardPage() {
                   <th className="table-th text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y" style={{ borderTopColor: 'var(--sys-border-subtle)' }}>
                 {/* Inline loading overlay */}
                 {tableLoading && (
                   <tr>
                     <td colSpan={6} className="p-0 border-0">
-                      <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-[1px] flex items-center justify-center rounded-b-3xl transition-opacity">
+                      <div className="absolute inset-0 z-20 backdrop-blur-[1px] flex items-center justify-center rounded-b-3xl transition-opacity bg-black/5 dark:bg-white/5">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-6 h-6 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin" />
                           <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Loading…</span>
@@ -403,7 +410,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="p-16 text-center bg-white border-b-0">
+                    <td colSpan={6} className="p-16 text-center border-b-0" style={{ backgroundColor: 'var(--sys-surface)' }}>
                       <div className="flex flex-col items-center text-zinc-400">
                         <svg className="w-8 h-8 mb-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
                         <p className="text-sm font-medium">No reports found in the secure vault.</p>
@@ -418,23 +425,25 @@ export default function DashboardPage() {
 
           {/* ---- PAGINATION ---- */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-cavite-border bg-white px-5 py-3 rounded-b-lg">
-              <p className="text-sm text-zinc-500 font-medium">
-                Page <span className="font-semibold text-cavite-black">{currentPage}</span> of{" "}
-                <span className="font-semibold text-cavite-black">{totalPages}</span>
+            <div className="flex items-center justify-between border-t px-5 py-3 rounded-b-lg" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+              <p className="text-sm font-medium" style={{ color: 'var(--sys-text-muted)' }}>
+                Page <span className="font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{currentPage}</span> of{" "}
+                <span className="font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{totalPages}</span>
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage <= 1}
-                  className="bg-zinc-100 border border-cavite-border text-cavite-black px-4 py-1.5 text-sm font-medium rounded-md hover:bg-zinc-200 hover:border-zinc-300 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-1.5 text-sm font-medium rounded-md transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)] disabled:opacity-50 disabled:cursor-not-allowed border hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage >= totalPages}
-                  className="bg-zinc-100 border border-cavite-border text-cavite-black px-4 py-1.5 text-sm font-medium rounded-md hover:bg-zinc-200 hover:border-zinc-300 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-1.5 text-sm font-medium rounded-md transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02)] disabled:opacity-50 disabled:cursor-not-allowed border hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}
                 >
                   Next
                 </button>

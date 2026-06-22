@@ -42,7 +42,7 @@ export default function IncidentReportingPage() {
   const removeLocation = (id: string) => setLocations(locations.filter(l => l.id !== id));
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <div className="min-h-screen font-sans" style={{ backgroundColor: 'var(--sys-page-bg)', color: 'var(--sys-text-primary)' }}>
       
       {/* TOP NAVIGATION BAR */}
       
@@ -76,7 +76,7 @@ export default function IncidentReportingPage() {
               
               <div className="space-y-4">
                 {students.map((student, index) => (
-                  <div key={student.id} className="relative grid grid-cols-1 md:grid-cols-2 gap-6 bg-cavite-gray/50 p-4 rounded-xl border border-cavite-border group">
+                  <div key={student.id} className="relative grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-xl border group" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
                     
                     {students.length > 1 && (
                       <button 

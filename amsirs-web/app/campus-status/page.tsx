@@ -54,7 +54,7 @@ export default function CampusStatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen font-sans" style={{ backgroundColor: 'var(--sys-page-bg)' }}>
 
       {/* NAVBAR */}
 
@@ -68,11 +68,11 @@ export default function CampusStatusPage() {
 
         <div className="mb-8">
 
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight" style={{ color: 'var(--sys-text-primary)' }}>
             Campus Status Monitor
           </h1>
 
-          <p className="text-gray-500 font-medium mt-2">
+          <p className="font-medium mt-2" style={{ color: 'var(--sys-text-secondary)' }}>
             Real-time monitoring of students currently inside the school campus.
           </p>
 
@@ -82,9 +82,9 @@ export default function CampusStatusPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
 
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+          <div className="rounded-3xl shadow-xl p-6 border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
 
-            <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">
+            <p className="text-xs font-black tracking-[0.2em] uppercase" style={{ color: 'var(--sys-text-muted)' }}>
               Current Population
             </p>
 
@@ -92,15 +92,15 @@ export default function CampusStatusPage() {
               {students.length}
             </p>
 
-            <p className="text-gray-500 mt-2 font-medium">
+            <p className="mt-2 font-medium" style={{ color: 'var(--sys-text-secondary)' }}>
               Students currently inside campus
             </p>
 
           </div>
 
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+          <div className="rounded-3xl shadow-xl p-6 border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
 
-            <p className="text-xs font-black tracking-[0.2em] uppercase text-gray-400">
+            <p className="text-xs font-black tracking-[0.2em] uppercase" style={{ color: 'var(--sys-text-muted)' }}>
               System Status
             </p>
 
@@ -108,7 +108,7 @@ export default function CampusStatusPage() {
               ACTIVE
             </p>
 
-            <p className="text-gray-500 mt-2 font-medium">
+            <p className="mt-2 font-medium" style={{ color: 'var(--sys-text-secondary)' }}>
               Real-time campus tracking enabled
             </p>
 
@@ -139,13 +139,13 @@ export default function CampusStatusPage() {
 
         {students.length === 0 && (
 
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-16 text-center">
+          <div className="rounded-3xl shadow-xl p-16 text-center border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
 
-            <div className="text-3xl font-black text-gray-700">
+            <div className="text-3xl font-black" style={{ color: 'var(--sys-text-primary)' }}>
               No Students Inside Campus
             </div>
 
-            <p className="text-gray-500 mt-3">
+            <p className="mt-3" style={{ color: 'var(--sys-text-secondary)' }}>
               All recorded students have exited the campus.
             </p>
 
@@ -157,22 +157,23 @@ export default function CampusStatusPage() {
         {students.length > 0 && (
 
           <div className="sys-card mt-8">
-            <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <h3 className="sys-label m-0 text-sm">Active Campus Presence</h3>
+            <div className="p-4 border-b flex flex-col md:flex-row items-start md:items-center justify-between gap-4" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
+              <h3 className="sys-label m-0 text-sm" style={{ color: 'var(--sys-text-primary)' }}>Active Campus Presence</h3>
               <div className="w-full md:w-72">
                 <input
                   type="text"
                   placeholder="Search by ID or Name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white border border-cavite-border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
+                  className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
+                  style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                 />
               </div>
             </div>
             
             <div className="sys-table-wrapper max-h-[600px] overflow-auto">
               <table className="sys-table">
-                <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+                <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.08)]" style={{ backgroundColor: 'var(--sys-table-header-bg)' }}>
                   <tr className="table-header-row">
                     <th className="table-th w-[40%]">Student Identity</th>
                     <th className="table-th text-center">Entry Time</th>
@@ -180,24 +181,24 @@ export default function CampusStatusPage() {
                     <th className="table-th text-center">Access Gate Proof</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y" style={{ borderTopColor: 'var(--sys-border-subtle)' }}>
                   {paginatedStudents.map((log: any) => (
-                    <tr key={log.id} className="hover:bg-zinc-50 transition-colors group">
+                    <tr key={log.id} className="transition-colors group hover:bg-black/5 dark:hover:bg-white/5">
                       <td className="table-td" data-label="Student Identity">
                         <div className="flex items-center gap-4">
                           {log.faceUrl ? (
                             <img src={log.faceUrl} alt="" className="w-14 h-14 rounded-lg object-cover border border-zinc-200 shrink-0 shadow-sm" />
                           ) : (
-                            <div className="w-14 h-14 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[9px] font-bold text-zinc-400 shrink-0">NO PIC</div>
+                            <div className="w-14 h-14 rounded-lg border flex items-center justify-center text-[9px] font-bold shrink-0" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>NO PIC</div>
                           )}
                           <div>
-                            <p className="text-sm font-bold text-cavite-black leading-tight">
+                            <p className="text-sm font-bold leading-tight" style={{ color: 'var(--sys-text-primary)' }}>
                               {log.students.last_name}, {log.students.first_name}
                             </p>
                             <p className="text-xs font-mono text-zinc-500 leading-none mt-1.5 mb-1.5">
                               {log.students.student_id} • {log.students.grade_level} {log.students.section}
                             </p>
-                            <span className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 px-2 py-[2px] rounded text-[9px] font-black uppercase tracking-wider">
+                            <span className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-500 px-2 py-[2px] rounded text-[9px] font-black uppercase tracking-wider">
                               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                               INSIDE
                             </span>
@@ -205,7 +206,7 @@ export default function CampusStatusPage() {
                         </div>
                       </td>
                       <td className="table-td text-center" data-label="Entry Time">
-                        <span className="text-sm font-semibold text-zinc-700">
+                        <span className="text-sm font-semibold" style={{ color: 'var(--sys-text-primary)' }}>
                           {new Date(log.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </td>
@@ -221,10 +222,11 @@ export default function CampusStatusPage() {
                             <img 
                               src={log.snapshotUrl} 
                               alt="Access proof" 
-                              className="w-24 h-16 rounded object-cover border border-zinc-200 group-hover:scale-[2.5] group-hover:z-50 group-hover:shadow-2xl group-hover:-translate-x-10 transition-all duration-300 origin-right cursor-zoom-in relative z-10 bg-white" 
+                              className="w-24 h-16 rounded object-cover border group-hover:scale-[2.5] group-hover:z-50 group-hover:shadow-2xl group-hover:-translate-x-10 transition-all duration-300 origin-right cursor-zoom-in relative z-10" 
+                              style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}
                             />
                           ) : (
-                            <span className="text-xs text-zinc-400 font-medium italic bg-zinc-50 px-3 py-1.5 rounded-md border border-dashed border-zinc-200">No snapshot recorded</span>
+                            <span className="text-xs font-medium italic px-3 py-1.5 rounded-md border border-dashed" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>No snapshot recorded</span>
                           )}
                         </div>
                       </td>
@@ -235,11 +237,11 @@ export default function CampusStatusPage() {
             </div>
             
             {totalPages > 1 && (
-              <div className="p-4 border-t border-cavite-border bg-white flex justify-between items-center text-sm rounded-b-xl">
-                <span className="text-zinc-500 font-medium">Page <span className="font-semibold text-cavite-black">{currentPage}</span> of <span className="font-semibold text-cavite-black">{totalPages}</span></span>
+              <div className="p-4 border-t flex justify-between items-center text-sm rounded-b-xl" style={{ borderColor: 'var(--sys-border)', backgroundColor: 'var(--sys-surface)' }}>
+                <span className="font-medium" style={{ color: 'var(--sys-text-muted)' }}>Page <span className="font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{currentPage}</span> of <span className="font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{totalPages}</span></span>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 border border-cavite-border rounded-md text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 font-semibold text-xs shadow-sm transition-colors">Previous</button>
-                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 border border-cavite-border rounded-md text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 font-semibold text-xs shadow-sm transition-colors">Next</button>
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 border rounded-md disabled:opacity-50 font-semibold text-xs shadow-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5" style={{ borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}>Previous</button>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 border rounded-md disabled:opacity-50 font-semibold text-xs shadow-sm transition-colors hover:bg-black/5 dark:hover:bg-white/5" style={{ borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}>Next</button>
                 </div>
               </div>
             )}

@@ -98,12 +98,12 @@ export default async function ActiveSessionsPage() {
 
       <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="sys-card">
-          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h3 className="sys-label m-0 text-sm">Currently Active Staff Devices</h3>
+          <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
+            <h3 className="sys-label m-0 text-sm" style={{ color: 'var(--sys-text-primary)' }}>Currently Active Staff Devices</h3>
           </div>
           <div className="sys-table-wrapper max-h-[600px] overflow-auto">
             <table className="sys-table">
-              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+              <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]" style={{ backgroundColor: 'var(--sys-surface)' }}>
               <tr className="table-header-row">
                 <th className="table-th min-w-[180px]">User Name</th>
                 <th className="table-th min-w-[120px]">Role</th>
@@ -113,16 +113,16 @@ export default async function ActiveSessionsPage() {
                 <th className="table-th min-w-[120px] text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y" style={{ borderTopColor: 'var(--sys-border-subtle)' }}>
               {combinedSessions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-16 text-center text-zinc-400 bg-white">
+                  <td colSpan={6} className="p-16 text-center text-zinc-400" style={{ backgroundColor: 'var(--sys-surface)' }}>
                     <p className="text-base font-medium">No active staff sessions found.</p>
                   </td>
                 </tr>
               ) : (combinedSessions.map((session) => {
                 return (
-                  <tr key={session.session_id} className="hover:bg-gray-50 group transition-colors">
+                  <tr key={session.session_id} className="group transition-colors hover:bg-black/5 dark:hover:bg-white/5">
                     
                     <td className="table-td" data-label="User Name">
                       <span className="text-sm font-medium px-2 py-1 block w-full min-w-[160px] flex items-center gap-2">
@@ -138,7 +138,7 @@ export default async function ActiveSessionsPage() {
                     </td>
 
                     <td className="table-td" data-label="Device Info">
-                      <span className="text-sm text-zinc-600 px-2 py-1 block w-full">
+                      <span className="text-sm px-2 py-1 block w-full" style={{ color: 'var(--sys-text-secondary)' }}>
                         {session.device_info || 'Unknown Device'}
                       </span>
                     </td>
@@ -156,7 +156,7 @@ export default async function ActiveSessionsPage() {
                         <ActionForm action={revokeSession} confirmMessage={`Are you sure you want to forcibly logout ${session.displayName}?`}>
                           <input type="hidden" name="sessionId" value={session.session_id} />
                           <input type="hidden" name="userId" value={session.user_id} />
-                          <button type="submit" className="px-3 py-1.5 rounded-md bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-red-100" disabled={session.isSelf}>
+                          <button type="submit" className="px-3 py-1.5 rounded-md font-semibold text-xs transition-all flex items-center gap-1.5 shadow-sm border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-500" disabled={session.isSelf}>
                             <span className="hidden sm:inline">Revoke</span>
                           </button>
                         </ActionForm>

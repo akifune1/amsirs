@@ -3,6 +3,7 @@ import "./globals.css";
 import Sidebar from "./components/Sidebar";
 import MobileNav from "./components/MobileNav";
 import ToasterProvider from "./components/ToasterProvider";
+import ThemeProvider from "./components/ThemeProvider";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import NextTopLoader from "nextjs-toploader";
@@ -101,17 +102,20 @@ export default async function RootLayout({
   const userInfo = await getUserInfo();
   
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body
-        className={`font-sans bg-[#F3F5F8] text-[#2D3748] antialiased flex h-screen overflow-hidden`}
+        className={`font-sans antialiased flex h-screen overflow-hidden`}
+        style={{ backgroundColor: 'var(--sys-page-bg)', color: 'var(--sys-text-primary)' }}
       >
-        <NextTopLoader color="#7A191B" showSpinner={true} />
-        <ToasterProvider />
-        <Sidebar userInfo={userInfo} />
-        <MobileNav userInfo={userInfo} />
-        <div className="flex-1 h-full overflow-y-auto hide-scrollbar relative pt-16 pb-20 lg:pt-0 lg:pb-0">
-          {children}
-        </div>
+        <ThemeProvider>
+          <NextTopLoader color="#7A191B" showSpinner={true} />
+          <ToasterProvider />
+          <Sidebar userInfo={userInfo} />
+          <MobileNav userInfo={userInfo} />
+          <div className="flex-1 h-full overflow-y-auto hide-scrollbar relative pt-16 pb-20 lg:pt-0 lg:pb-0">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

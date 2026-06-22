@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 interface FilterOption {
   label: string;
@@ -46,11 +46,20 @@ export default function FilterDropdown({ paramName, options, defaultValue = '', 
 
   return (
     <div className="flex items-center gap-2">
-      {placeholder && <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">{placeholder}</label>}
+      {placeholder && (
+        <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--sys-text-muted)' }}>
+          {placeholder}
+        </label>
+      )}
       <select 
         value={currentVal} 
         onChange={handleChange}
-        className="bg-white text-sm font-medium px-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon cursor-pointer shadow-sm transition-all text-cavite-black min-w-[140px]"
+        className="text-sm font-medium px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon cursor-pointer shadow-sm transition-all min-w-[140px]"
+        style={{
+          backgroundColor: 'var(--sys-input-bg)',
+          borderColor: 'var(--sys-border)',
+          color: 'var(--sys-text-primary)',
+        }}
       >
         {options.map(opt => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>

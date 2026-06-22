@@ -45,7 +45,8 @@ function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-white text-sm font-medium px-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon cursor-pointer shadow-sm transition-all text-cavite-black min-w-[140px]"
+        className="text-sm font-medium px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon cursor-pointer shadow-sm transition-all min-w-[140px]"
+        style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
       >
         {children}
       </select>
@@ -74,7 +75,8 @@ function DateInput({
         type="date"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-white text-sm font-medium px-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon shadow-sm transition-all text-cavite-black"
+        className="text-sm font-medium px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon shadow-sm transition-all"
+        style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
       />
     </div>
   );
@@ -329,11 +331,11 @@ export default function AccessLogsPage() {
     <>
       {/* ---- PRINT HEADER (hidden on screen, visible in print) ---- */}
       <div className="hidden print:block mb-6 pb-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900">Access Logs Report</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--sys-text-primary)' }}>Access Logs Report</h1>
         <p className="text-sm text-gray-500 mt-1">
           Generated: {new Date().toLocaleString("en-PH")}
         </p>
-        <p className="text-sm text-gray-600 font-medium mt-1">
+        <p className="text-sm font-medium mt-1" style={{ color: 'var(--sys-text-secondary)' }}>
           Filters: {printFilterSummary || buildFilterSummary()}
         </p>
       </div>
@@ -355,7 +357,7 @@ export default function AccessLogsPage() {
         <div className="sys-card">
 
           {/* ---- FILTER BAR ---- */}
-          <div className="p-4 border-b border-cavite-border bg-zinc-50/50 space-y-3 print:hidden">
+          <div className="p-4 border-b space-y-3 print:hidden" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
 
             {/* Row 1: Quick-preset filters + Export buttons */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -402,7 +404,8 @@ export default function AccessLogsPage() {
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handlePrint}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-md shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md shadow-sm transition-colors border hover:bg-black/5 dark:hover:bg-white/5"
+                  style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Print PDF
@@ -444,7 +447,8 @@ export default function AccessLogsPage() {
                   onChange={(e) => setStudentIdInput(e.target.value)}
                   onKeyDown={handleStudentIdKeyDown}
                   onBlur={handleStudentIdBlur}
-                  className="bg-white text-sm font-medium px-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon shadow-sm transition-all text-cavite-black w-[150px] placeholder:text-zinc-400 font-mono"
+                  className="text-sm font-medium px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon shadow-sm transition-all w-[150px] font-mono"
+                  style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                 />
               </div>
 
@@ -462,7 +466,8 @@ export default function AccessLogsPage() {
                       value={nameInput}
                       onChange={(e) => handleNameInput(e.target.value)}
                       onFocus={() => nameResults.length > 0 && setNameDropdownOpen(true)}
-                      className="bg-white text-sm font-medium pl-8 pr-3 py-2 rounded-lg border border-cavite-border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon shadow-sm transition-all text-cavite-black w-[180px] placeholder:text-zinc-400"
+                      className="text-sm font-medium pl-8 pr-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon shadow-sm transition-all w-[180px]"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     />
                     {nameInput && (
                       <button
@@ -472,7 +477,7 @@ export default function AccessLogsPage() {
                           setNameResults([]);
                           setCurrentPage(1);
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -481,15 +486,16 @@ export default function AccessLogsPage() {
 
                   {/* Autocomplete dropdown */}
                   {nameDropdownOpen && nameResults.length > 0 && (
-                    <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-cavite-border rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 mt-1 w-64 border rounded-xl shadow-lg z-50 overflow-hidden" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
                       {nameResults.map((s) => (
                         <button
                           key={s.id}
                           onMouseDown={(e) => e.preventDefault()} // prevent input blur before click
                           onClick={() => selectStudent(s)}
-                          className="w-full text-left px-3 py-2.5 hover:bg-zinc-50 transition-colors border-b border-zinc-50 last:border-0"
+                          className="w-full text-left px-3 py-2.5 transition-colors border-b last:border-0 hover:bg-black/5 dark:hover:bg-white/5"
+                          style={{ borderColor: 'var(--sys-border-subtle)' }}
                         >
-                          <p className="text-sm font-semibold text-cavite-black">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--sys-text-primary)' }}>
                             {s.first_name} {s.last_name}
                           </p>
                           <p className="text-xs text-zinc-400 font-mono mt-0.5">
@@ -518,7 +524,7 @@ export default function AccessLogsPage() {
           {/* ---- TABLE ---- */}
           <div className="sys-table-wrapper max-h-[600px] overflow-auto relative">
             <table className="sys-table">
-              <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]">
+              <thead className="sticky top-0 z-10 shadow-[0_1px_3px_0_rgba(0,0,0,0.05)]" style={{ backgroundColor: 'var(--sys-surface)' }}>
                 <tr className="table-header-row">
                   <th className="table-th">Snapshot</th>
                   <th className="table-th">Student</th>
@@ -530,12 +536,12 @@ export default function AccessLogsPage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y" style={{ borderTopColor: 'var(--sys-border-subtle)' }}>
                 {/* Inline loading overlay */}
                 {tableLoading && (
                   <tr>
                     <td colSpan={7} className="p-0 border-0">
-                      <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-[1px] flex items-center justify-center rounded-b-3xl transition-opacity">
+                      <div className="absolute inset-0 z-20 backdrop-blur-[1px] flex items-center justify-center rounded-b-3xl transition-opacity bg-black/5 dark:bg-white/5">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-6 h-6 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin" />
                           <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Loading…</span>
@@ -546,7 +552,7 @@ export default function AccessLogsPage() {
                 )}
                 {logs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-16 text-center text-zinc-400 bg-white">
+                    <td colSpan={7} className="p-16 text-center text-zinc-400" style={{ backgroundColor: 'var(--sys-surface)' }}>
                       <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -556,7 +562,7 @@ export default function AccessLogsPage() {
                   </tr>
                 ) : (
                   logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={log.id} className="transition-colors hover:bg-black/5 dark:hover:bg-white/5">
                       <td className="table-td" data-label="Snapshot">
                         {log.snapshot_path && imageUrls[log.snapshot_path] ? (
                           <img
@@ -565,12 +571,12 @@ export default function AccessLogsPage() {
                             className="w-16 h-16 object-cover rounded-xl"
                           />
                         ) : (
-                          <div className="w-16 h-16 rounded-md bg-zinc-100 flex items-center justify-center text-xs font-semibold text-zinc-400">
+                          <div className="w-16 h-16 rounded-md flex items-center justify-center text-xs font-semibold text-zinc-400" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}>
                             NO IMAGE
                           </div>
                         )}
                       </td>
-                      <td className="table-td font-semibold text-cavite-black" data-label="Student">
+                      <td className="table-td font-semibold" style={{ color: 'var(--sys-text-primary)' }} data-label="Student">
                         {log.students?.first_name} {log.students?.last_name}
                       </td>
                       <td className="table-td text-zinc-500 font-mono text-sm" data-label="Student ID">
@@ -589,7 +595,7 @@ export default function AccessLogsPage() {
                           {log.action}
                         </span>
                       </td>
-                      <td className="table-td font-semibold text-cavite-black" data-label="Match">
+                      <td className="table-td font-semibold" style={{ color: 'var(--sys-text-primary)' }} data-label="Match">
                         {log.match_percentage}%
                       </td>
                       <td className="table-td text-zinc-500 text-sm" data-label="Timestamp">
@@ -608,10 +614,10 @@ export default function AccessLogsPage() {
           </div>
 
           {/* ---- PAGINATION ---- */}
-          <div className="flex flex-col sm:flex-row items-center justify-between border-t border-gray-100 bg-white px-8 py-6 gap-4 print:hidden">
-            <p className="text-sm text-zinc-500 font-medium">
-              Showing <span className="font-semibold text-cavite-black">{logs.length}</span> logs
-              (Total: <span className="font-semibold text-cavite-black">{totalLogs}</span>)
+          <div className="flex flex-col sm:flex-row items-center justify-between border-t px-8 py-6 gap-4 print:hidden" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--sys-text-muted)' }}>
+              Showing <span className="font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{logs.length}</span> logs
+              (Total: <span className="font-semibold" style={{ color: 'var(--sys-text-primary)' }}>{totalLogs}</span>)
             </p>
             <div className="flex items-center gap-2">
               <button

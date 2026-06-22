@@ -130,7 +130,8 @@ export default async function StudentPortal() {
           {/* Mobile Only Report Button */}
           <Link 
             href="/incident-reporting" 
-            className="sm:hidden mt-4 w-full justify-center flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-cavite-maroon transition-all uppercase tracking-widest bg-gray-50 px-4 py-3 rounded-xl border border-gray-200 hover:border-cavite-maroon/20"
+            className="sm:hidden mt-4 w-full justify-center flex items-center gap-2 text-xs font-bold transition-all uppercase tracking-widest px-4 py-3 rounded-xl border"
+            style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}
           >
             File a New Report
           </Link>
@@ -172,8 +173,8 @@ export default async function StudentPortal() {
               <div className="p-6 md:p-8 space-y-6">
                 
                 {/* PHOTO AND ID SECTION */}
-                <div className="flex items-center gap-5 border-b border-cavite-border pb-6">
-                  <div className="w-20 h-20 rounded-full bg-cavite-gray border border-cavite-border overflow-hidden shrink-0 flex items-center justify-center shadow-inner">
+                <div className="flex items-center gap-5 border-b pb-6" style={{ borderColor: 'var(--sys-border)' }}>
+                  <div className="w-20 h-20 rounded-full border overflow-hidden shrink-0 flex items-center justify-center shadow-inner" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)' }}>
                     {photoUrl ? (
                       <img src={photoUrl} alt="Biometric Reference" className="w-full h-full object-cover" />
                     ) : (
@@ -183,7 +184,7 @@ export default async function StudentPortal() {
                   <div>
                     <label className="form-label !mb-1">Internal ID</label>
                     <p className="text-2xl font-black tracking-tight text-cavite-maroon">{student.student_id}</p>
-                    <p className="text-xs font-bold text-gray-500 mt-1">LRN: {student.lrn || 'Not provided'}</p>
+                    <p className="text-xs font-bold mt-1" style={{ color: 'var(--sys-text-muted)' }}>LRN: {student.lrn || 'Not provided'}</p>
                   </div>
                 </div>
 
@@ -222,7 +223,7 @@ export default async function StudentPortal() {
                 </div>
 
                 {/* ACADEMICS */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-cavite-border">
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t" style={{ borderColor: 'var(--sys-border)' }}>
                   <div>
                     <label className="form-label">Level</label>
                     <div className="input-field-alt text-sm">{student.grade_level}</div>

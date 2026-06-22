@@ -4,6 +4,7 @@ import { useActionState, Suspense } from 'react';
 import Link from 'next/link';
 import { login } from './login/actions';
 import { useSearchParams } from 'next/navigation';
+import ThemeToggle from '@/app/components/ThemeToggle';
 
 function LoginFormContent() {
   const [state, formAction, isPending] = useActionState(login, null);
@@ -28,7 +29,7 @@ function LoginFormContent() {
 
         {/* Display Error Message using the new alert-error component */}
         {errorMessage && (
-          <div className="alert-error text-center rounded-lg p-3 bg-red-50 text-red-600 border border-red-200 font-medium text-sm">
+          <div className="alert-error text-center rounded-lg p-3 bg-red-500/10 text-red-500 border border-red-500/20 font-medium text-sm">
             {errorMessage}
           </div>
         )}
@@ -88,7 +89,10 @@ function LoginFormContent() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Suspense fallback={<div className="max-w-md w-full sys-card p-10 border-t-[6px] border-t-cavite-maroon animate-pulse"><div className="h-64"></div></div>}>
         <LoginFormContent />
       </Suspense>

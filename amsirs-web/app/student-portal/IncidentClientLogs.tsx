@@ -13,9 +13,9 @@ function LogTableRow({ record, onDecrypt }: { record: any, onDecrypt: () => void
       <td className="table-td truncate max-w-[200px]">{incident.location}</td>
       <td className="table-td whitespace-nowrap">
         <span className={`text-[10px] font-black uppercase px-2 py-1 rounded border tracking-tighter ${
-          incident.severity === 'High' ? 'bg-red-50 text-red-700 border-red-200' :
-          incident.severity === 'Medium' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
-          'bg-gray-50 text-gray-700 border-gray-200'
+          incident.severity === 'High' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+          incident.severity === 'Medium' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 
+          'bg-gray-500/10 text-gray-400 border-gray-500/20'
         }`}>
           {incident.severity}
         </span>
@@ -87,7 +87,7 @@ export default function IncidentClientLogs({ involvements }: { involvements: any
           >
             {/* Header */}
             <div className="sys-card-header flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <span className="sys-label !text-cavite-black">Classified Payload Decrypted</span>
+              <span className="sys-label" style={{ color: 'var(--sys-text-primary)' }}>Classified Payload Decrypted</span>
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <ExportButtons 
                   data={[{
@@ -109,26 +109,26 @@ export default function IncidentClientLogs({ involvements }: { involvements: any
             </div>
 
             {/* Body (Form Grid) */}
-            <div className="p-6 md:p-8 overflow-y-auto bg-gray-50">
+            <div className="p-6 md:p-8 overflow-y-auto" style={{ backgroundColor: 'var(--sys-surface)' }}>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 <div className="col-span-1">
                   <label className="form-label">Date Recorded</label>
-                  <div className="input-field-alt text-sm font-bold bg-white">{selectedRecord.formattedDate}</div>
+                  <div className="input-field-alt text-sm font-bold" style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}>{selectedRecord.formattedDate}</div>
                 </div>
 
                 <div className="col-span-1">
                   <label className="form-label">Current Status</label>
-                  <div className="input-field-alt text-sm uppercase font-black bg-white">{selectedRecord.incident.status}</div>
+                  <div className="input-field-alt text-sm uppercase font-black" style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}>{selectedRecord.incident.status}</div>
                 </div>
 
                 <div className="col-span-1">
                   <label className="form-label">Priority Level</label>
-                  <div className="input-field-alt flex items-center bg-white py-2.5">
+                  <div className="input-field-alt flex items-center py-2.5" style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)' }}>
                     <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border tracking-tighter ${
-                      selectedRecord.incident.severity === 'High' ? 'bg-red-50 text-red-700 border-red-200' :
-                      selectedRecord.incident.severity === 'Medium' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
-                      'bg-gray-50 text-gray-700 border-gray-200'
+                      selectedRecord.incident.severity === 'High' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                      selectedRecord.incident.severity === 'Medium' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 
+                      'bg-gray-500/10 text-gray-400 border-gray-500/20'
                     }`}>
                       {selectedRecord.incident.severity}
                     </span>
@@ -137,12 +137,12 @@ export default function IncidentClientLogs({ involvements }: { involvements: any
 
                 <div className="col-span-full">
                   <label className="form-label">Incident Location</label>
-                  <div className="input-field-alt text-sm font-bold bg-white">{selectedRecord.incident.location}</div>
+                  <div className="input-field-alt text-sm font-bold" style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}>{selectedRecord.incident.location}</div>
                 </div>
 
                 <div className="col-span-full">
                   <label className="form-label">Official Report</label>
-                  <div className="input-field-alt min-h-[120px] whitespace-pre-wrap break-words bg-white text-sm font-medium leading-relaxed">
+                  <div className="input-field-alt min-h-[120px] whitespace-pre-wrap break-words text-sm font-medium leading-relaxed" style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}>
                     {selectedRecord.incident.description}
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export default function IncidentClientLogs({ involvements }: { involvements: any
                 {selectedRecord.incidentImageUrl && (
                   <div className="col-span-full">
                     <label className="form-label">Photographic Evidence</label>
-                    <div className="input-field-alt bg-white flex justify-center p-2">
+                    <div className="input-field-alt flex justify-center p-2" style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)' }}>
                       <img 
                         src={selectedRecord.incidentImageUrl} 
                         alt="Incident Evidence" 

@@ -9,19 +9,19 @@ export default function NotificationsClient() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, ICON_MAP, loading } = useNotifications();
 
   const getSeverityColors = (severity: string, isRead: boolean) => {
-    if (isRead) return "bg-gray-50 text-gray-400";
+    if (isRead) return "bg-black/5 dark:bg-white/5 text-zinc-500";
     switch (severity) {
-      case "critical": return "bg-red-50 text-red-600";
-      case "warning": return "bg-amber-50 text-amber-600";
-      case "info": return "bg-blue-50 text-blue-600";
-      default: return "bg-zinc-50 text-zinc-600";
+      case "critical": return "bg-red-500/10 text-red-500";
+      case "warning": return "bg-amber-500/10 text-amber-500";
+      case "info": return "bg-blue-500/10 text-blue-500";
+      default: return "bg-zinc-500/10 text-zinc-500";
     }
   };
 
   if (loading) {
     return (
       <div className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 flex items-center justify-center min-h-[50vh]">
-        <div className="animate-pulse flex flex-col items-center gap-4 text-gray-400">
+        <div className="animate-pulse flex flex-col items-center gap-4" style={{ color: 'var(--sys-text-muted)' }}>
           <Bell className="w-12 h-12 opacity-50" />
           <p>Loading notifications...</p>
         </div>
@@ -33,7 +33,7 @@ export default function NotificationsClient() {
     <div className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3" style={{ color: 'var(--sys-text-primary)' }}>
             Notifications
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-sm px-2.5 py-0.5 rounded-full shadow-sm">
@@ -41,26 +41,27 @@ export default function NotificationsClient() {
               </span>
             )}
           </h1>
-          <p className="text-gray-500 mt-1">View and manage your system alerts</p>
+          <p className="mt-1" style={{ color: 'var(--sys-text-muted)' }}>View and manage your system alerts</p>
         </div>
         
         <button 
           onClick={markAllAsRead}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors shadow-sm font-medium self-start md:self-auto"
+          className="flex items-center gap-2 px-4 py-2 border rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors shadow-sm font-medium self-start md:self-auto"
+          style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}
         >
           <CheckCheck className="w-4 h-4" />
           Mark all as read
         </button>
       </div>
 
-      <div className="bg-white rounded-[32px] shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+      <div className="rounded-[32px] shadow-sm border overflow-hidden flex flex-col" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
         {notifications.length === 0 ? (
-          <div className="p-20 flex flex-col items-center justify-center text-gray-400 gap-4">
+          <div className="p-20 flex flex-col items-center justify-center gap-4" style={{ color: 'var(--sys-text-muted)' }}>
             <Bell className="w-16 h-16 opacity-20" />
             <p className="text-lg font-medium">You're all caught up!</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y" style={{ borderTopColor: 'var(--sys-border-subtle)' }}>
             {notifications.map((notif) => {
               const Icon = ICON_MAP[notif.icon] || Bell;
               return (
@@ -70,8 +71,8 @@ export default function NotificationsClient() {
                   className={cn(
                     "group p-6 flex flex-col md:flex-row gap-4 md:items-center transition-all cursor-pointer relative",
                     notif.is_read 
-                      ? "bg-white hover:bg-gray-50/50" 
-                      : "bg-blue-50/20 hover:bg-blue-50/40"
+                      ? "hover:bg-black/5 dark:hover:bg-white/5" 
+                      : "bg-blue-500/5 hover:bg-blue-500/10"
                   )}
                 >
                   {!notif.is_read && (
@@ -85,18 +86,18 @@ export default function NotificationsClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4 mb-1">
                       <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold tracking-wider uppercase text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg">
+                        <span className="text-xs font-bold tracking-wider uppercase px-2 py-0.5 rounded-lg" style={{ backgroundColor: 'var(--sys-surface-muted)', color: 'var(--sys-text-muted)' }}>
                           {notif.category}
                         </span>
-                        <span className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium" style={{ color: 'var(--sys-text-muted)' }}>
                           {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                         </span>
                       </div>
                     </div>
-                    <h3 className={cn("text-lg mb-1", notif.is_read ? "font-medium text-gray-700" : "font-bold text-gray-900")}>
+                    <h3 className={cn("text-lg mb-1", notif.is_read ? "font-medium" : "font-bold")} style={notif.is_read ? { color: 'var(--sys-text-primary)' } : { color: 'var(--sys-text-primary)' }}>
                       {notif.title}
                     </h3>
-                    <p className="text-gray-600 leading-relaxed max-w-4xl">
+                    <p className="leading-relaxed max-w-4xl" style={{ color: 'var(--sys-text-secondary)' }}>
                       {notif.message}
                     </p>
                   </div>

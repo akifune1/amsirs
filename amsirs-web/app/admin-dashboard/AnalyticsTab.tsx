@@ -52,30 +52,30 @@ export default function AnalyticsTab() {
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
         <div className="mb-6">
-          <div className="h-6 w-64 bg-gray-200 animate-pulse rounded-md mb-2"></div>
-          <div className="h-4 w-96 bg-gray-100 animate-pulse rounded-md"></div>
+          <div className="h-6 w-64 animate-pulse rounded-md mb-2" style={{ backgroundColor: 'var(--sys-surface-muted)' }}></div>
+          <div className="h-4 w-96 animate-pulse rounded-md" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}></div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Trend Chart Skeleton */}
           <div className="sys-card p-6 flex flex-col h-[400px]">
-            <div className="h-5 w-48 bg-gray-200 animate-pulse rounded-md mb-4"></div>
-            <div className="flex-1 w-full bg-gray-100/50 rounded-lg border border-dashed border-gray-200 animate-pulse"></div>
+            <div className="h-5 w-48 animate-pulse rounded-md mb-4" style={{ backgroundColor: 'var(--sys-surface-muted)' }}></div>
+            <div className="flex-1 w-full rounded-lg border border-dashed animate-pulse" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}></div>
           </div>
 
           {/* Late Chart Skeleton */}
           <div className="sys-card p-6 flex flex-col h-[400px]">
-            <div className="h-5 w-56 bg-gray-200 animate-pulse rounded-md mb-4"></div>
-            <div className="flex-1 w-full bg-gray-100/50 rounded-lg border border-dashed border-gray-200 animate-pulse"></div>
+            <div className="h-5 w-56 animate-pulse rounded-md mb-4" style={{ backgroundColor: 'var(--sys-surface-muted)' }}></div>
+            <div className="flex-1 w-full rounded-lg border border-dashed animate-pulse" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}></div>
           </div>
         </div>
 
         {/* Summary Cards Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="sys-card p-5 bg-white border border-gray-100">
-              <div className="h-3 w-24 bg-gray-200 animate-pulse rounded-md mb-2"></div>
-              <div className="h-8 w-16 bg-gray-300 animate-pulse rounded-md mt-2"></div>
+            <div key={i} className="sys-card p-5 border" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+              <div className="h-3 w-24 animate-pulse rounded-md mb-2" style={{ backgroundColor: 'var(--sys-surface-muted)' }}></div>
+              <div className="h-8 w-16 animate-pulse rounded-md mt-2" style={{ backgroundColor: 'var(--sys-border)' }}></div>
             </div>
           ))}
         </div>
@@ -154,14 +154,14 @@ export default function AnalyticsTab() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-6">
         <h2 className="sys-label">Attendance Analytics Dashboard</h2>
-        <p className="text-sm text-zinc-500 mt-1">High-level insights based on physical access logs.</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--sys-text-muted)' }}>High-level insights based on physical access logs.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Trend Chart */}
         <div className="sys-card p-6 flex flex-col h-[400px]">
-          <h3 className="font-bold text-gray-800 mb-4">Daily Volume Trends</h3>
+          <h3 className="font-bold mb-4" style={{ color: 'var(--sys-text-primary)' }}>Daily Volume Trends</h3>
           <div className="flex-1 relative w-full">
             <Line data={trendChartData} options={trendChartOptions} />
           </div>
@@ -169,7 +169,7 @@ export default function AnalyticsTab() {
 
         {/* Late Chart */}
         <div className="sys-card p-6 flex flex-col h-[400px]">
-          <h3 className="font-bold text-gray-800 mb-4">Late Arrivals by Section</h3>
+          <h3 className="font-bold mb-4" style={{ color: 'var(--sys-text-primary)' }}>Late Arrivals by Section</h3>
           <div className="flex-1 relative w-full">
             <Bar data={lateChartData} options={lateChartOptions} />
           </div>
@@ -179,21 +179,21 @@ export default function AnalyticsTab() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="sys-card p-5 bg-gradient-to-br from-green-50 to-emerald-100/50 border-green-200/50">
-          <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Avg Daily Entries</span>
-          <p className="text-3xl font-black text-green-900 mt-2">
+        <div className="sys-card p-5 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+          <span className="text-xs font-bold text-green-500 uppercase tracking-wider">Avg Daily Entries</span>
+          <p className="text-3xl font-black text-green-500 mt-2">
             {data.trendData.entries.length > 0 ? Math.round(data.trendData.entries.reduce((a:number,b:number)=>a+b, 0) / data.trendData.entries.length) : 0}
           </p>
         </div>
-        <div className="sys-card p-5 bg-gradient-to-br from-amber-50 to-orange-100/50 border-orange-200/50">
-          <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Top Late Section</span>
-          <p className="text-2xl font-black text-amber-900 mt-2 truncate">
+        <div className="sys-card p-5 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-orange-500/20">
+          <span className="text-xs font-bold text-amber-500 uppercase tracking-wider">Top Late Section</span>
+          <p className="text-2xl font-black text-amber-500 mt-2 truncate">
             {data.lateData.labels.length > 0 ? data.lateData.labels[0] : 'N/A'}
           </p>
         </div>
-        <div className="sys-card p-5 bg-gradient-to-br from-blue-50 to-indigo-100/50 border-indigo-200/50">
-          <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Total Logs Analyzed</span>
-          <p className="text-3xl font-black text-indigo-900 mt-2">
+        <div className="sys-card p-5 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-indigo-500/20">
+          <span className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Total Logs Analyzed</span>
+          <p className="text-3xl font-black text-indigo-500 mt-2">
             {data.trendData.entries.reduce((a:number,b:number)=>a+b, 0) + data.trendData.exits.reduce((a:number,b:number)=>a+b, 0)}
           </p>
         </div>

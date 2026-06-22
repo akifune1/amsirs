@@ -231,9 +231,9 @@ export default function IncidentRow({ report }: { report: any }) {
   const reportedLastNames = (report.last_name || '').split(' & ').filter(Boolean);
 
   const severityColors: any = {
-    Low: "bg-green-100 text-green-700",
-    Medium: "bg-orange-100 text-orange-700",
-    High: "bg-red-100 text-red-700 font-bold"
+    Low: "bg-green-500/10 text-green-500",
+    Medium: "bg-orange-500/10 text-orange-500",
+    High: "bg-red-500/10 text-red-500 font-bold"
   };
 
   const formattedDate = new Date(report.created_at).toLocaleString('en-PH', {
@@ -258,14 +258,14 @@ export default function IncidentRow({ report }: { report: any }) {
 
   return (
     <>
-      <tr className={`group hover:bg-zinc-50 transition-colors align-top ${decryptedText ? 'bg-zinc-50' : ''}`}>
-        <td className="table-td text-gray-500 whitespace-nowrap" data-label="Date">{formattedDate}</td>
+      <tr className={`group transition-colors align-top ${decryptedText ? 'bg-black/5 dark:bg-white/5' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>
+        <td className="table-td whitespace-nowrap" style={{ color: 'var(--sys-text-secondary)' }} data-label="Date">{formattedDate}</td>
         
         <td className="table-td" data-label="Student">
           <div className="flex flex-col gap-1">
             {involvements.length > 0 ? (
               involvements.map((inv: any, i: number) => (
-                <div key={i} className="text-sm font-semibold text-cavite-black flex items-center gap-2">
+                <div key={i} className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--sys-text-primary)' }}>
                   <span className="w-1 h-1 bg-zinc-300 rounded-full"></span>
                   {inv.students?.last_name || 'Unknown'}, {inv.students?.first_name || 'Unknown'}
                 </div>
@@ -273,13 +273,13 @@ export default function IncidentRow({ report }: { report: any }) {
             ) : (
               reportedLastNames.length > 0 ? (
                 reportedLastNames.map((ln: string, i: number) => (
-                  <div key={i} className="text-sm font-medium text-zinc-500 flex items-center gap-2">
+                  <div key={i} className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--sys-text-muted)' }}>
                     <span className="w-1 h-1 bg-zinc-300 rounded-full"></span>
-                    {ln}, {reportedFirstNames[i]} <span className="text-[10px] bg-zinc-100 px-1 rounded">Unverified</span>
+                    {ln}, {reportedFirstNames[i]} <span className="text-[10px] px-1 rounded" style={{ backgroundColor: 'var(--sys-surface-muted)' }}>Unverified</span>
                   </div>
                 ))
               ) : (
-                <span className="text-zinc-400 italic text-sm">Unidentified Participant</span>
+                <span className="italic text-sm" style={{ color: 'var(--sys-text-muted)' }}>Unidentified Participant</span>
               )
             )}
             
@@ -294,11 +294,11 @@ export default function IncidentRow({ report }: { report: any }) {
         <td className="table-td" data-label="Location">
           <div className="flex flex-col gap-1">
             {locations.length > 0 ? locations.map((loc: string, i: number) => (
-              <div key={i} className="text-sm text-zinc-500 flex items-center gap-2">
+              <div key={i} className="text-sm flex items-center gap-2" style={{ color: 'var(--sys-text-secondary)' }}>
                 <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 {loc}
               </div>
-            )) : <span className="text-zinc-400 italic text-sm">Unknown</span>}
+            )) : <span className="italic text-sm" style={{ color: 'var(--sys-text-muted)' }}>Unknown</span>}
           </div>
         </td>
 
@@ -315,9 +315,9 @@ export default function IncidentRow({ report }: { report: any }) {
               onChange={(e) => handleStatusChange(e.target.value)}
               disabled={statusLoading}
               className={`appearance-none w-full border text-xs font-bold px-3 py-1.5 pr-8 rounded-md outline-none cursor-pointer focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon transition-colors ${
-                report.status === 'Resolved' ? 'bg-green-50 border-green-200 text-green-700' :
-                report.status === 'Under Investigation' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                'bg-yellow-50 border-yellow-200 text-yellow-700'
+                report.status === 'Resolved' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
+                report.status === 'Under Investigation' ? 'bg-blue-500/10 border-blue-500/20 text-blue-500' :
+                'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
               } ${statusLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <option value="Pending">Pending</option>
@@ -336,7 +336,7 @@ export default function IncidentRow({ report }: { report: any }) {
         </td>
         
         <td className="table-td text-right" data-label="Actions">
-          <button onClick={handleToggleDetails} disabled={loading} className={`px-4 py-2 rounded-md font-semibold text-xs shadow-sm transition-all flex items-center justify-end gap-1.5 ml-auto w-fit ${decryptedText ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200' : 'bg-cavite-maroon hover:bg-cavite-hover text-white'}`}>
+          <button onClick={handleToggleDetails} disabled={loading} className={`px-4 py-2 rounded-md font-semibold text-xs shadow-sm transition-all flex items-center justify-end gap-1.5 ml-auto w-fit border ${decryptedText ? 'hover:bg-black/5 dark:hover:bg-white/5' : 'bg-cavite-maroon hover:bg-cavite-hover text-white'}`} style={decryptedText ? { backgroundColor: 'var(--sys-surface-muted)', color: 'var(--sys-text-primary)', borderColor: 'var(--sys-border)' } : {}}>
             {loading ? (
               <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> Decrypting...</>
             ) : decryptedText ? (
@@ -349,24 +349,24 @@ export default function IncidentRow({ report }: { report: any }) {
       </tr>
       {decryptedText && (
         <tr className="expansion-row">
-          <td colSpan={6} className="p-0 bg-zinc-50 border-b border-cavite-border shadow-inner">
+          <td colSpan={6} className="p-0 border-b shadow-inner" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' }}>
             <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-2 duration-200">
               
               <div className="space-y-6">
-                <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6">
+                <div className="rounded-lg border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
                   <div className="flex items-center gap-2 mb-4">
                     <span className="w-2 h-2 bg-cavite-maroon rounded-full animate-pulse"></span>
                     <h4 className="sys-label">Decrypted Security Log</h4>
                   </div>
-                  <p className="text-cavite-black text-sm leading-relaxed whitespace-pre-wrap font-medium">{decryptedText}</p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium" style={{ color: 'var(--sys-text-primary)' }}>{decryptedText}</p>
                 </div>
 
-                <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6">
+                <div className="rounded-lg border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
                   <h4 className="sys-label mb-4">Evidence Attachment</h4>
                   
                   <div>
                     {isScanningStatus && (
-                      <div className="mb-4 bg-zinc-100 border border-cavite-border p-3 rounded-md text-xs font-semibold text-zinc-500 tracking-wider animate-pulse">
+                      <div className="mb-4 border p-3 rounded-md text-xs font-semibold tracking-wider animate-pulse" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>
                         {">"} {isScanningStatus}
                       </div>
                     )}
@@ -384,7 +384,7 @@ export default function IncidentRow({ report }: { report: any }) {
                         />
                       </div>
                     ) : (
-                      <div className="w-full h-32 rounded-lg border border-dashed border-cavite-border flex flex-col items-center justify-center text-zinc-400 bg-zinc-50">
+                      <div className="w-full h-32 rounded-lg border border-dashed flex flex-col items-center justify-center" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>
                         <span className="text-sm font-medium">No visual evidence</span>
                       </div>
                     )}
@@ -393,7 +393,7 @@ export default function IncidentRow({ report }: { report: any }) {
               </div>
 
               {/* IDENTITY VERIFICATION SECTION */}
-              <div className="bg-white rounded-lg border border-cavite-border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6 flex flex-col">
+              <div className="rounded-lg border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-6 flex flex-col" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
                 
                 {(() => {
                   const linkedStudentIds = new Set(involvements.map((inv: any) => inv.students.id));
@@ -412,7 +412,8 @@ export default function IncidentRow({ report }: { report: any }) {
                               <img 
                                 src={rec.photoUrl} 
                                 alt="Matched student" 
-                                className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-lg shadow-sm border border-warning-border/50 bg-white shrink-0" 
+                                className="w-32 h-32 sm:w-36 sm:h-36 object-cover rounded-lg shadow-sm border border-warning-border/50 shrink-0" 
+                                style={{ backgroundColor: 'var(--sys-surface)' }}
                               />
                             ) : (
                               <div className="w-32 h-32 sm:w-36 sm:h-36 bg-warning-border/20 rounded-lg border border-warning-border/50 flex flex-col items-center justify-center text-warning-text text-sm font-bold text-center leading-tight shrink-0">
@@ -424,7 +425,7 @@ export default function IncidentRow({ report }: { report: any }) {
                                 <p className="text-sm font-black text-warning-text leading-none mb-2 tracking-wide">
                                   {rec.match_percentage}% MATCH • <span className="font-mono">{rec.students.student_id}</span>
                                 </p>
-                                <p className="text-lg font-bold text-cavite-black leading-tight">
+                                <p className="text-lg font-bold leading-tight" style={{ color: 'var(--sys-text-primary)' }}>
                                   {rec.students.last_name}, {rec.students.first_name}
                                 </p>
                               </div>
@@ -448,31 +449,31 @@ export default function IncidentRow({ report }: { report: any }) {
                   {involvements.map((inv: any) => {
                     const isAiMatch = aiRecommendations.some(rec => rec.students.id === inv.students.id);
                     return (
-                      <div key={inv.id} className={`border rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center justify-between group shadow-sm transition-all hover:shadow-md gap-4 sm:gap-0 ${isAiMatch ? 'bg-warning-bg border-warning-border' : 'bg-zinc-50 border-cavite-border'}`}>
+                      <div key={inv.id} className={`border rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center justify-between group shadow-sm transition-all hover:shadow-md gap-4 sm:gap-0 ${isAiMatch ? 'bg-warning-bg border-warning-border' : ''}`} style={!isAiMatch ? { backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)' } : {}}>
                         <div className="flex items-center gap-4 w-full sm:w-auto">
                           {inv.students.photoUrl ? (
                             <img src={inv.students.photoUrl} className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover border border-zinc-200 shadow-sm shrink-0" alt="" />
                           ) : (
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-zinc-200 border border-zinc-300 flex items-center justify-center text-[10px] sm:text-xs font-bold text-zinc-400 shrink-0 shadow-sm">NO PIC</div>
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg border flex items-center justify-center text-[10px] sm:text-xs font-bold shrink-0 shadow-sm" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>NO PIC</div>
                           )}
                           <div>
                             <p className="text-xs font-mono text-zinc-500 leading-none mb-2 flex flex-wrap items-center gap-1.5">
                               {inv.students.student_id}
-                              <span className={`px-1.5 py-[2px] rounded text-[9px] font-bold tracking-wider uppercase ${inv.role === 'Offender' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                              <span className={`px-1.5 py-[2px] rounded text-[9px] font-bold tracking-wider uppercase ${inv.role === 'Offender' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>
                                 {inv.role || 'Offender'}
                               </span>
                               {isAiMatch && (
                                 <span className="px-1.5 py-[2px] rounded text-[9px] font-bold tracking-wider uppercase bg-warning-border/50 text-warning-text">AI MATCH</span>
                               )}
                             </p>
-                            <p className="text-sm sm:text-base font-bold text-cavite-black leading-tight">
+                            <p className="text-sm sm:text-base font-bold leading-tight" style={{ color: 'var(--sys-text-primary)' }}>
                               {inv.students.last_name}, {inv.students.first_name}
                             </p>
                           </div>
                         </div>
                         <button 
                           onClick={() => handleUnlink(inv.id)}
-                          className="w-full sm:w-auto text-xs font-bold text-danger-text bg-red-50 hover:bg-red-100 border border-red-200 transition-colors flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg shadow-sm active:scale-95"
+                          className="w-full sm:w-auto text-xs font-bold bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20 transition-colors flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg shadow-sm active:scale-95"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4l16 16"></path></svg>
                           <span>Unlink</span>
@@ -482,7 +483,7 @@ export default function IncidentRow({ report }: { report: any }) {
                   })}
                   
                   {involvements.length === 0 && (
-                    <div className="text-center py-6 text-zinc-400 border border-dashed border-cavite-border rounded-md bg-zinc-50">
+                    <div className="text-center py-6 border border-dashed rounded-md" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>
                       <p className="text-sm font-semibold">No Database Link</p>
                       <p className="text-xs font-medium mt-1">Search below to verify.</p>
                     </div>
@@ -492,11 +493,12 @@ export default function IncidentRow({ report }: { report: any }) {
                 {/* Smart Search Input */}
                 <div className="pt-4 mt-4 border-t border-cavite-border relative">
                   <div className="flex justify-between items-end mb-1.5">
-                    <label className="block text-sm font-medium text-cavite-black">Link Database Record</label>
+                    <label className="block text-sm font-medium" style={{ color: 'var(--sys-text-primary)' }}>Link Database Record</label>
                     <select 
                       value={selectedRole}
                       onChange={(e) => setSelectedRole(e.target.value)}
-                      className="text-xs font-semibold bg-zinc-50 border border-zinc-200 rounded px-2 py-0.5 outline-none text-zinc-600 focus:border-cavite-maroon"
+                      className="text-xs font-semibold border rounded px-2 py-0.5 outline-none focus:border-cavite-maroon"
+                      style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                     >
                       <option value="Offender">Offender</option>
                       <option value="Victim">Victim</option>
@@ -508,7 +510,8 @@ export default function IncidentRow({ report }: { report: any }) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search by ID or Last Name..." 
-                    className="w-full bg-white border border-cavite-border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
+                    className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-cavite-maroon focus:border-cavite-maroon shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
+                    style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
                   />
                   
                   {isSearching && (
@@ -518,20 +521,21 @@ export default function IncidentRow({ report }: { report: any }) {
                   )}
 
                   {searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-cavite-border rounded-md shadow-lg overflow-hidden max-h-48 overflow-y-auto bottom-full mb-1">
+                    <div className="absolute z-10 w-full mt-1 border rounded-md shadow-lg overflow-hidden max-h-48 overflow-y-auto bottom-full mb-1" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
                       {searchResults.map((student) => (
                         <button 
                           key={student.id}
                           onClick={() => handleLink(student.id)}
-                          className="w-full text-left p-3 hover:bg-zinc-50 flex items-center gap-3 transition-colors border-b border-cavite-border/50 last:border-0 group"
+                          className="w-full text-left p-3 flex items-center gap-3 transition-colors border-b last:border-0 group hover:bg-black/5 dark:hover:bg-white/5"
+                          style={{ borderColor: 'var(--sys-border-subtle)' }}
                         >
                           {student.photoUrl ? (
                             <img src={student.photoUrl} alt="" className="w-10 h-10 rounded-md object-cover border border-zinc-200 shrink-0" />
                           ) : (
-                            <div className="w-10 h-10 rounded-md bg-zinc-100 border border-zinc-200 flex items-center justify-center text-[8px] font-bold text-zinc-400 shrink-0">NO PIC</div>
+                            <div className="w-10 h-10 rounded-md border flex items-center justify-center text-[8px] font-bold shrink-0" style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>NO PIC</div>
                           )}
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-cavite-black leading-none mb-1">{student.last_name}, {student.first_name}</p>
+                            <p className="text-sm font-semibold leading-none mb-1" style={{ color: 'var(--sys-text-primary)' }}>{student.last_name}, {student.first_name}</p>
                             <p className="text-xs font-mono text-zinc-500 leading-none">{student.student_id} • {student.grade_level}</p>
                           </div>
                           <div className="flex items-center gap-1 text-xs font-semibold text-cavite-maroon opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
