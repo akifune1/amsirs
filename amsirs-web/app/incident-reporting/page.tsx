@@ -128,15 +128,20 @@ export default function IncidentReportingPage() {
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="form-label">Overall Severity Level</label>
-                  <div className="relative">
-                    <select name="severity" className="input-field-alt appearance-none cursor-pointer">
-                      <option value="Low">Low (Minor Infraction)</option>
-                      <option value="Medium">Medium (Disciplinary Action)</option>
-                      <option value="High">High (Immediate Intervention)</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="form-label">Nature of Complaint</label>
+                    <div className="relative">
+                      <select name="offenseCategory" required className="input-field-alt appearance-none cursor-pointer">
+                        <option value="" disabled selected>Select Category...</option>
+                        <option value="Bullying / Peer Abuse">Bullying / Peer Abuse</option>
+                        <option value="Child Abuse">Child Abuse</option>
+                        <option value="Physical Violence">Physical Violence</option>
+                        <option value="Harassment">Harassment</option>
+                        <option value="Other">Other Infractions</option>
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                    </div>
                   </div>
                 </div>
               </div>

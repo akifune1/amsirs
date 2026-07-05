@@ -147,7 +147,7 @@ export default function CounselingModal({
                 >
                   <option value="Active">Active - Ongoing Support</option>
                   <option value="Pending Review">Pending Review</option>
-                  <option value="Resolved">Resolved - Case Closed</option>
+                  <option value="Resolved">Case Resolved - Referred to CPC for Monitoring</option>
                   <option value="Escalated">Escalated - Requires Admin</option>
                 </select>
               </div>

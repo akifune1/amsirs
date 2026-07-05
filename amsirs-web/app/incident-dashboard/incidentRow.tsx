@@ -14,8 +14,10 @@ import {
   saveAiMatch,
   getAiMatches,
   getStudentPhoto,
-  updateIncidentStatus
+  updateIncidentStatus,
+  fetchIntakeSheetData
 } from './actions';
+import IntakeSheetModal from '@/app/components/IntakeSheetModal';
 import { loadModels } from '@/lib/face/loadModels';
 import { compareFaces, getMatchPercentage } from '@/lib/face/compareFaces'; 
 
@@ -42,6 +44,11 @@ export default function IncidentRow({ report }: { report: any }) {
   
   // Guard reference to prevent double-scanning
   const hasScannedRef = useRef(false);
+
+  // 📄 Intake Sheet State
+  const [intakeModalOpen, setIntakeModalOpen] = useState(false);
+  const [intakePrefill, setIntakePrefill] = useState<any>(null);
+  const [intakeLoading, setIntakeLoading] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -230,12 +237,6 @@ export default function IncidentRow({ report }: { report: any }) {
   const reportedFirstNames = (report.first_name || '').split(' & ').filter(Boolean);
   const reportedLastNames = (report.last_name || '').split(' & ').filter(Boolean);
 
-  const severityColors: any = {
-    Low: "bg-green-500/10 text-green-500",
-    Medium: "bg-orange-500/10 text-orange-500",
-    High: "bg-red-500/10 text-red-500 font-bold"
-  };
-
   const formattedDate = new Date(report.created_at).toLocaleString('en-PH', {
     month: 'short', day: 'numeric', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
@@ -302,10 +303,16 @@ export default function IncidentRow({ report }: { report: any }) {
           </div>
         </td>
 
-        <td className="table-td" data-label="Severity">
-          <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${severityColors[report.severity]}`}>
-            {report.severity}
-          </span>
+        <td className="table-td" data-label="Category">
+          <div className="flex flex-col gap-1 items-start">
+            {report.offense_category && report.offense_category !== 'Other' ? (
+              <span className="px-2 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider bg-cavite-maroon/10 text-cavite-maroon border border-cavite-maroon/20">
+                {report.offense_category}
+              </span>
+            ) : (
+              <span className="italic text-sm" style={{ color: 'var(--sys-text-muted)' }}>Other</span>
+            )}
+          </div>
         </td>
 
         <td className="table-td" data-label="Status">
@@ -389,6 +396,45 @@ export default function IncidentRow({ report }: { report: any }) {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* EXPORT INTAKE SHEET BUTTON */}
+                <div className="rounded-lg border shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-4" style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)' }}>
+                  <button
+                    onClick={async () => {
+                      setIntakeLoading(true);
+                      try {
+                        const result = await fetchIntakeSheetData(report.id);
+                        if (result.success && result.data) {
+                          setIntakePrefill(result.data);
+                        } else {
+                          setIntakePrefill(null);
+                        }
+                        setIntakeModalOpen(true);
+                      } catch (err) {
+                        console.error('Failed to fetch intake data:', err);
+                        setIntakePrefill(null);
+                        setIntakeModalOpen(true);
+                      } finally {
+                        setIntakeLoading(false);
+                      }
+                    }}
+                    disabled={intakeLoading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-semibold text-xs shadow-sm transition-all border hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]"
+                    style={{ backgroundColor: 'var(--sys-surface-muted)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}
+                  >
+                    {intakeLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin" />
+                        Preparing Intake Sheet...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Export Intake Sheet
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -554,6 +600,11 @@ export default function IncidentRow({ report }: { report: any }) {
         </tr>
       )}
       {renderModal()}
+      <IntakeSheetModal
+        isOpen={intakeModalOpen}
+        onClose={() => setIntakeModalOpen(false)}
+        prefill={intakePrefill}
+      />
     </>
   );
 }

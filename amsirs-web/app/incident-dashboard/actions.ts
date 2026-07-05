@@ -28,7 +28,7 @@ async function getAuthClient() {
 export async function fetchIncidentReports(params: {
   page: number;
   itemsPerPage: number;
-  severityFilter?: string;
+  categoryFilter?: string;
   timeframeFilter?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -85,16 +85,16 @@ export async function fetchIncidentReports(params: {
   }
 }
 
-// ---- Helper: apply severity, timeframe, date range, location filters ----
+// ---- Helper: apply category, timeframe, date range, location filters ----
 function applyCommonFilters(query: any, params: {
-  severityFilter?: string;
+  categoryFilter?: string;
   timeframeFilter?: string;
   dateFrom?: string;
   dateTo?: string;
   locationSearch?: string;
 }) {
-  if (params.severityFilter && params.severityFilter !== 'All') {
-    query = query.eq('severity', params.severityFilter);
+  if (params.categoryFilter && params.categoryFilter !== 'All') {
+    query = query.eq('offense_category', params.categoryFilter);
   }
 
   if (params.locationSearch && params.locationSearch.trim()) {
@@ -416,7 +416,7 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
   // 1. Fetch all involvements for this student where role is Offender
   const { data: involvements, error: invError } = await supabase
     .from('incident_involvements')
-    .select('incident_id, incident_reports(severity, status)')
+    .select('incident_id, incident_reports(status)')
     .eq('student_id', studentId)
     .eq('role', 'Offender');
 
@@ -425,32 +425,18 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
     return;
   }
 
-  // 2. Tally up the severities (excluding Resolved incidents)
-  let low = 0, medium = 0, high = 0;
-  for (const inv of involvements || []) {
-    const report = inv.incident_reports;
-    if (!report || report.status === 'Resolved') continue;
-
-    const severity = report.severity;
-    if (severity === 'Low') low++;
-    else if (severity === 'Medium') medium++;
-    else if (severity === 'High') high++;
-  }
-
-  // 3. Apply ABC EWS Threshold Rules
+  // 2. Check if ANY incident is 'Under Investigation'
   let isFlagged = false;
   let flagReason = null;
   let reviewStatus = 'Pending';
 
-  if (high >= 1) {
-    isFlagged = true;
-    flagReason = `Triggered by ${high} High Severity Incident(s)`;
-  } else if (medium >= 2) {
-    isFlagged = true;
-    flagReason = `Triggered by ${medium} Medium Severity Incident(s)`;
-  } else if (low >= 3) {
-    isFlagged = true;
-    flagReason = `Triggered by ${low} Low Severity Incident(s)`;
+  for (const inv of involvements || []) {
+    const report = inv.incident_reports;
+    if (report && report.status === 'Under Investigation') {
+      isFlagged = true;
+      flagReason = 'Involved in an incident currently Under Investigation';
+      break;
+    }
   }
 
   // 4. Update the student_flags table (Upsert logic to ensure record exists)
@@ -470,9 +456,6 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
     await supabase
       .from('student_flags')
       .update({
-        low_severity_count: low,
-        medium_severity_count: medium,
-        high_severity_count: high,
         is_flagged: isFlagged,
         flag_reason: flagReason,
         // If it's no longer flagged, reset review status. If it was already under review, keep it.
@@ -487,9 +470,6 @@ async function recalculateStudentFlags(studentId: string, supabase: any) {
       .from('student_flags')
       .insert({
         student_id: studentId,
-        low_severity_count: low,
-        medium_severity_count: medium,
-        high_severity_count: high,
         is_flagged: isFlagged,
         flag_reason: flagReason,
         review_status: reviewStatus,
@@ -779,4 +759,146 @@ export async function updateIncidentStatus(incidentId: string, newStatus: string
   }
 
   revalidatePath('/incident-dashboard');
+}
+
+// ==========================================
+// 📄 INTAKE SHEET DATA FETCH
+// ==========================================
+
+/**
+ * Fetches all available data for an incident to pre-populate the intake sheet modal.
+ * Decrypts the description server-side and maps linked students to victim/respondent roles.
+ */
+export async function fetchIntakeSheetData(incidentId: string): Promise<{
+  success: boolean;
+  data?: {
+    victim: {
+      name: string;
+      dateOfBirth: string;
+      age: string;
+      sex: string;
+      gradeYearSection: string;
+      addressContact: string;
+    };
+    respondentStudent: {
+      name: string;
+      dateOfBirth: string;
+      age: string;
+      sex: string;
+      gradeYearSection: string;
+    };
+    caseDetails: string;
+    date: string;
+  };
+  error?: string;
+}> {
+  try {
+    const { supabase } = await getAuthClient();
+
+    // 1. Fetch the incident with linked students
+    const { data: incident, error: incidentError } = await supabase
+      .from('incident_reports')
+      .select(`
+        *,
+        incident_involvements (
+          id,
+          role,
+          students (
+            id,
+            first_name,
+            last_name,
+            grade_level,
+            section,
+            gender,
+            birthday,
+            address
+          )
+        )
+      `)
+      .eq('id', incidentId)
+      .single();
+
+    if (incidentError || !incident) {
+      return { success: false, error: incidentError?.message || 'Incident not found' };
+    }
+
+    // 2. Decrypt the description
+    let decryptedDescription = '';
+    try {
+      decryptedDescription = decrypt(incident.description);
+    } catch {
+      decryptedDescription = '[Could not decrypt description]';
+    }
+
+    // 3. Helper to compute age from birthday string
+    function computeAge(birthday: string | null): string {
+      if (!birthday) return '';
+      try {
+        const dob = new Date(birthday);
+        if (isNaN(dob.getTime())) return '';
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+          age--;
+        }
+        return age.toString();
+      } catch {
+        return '';
+      }
+    }
+
+    // 4. Find victim and offender from involvements
+    const involvements = incident.incident_involvements || [];
+    const victimInv = involvements.find((inv: any) => inv.role === 'Victim');
+    const offenderInv = involvements.find((inv: any) => inv.role === 'Offender');
+
+    const victimStudent = victimInv?.students;
+    const offenderStudent = offenderInv?.students;
+
+    // 5. Build pre-fill data
+    const victimData = {
+      name: victimStudent
+        ? `${victimStudent.last_name}, ${victimStudent.first_name}`
+        : '',
+      dateOfBirth: victimStudent?.birthday || '',
+      age: victimStudent ? computeAge(victimStudent.birthday) : '',
+      sex: victimStudent?.gender || '',
+      gradeYearSection: victimStudent
+        ? `${victimStudent.grade_level} - ${victimStudent.section}`
+        : '',
+      addressContact: victimStudent?.address || '',
+    };
+
+    const respondentStudentData = {
+      name: offenderStudent
+        ? `${offenderStudent.last_name}, ${offenderStudent.first_name}`
+        : '',
+      dateOfBirth: offenderStudent?.birthday || '',
+      age: offenderStudent ? computeAge(offenderStudent.birthday) : '',
+      sex: offenderStudent?.gender || '',
+      gradeYearSection: offenderStudent
+        ? `${offenderStudent.grade_level} - ${offenderStudent.section}`
+        : '',
+    };
+
+    return {
+      success: true,
+      data: {
+        victim: victimData,
+        respondentStudent: respondentStudentData,
+        caseDetails: decryptedDescription,
+        date: new Date(incident.created_at).toLocaleDateString('en-PH', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      },
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to fetch intake sheet data',
+    };
+  }
 }

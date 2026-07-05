@@ -56,7 +56,7 @@ export async function submitSecureIncident(prevState: any, formData: FormData) {
           first_name: aggregatedFirstNames,
           last_name: aggregatedLastNames,
           location: aggregatedLocations,
-          severity: formData.get('severity'),
+          offense_category: formData.get('offenseCategory') || 'Other',
           description: encrypt(formData.get('description') as string),
           image_path: imagePath, 
           reported_by: user.id,
@@ -67,13 +67,13 @@ export async function submitSecureIncident(prevState: any, formData: FormData) {
     if (dbError) throw dbError;
 
     // Dispatch Notification
-    const severityInput = formData.get('severity') as string;
-    const notificationSeverity = severityInput === 'High' ? 'critical' : severityInput === 'Medium' ? 'warning' : 'info';
+    const categoryInput = formData.get('offenseCategory') as string || 'Other';
+    const notificationSeverity = (categoryInput === 'Child Abuse' || categoryInput === 'Physical Violence' || categoryInput === 'Harassment') ? 'critical' : 'warning';
     
     await createNotification({
       category: "Incident management",
       severity: notificationSeverity,
-      title: `${severityInput} severity incident filed`,
+      title: `New Incident Filed: ${categoryInput}`,
       message: `A new incident was reported at ${aggregatedLocations}.`,
       icon: "FileWarning",
       link: "/incident-dashboard",

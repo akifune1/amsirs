@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({ today: 0, week: 0, month: 0 });
 
   // ---- Filters ----
-  const [severityFilter, setSeverityFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [timeframeFilter, setTimeframeFilter] = useState("All");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -97,7 +97,7 @@ export default function DashboardPage() {
   useEffect(() => {
     loadReports();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, severityFilter, timeframeFilter, dateFrom, dateTo, locationDebounced, selectedStudent]);
+  }, [currentPage, categoryFilter, timeframeFilter, dateFrom, dateTo, locationDebounced, selectedStudent]);
 
   async function loadReports() {
     try {
@@ -106,7 +106,7 @@ export default function DashboardPage() {
       const result = await fetchIncidentReports({
         page: currentPage,
         itemsPerPage: ITEMS_PER_PAGE,
-        severityFilter,
+        categoryFilter,
         timeframeFilter,
         dateFrom,
         dateTo,
@@ -135,7 +135,7 @@ export default function DashboardPage() {
 
   // ---- Filter helpers ----
   const hasActiveFilters =
-    severityFilter !== "All" ||
+    categoryFilter !== "All" ||
     timeframeFilter !== "All" ||
     dateFrom !== "" ||
     dateTo !== "" ||
@@ -143,7 +143,7 @@ export default function DashboardPage() {
     selectedStudent !== null;
 
   function clearFilters() {
-    setSeverityFilter("All");
+    setCategoryFilter("All");
     setTimeframeFilter("All");
     setDateFrom("");
     setDateTo("");
@@ -250,18 +250,20 @@ export default function DashboardPage() {
                 <option value="30days">Last 30 Days</option>
               </select>
 
-              {/* Severity */}
-              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Severity</span>
+              {/* Category */}
+              <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Category</span>
               <select
-                value={severityFilter}
-                onChange={(e) => { setSeverityFilter(e.target.value); setCurrentPage(1); }}
+                value={categoryFilter}
+                onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
                 className="border rounded-lg px-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-cavite-maroon/20 focus:border-cavite-maroon outline-none transition-all cursor-pointer"
                 style={{ backgroundColor: 'var(--sys-input-bg)', borderColor: 'var(--sys-border)', color: 'var(--sys-input-text)' }}
               >
-                <option value="All">All Severity</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
+                <option value="All">All Categories</option>
+                <option value="Bullying / Peer Abuse">Bullying / Peer Abuse</option>
+                <option value="Child Abuse">Child Abuse</option>
+                <option value="Physical Violence">Physical Violence</option>
+                <option value="Harassment">Harassment</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
@@ -385,7 +387,7 @@ export default function DashboardPage() {
                   <th className="table-th">Date & Time</th>
                   <th className="table-th">Student Involved</th>
                   <th className="table-th">Location</th>
-                  <th className="table-th">Severity</th>
+                  <th className="table-th text-left w-32">Category</th>
                   <th className="table-th">Status</th>
                   <th className="table-th text-right">Actions</th>
                 </tr>

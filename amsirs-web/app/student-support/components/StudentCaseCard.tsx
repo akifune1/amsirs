@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { Calendar, User, FileText, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import RiskBadge from './RiskBadge';
+import IntakeSheetModal from '@/app/components/IntakeSheetModal';
+import { fetchIntakeSheetData } from '@/app/incident-dashboard/actions';
 
 interface IncidentRecord {
   id: string; // Added ID for toggle tracking
   date: string;
   title: string;
-  severity: 'Low' | 'Medium' | 'High';
+  offenseCategory?: string;
   reporter: string;
   status: string;
   description: string;
@@ -30,9 +32,6 @@ interface StudentCaseCardProps {
   gradeSection: string;
   guardianContact: string;
   riskLevel: 'Low' | 'Medium' | 'High';
-  lowCount?: number;
-  mediumCount?: number;
-  highCount?: number;
   flagReason?: string;
   attendanceStats: {
     totalAbsences: number;
@@ -50,9 +49,6 @@ export default function StudentCaseCard({
   gradeSection,
   guardianContact,
   riskLevel,
-  lowCount = 0,
-  mediumCount = 0,
-  highCount = 0,
   flagReason,
   attendanceStats,
   recentIncidents,
@@ -62,6 +58,11 @@ export default function StudentCaseCard({
   // NEW: State to track which incident is expanded
   const [expandedIncident, setExpandedIncident] = useState<string | null>(null);
 
+  // 📄 Intake Sheet State
+  const [intakeModalOpen, setIntakeModalOpen] = useState(false);
+  const [intakePrefill, setIntakePrefill] = useState<any>(null);
+  const [intakeLoading, setIntakeLoading] = useState<string | null>(null);
+
   const toggleIncident = (id: string) => {
     if (expandedIncident === id) {
       setExpandedIncident(null);
@@ -70,18 +71,10 @@ export default function StudentCaseCard({
     }
   };
 
-  const getSeverityColor = (severity: 'Low' | 'Medium' | 'High') => {
-    switch (severity) {
-      case 'Low':
-        return 'badge-success';
-      case 'Medium':
-        return 'badge-warning';
-      case 'High':
-        return 'badge-danger';
-    }
-  };
+
 
   return (
+    <>
     <div className="space-y-6 max-w-4xl animate-in slide-in-from-right-4 duration-300">
       {/* Student Header Card */}
       <div className="sys-card">
@@ -132,29 +125,6 @@ export default function StudentCaseCard({
             </div>
           </div>
 
-          {/* Behavioral Summary */}
-          <div className="p-8">
-            <h3 className="sys-label mb-4">BEHAVIORAL SUMMARY</h3>
-            <div className="grid grid-cols-3 gap-4 mb-3">
-              <div className="bg-red-500/10 p-4 rounded-md border border-red-500/20">
-                <p className="text-xs font-bold text-red-500 mb-1 uppercase tracking-wider">High</p>
-                <p className="text-2xl font-semibold text-red-500">{highCount}</p>
-              </div>
-              <div className="bg-orange-500/10 p-4 rounded-md border border-orange-500/20">
-                <p className="text-xs font-bold text-orange-500 mb-1 uppercase tracking-wider">Medium</p>
-                <p className="text-2xl font-semibold text-orange-500">{mediumCount}</p>
-              </div>
-              <div className="bg-green-500/10 p-4 rounded-md border border-green-500/20">
-                <p className="text-xs font-bold text-green-500 mb-1 uppercase tracking-wider">Low</p>
-                <p className="text-2xl font-semibold text-green-500">{lowCount}</p>
-              </div>
-            </div>
-            {flagReason && (
-              <p className="text-xs font-semibold border p-2 rounded" style={{ backgroundColor: 'var(--sys-surface-subtle)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-muted)' }}>
-                🚩 {flagReason}
-              </p>
-            )}
-          </div>
         </div>
       </div>
 
@@ -177,9 +147,11 @@ export default function StudentCaseCard({
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <AlertCircle className="w-4 h-4 text-zinc-400" />
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${getSeverityColor(incident.severity)}`}>
-                        {incident.severity}
-                      </span>
+                      {incident.offenseCategory && incident.offenseCategory !== 'Other' && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase bg-cavite-maroon/10 text-cavite-maroon border border-cavite-maroon/20">
+                          {incident.offenseCategory}
+                        </span>
+                      )}
                       <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md" style={{ backgroundColor: 'var(--sys-surface-subtle)', color: 'var(--sys-text-muted)' }}>
                         {incident.status}
                       </span>
@@ -228,6 +200,44 @@ export default function StudentCaseCard({
                           </div>
                         </div>
                       )}
+
+                      {/* Export Intake Sheet Button */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setIntakeLoading(incident.id);
+                          try {
+                            const result = await fetchIntakeSheetData(incident.id);
+                            if (result.success && result.data) {
+                              setIntakePrefill(result.data);
+                            } else {
+                              setIntakePrefill(null);
+                            }
+                            setIntakeModalOpen(true);
+                          } catch (err) {
+                            console.error('Failed to fetch intake data:', err);
+                            setIntakePrefill(null);
+                            setIntakeModalOpen(true);
+                          } finally {
+                            setIntakeLoading(null);
+                          }
+                        }}
+                        disabled={intakeLoading === incident.id}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-semibold text-xs shadow-sm transition-all border hover:bg-black/5 dark:hover:bg-white/5 active:scale-[0.98]"
+                        style={{ backgroundColor: 'var(--sys-surface)', borderColor: 'var(--sys-border)', color: 'var(--sys-text-primary)' }}
+                      >
+                        {intakeLoading === incident.id ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-cavite-maroon/30 border-t-cavite-maroon rounded-full animate-spin" />
+                            Preparing Intake Sheet...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            Export Intake Sheet
+                          </>
+                        )}
+                      </button>
 
                     </div>
                   </div>
@@ -293,5 +303,13 @@ export default function StudentCaseCard({
         </div>
       </div>
     </div>
+
+    {/* Intake Sheet Modal */}
+    <IntakeSheetModal
+      isOpen={intakeModalOpen}
+      onClose={() => setIntakeModalOpen(false)}
+      prefill={intakePrefill}
+    />
+    </>
   );
 }

@@ -22,7 +22,14 @@ export type InterventionType =
 
 export type CaseStatus = 'Active' | 'Pending Review' | 'Resolved' | 'Escalated';
 
-export type IncidentSeverity = 'Low' | 'Medium' | 'High';
+// IncidentSeverity has been removed in favor of OffenseCategory
+
+export type OffenseCategory =
+  | 'Bullying / Peer Abuse'
+  | 'Child Abuse'
+  | 'Physical Violence'
+  | 'Harassment'
+  | 'Other';
 
 // ==========================================
 // Student Records
@@ -40,9 +47,6 @@ export interface StudentRecord {
   counselingStatus: CounselingStatus;
   lastInteraction?: string;
   guardianEmail?: string;
-  lowCount?: number;
-  mediumCount?: number;
-  highCount?: number;
   flagReason?: string;
 }
 
@@ -82,8 +86,8 @@ export interface IncidentRecord {
   id: string;
   date: string;
   title: string;
-  severity: IncidentSeverity;
   reporter: string;
+  offenseCategory?: OffenseCategory | string;
 }
 
 export interface CounselingRecord {
@@ -428,7 +432,7 @@ export const INTERVENTION_TYPE_OPTIONS: Array<{ label: string; value: Interventi
 export const CASE_STATUS_OPTIONS: Array<{ label: string; value: CaseStatus }> = [
   { label: 'Active - Ongoing Support', value: 'Active' },
   { label: 'Pending Review', value: 'Pending Review' },
-  { label: 'Resolved - Case Closed', value: 'Resolved' },
+  { label: 'Case Resolved - Referred to CPC for Monitoring', value: 'Resolved' },
   { label: 'Escalated - Requires Admin', value: 'Escalated' },
 ];
 

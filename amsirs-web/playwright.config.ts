@@ -40,65 +40,12 @@ export default defineConfig({
 
   /* Configure projects for different authenticated roles */
   projects: [
-    // --- Unauthenticated tests (login, register, auth checks) ---
+    // --- Thesis Screenshots (Custom script) ---
     {
-      name: 'no-auth',
+      name: 'screenshots',
       use: { ...devices['Desktop Chrome'] },
       testMatch: [
-        '01-login.spec.ts',
-        '02-register.spec.ts',
-      ],
-    },
-
-    // --- Super Admin (has access to everything including guard pages) ---
-    {
-      name: 'super-admin',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/super-admin.json',
-      },
-      testMatch: [
-        '03-sidebar-navigation.spec.ts',
-        '04-admin-dashboard-staff.spec.ts',
-        '05-admin-dashboard-students.spec.ts',
-        '06-incident-reporting.spec.ts',
-        '07-incident-dashboard.spec.ts',
-        '10-access-logs.spec.ts',
-        '11-campus-status.spec.ts',
-        '12-gate-pages.spec.ts',
-      ],
-    },
-
-    // --- Student ---
-    {
-      name: 'student',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/student.json',
-      },
-      testMatch: [
-        '08-student-portal.spec.ts',
-      ],
-    },
-
-    // --- Student Support (Guidance Counselor) ---
-    {
-      name: 'student-support',
-      use: {
-        ...devices['Desktop Chrome'],
-        storageState: '.auth/student-support.json',
-      },
-      testMatch: [
-        '09-student-support.spec.ts',
-      ],
-    },
-
-    // --- Authorization tests (uses multiple auth states internally) ---
-    {
-      name: 'authorization',
-      use: { ...devices['Desktop Chrome'] },
-      testMatch: [
-        '13-authorization.spec.ts',
+        'thesis-screenshots.spec.ts',
       ],
     },
   ],

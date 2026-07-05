@@ -17,7 +17,6 @@ export default function StudentTable({
   onStartIntervention,
 }: StudentTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRisk, setFilterRisk] = useState<'All' | 'Low' | 'Medium' | 'High'>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
 
   const filteredStudents = students.filter(student => {
@@ -26,10 +25,9 @@ export default function StudentTable({
       student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.gradeSection.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesRisk = filterRisk === 'All' || student.riskLevel === filterRisk;
     const matchesStatus = filterStatus === 'All' || student.counselingStatus === filterStatus;
 
-    return matchesSearch && matchesRisk && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,7 +35,7 @@ export default function StudentTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterRisk, filterStatus]);
+  }, [searchTerm, filterStatus]);
 
   const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
   const paginatedStudents = filteredStudents.slice(
@@ -76,22 +74,6 @@ export default function StudentTable({
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}>
-                {(['All', 'Low', 'Medium', 'High'] as const).map((level) => (
-                  <button
-                    key={level}
-                    onClick={() => setFilterRisk(level)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                      filterRisk === level
-                        ? 'shadow-sm'
-                        : 'hover:opacity-80'
-                    }`}
-                    style={filterRisk === level ? { backgroundColor: 'var(--sys-surface)', color: 'var(--sys-text-primary)' } : { color: 'var(--sys-text-muted)' }}
-                  >
-                    {level === 'All' ? 'All Risks' : level}
-                  </button>
-                ))}
-              </div>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -115,7 +97,7 @@ export default function StudentTable({
                 <th className="table-th">Grade & Section</th>
                 <th className="table-th">Absences</th>
                 <th className="table-th">Incident History</th>
-                <th className="table-th">Risk Level</th>
+                <th className="table-th">Status</th>
                 <th className="table-th">Counseling Status</th>
                 <th className="table-th">Actions</th>
               </tr>
@@ -146,18 +128,10 @@ export default function StudentTable({
                     </td>
                     <td className="table-td" data-label="Incident History">
                       <div className="flex items-center gap-2 text-xs font-bold">
-                        {student.highCount !== undefined ? (
-                          <>
-                            <span className="text-red-500 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded">H: {student.highCount}</span>
-                            <span className="text-orange-500 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded">M: {student.mediumCount}</span>
-                            <span className="text-green-500 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded">L: {student.lowCount}</span>
-                          </>
-                        ) : (
-                          <span className="text-zinc-500 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}>Total: {student.incidentCount}</span>
-                        )}
+                        <span className="text-zinc-500 px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--sys-surface-subtle)' }}>Total: {student.incidentCount}</span>
                       </div>
                     </td>
-                    <td className="table-td" data-label="Risk Level">
+                    <td className="table-td" data-label="Status">
                       <RiskBadge level={student.riskLevel} />
                     </td>
                     <td className="table-td" data-label="Counseling Status">

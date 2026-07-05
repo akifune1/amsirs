@@ -11,13 +11,8 @@ import type {
   DashboardStats,
   ActionResponse,
   SupportIntervention,
+  RiskLevel,
 } from './types';
-
-function getRiskLevelFromCounts(low: number, medium: number, high: number): 'Low' | 'Medium' | 'High' {
-  if (high >= 1) return 'High';
-  if (medium >= 2) return 'Medium'; // Or 'High' depending on specific policy
-  return 'Low'; // If flagged but not medium/high, it's low
-}
 
 // ==========================================
 // 🔐 AUTHORIZATION HELPER
@@ -179,9 +174,6 @@ export async function getFlaggedStudents(
     const { data: flaggedData, error } = await supabase
       .from('student_flags')
       .select(`
-        low_severity_count,
-        medium_severity_count,
-        high_severity_count,
         flag_reason,
         is_flagged,
         student_id,
@@ -244,15 +236,8 @@ export async function getFlaggedStudents(
         attendanceConcern: false,
         absenceCount: 0,
         incidentCount: studentInfo?.incident_involvements?.length || 0,
-        lowCount: flag.low_severity_count || 0,
-        mediumCount: flag.medium_severity_count || 0,
-        highCount: flag.high_severity_count || 0,
         flagReason: flag.flag_reason || undefined,
-        riskLevel: getRiskLevelFromCounts(
-          flag.low_severity_count || 0, 
-          flag.medium_severity_count || 0, 
-          flag.high_severity_count || 0
-        ),
+        riskLevel: 'High' as RiskLevel, // Default to High for students under investigation
         counselingStatus: cStatus,
       };
     });
@@ -319,7 +304,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
         incident_involvements (
           id,
           incident_id,
-          incident_reports (id, location, severity, description, status, created_at, reported_by, image_path)
+          incident_reports (id, location, offense_category, description, status, created_at, reported_by, image_path)
         )
       `)
       .eq('id', studentId)
@@ -331,10 +316,10 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
     }
     if (!student) throw new Error('Not found: Student not found');
 
-    // 2. Fetch the mathematical flag score
+    // 2. Fetch the flag reason
     const { data: flagRecord } = await supabase
       .from('student_flags')
-      .select('low_severity_count, medium_severity_count, high_severity_count, flag_reason')
+      .select('flag_reason')
       .eq('student_id', studentId)
       .maybeSingle();
 
@@ -365,7 +350,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
         id: inv.id,
         date: report?.created_at || new Date().toISOString(),
         title: report?.location || 'Incident',
-        severity: report?.severity || 'Low',
+        offenseCategory: report?.offense_category || 'Other',
         reporter: report?.reported_by || 'Staff',
         status: report?.status || 'Unknown',
         description: decryptedDescription,
@@ -402,14 +387,7 @@ export async function getStudentCaseDetails(studentId: string): Promise<ActionRe
         lrn: student.lrn && student.lrn.includes(':') ? decrypt(student.lrn) : student.lrn,
         gradeSection: `${student.grade_level} - ${student.section}`,
         guardianContact: 'Pending Update',
-        riskLevel: flagRecord ? getRiskLevelFromCounts(
-          flagRecord.low_severity_count || 0,
-          flagRecord.medium_severity_count || 0,
-          flagRecord.high_severity_count || 0
-        ) : 'Low',
-        lowCount: flagRecord?.low_severity_count || 0,
-        mediumCount: flagRecord?.medium_severity_count || 0,
-        highCount: flagRecord?.high_severity_count || 0,
+        riskLevel: flagRecord ? 'High' : 'Low', // Simplified for now since we removed severity counts
         flagReason: flagRecord?.flag_reason || undefined,
         attendanceStats: {
           totalAbsences: 0,
@@ -459,6 +437,28 @@ export async function createIntervention(
       .single();
 
     if (insertError) throw new Error(insertError.message);
+
+    // If case is resolved, also resolve underlying incidents and unflag student
+    if (caseStatus === 'Resolved') {
+      const { data: involvements } = await supabase
+        .from('incident_involvements')
+        .select('incident_id')
+        .eq('student_id', studentId);
+        
+      if (involvements && involvements.length > 0) {
+        const incidentIds = involvements.map((inv: any) => inv.incident_id);
+        await supabase
+          .from('incident_reports')
+          .update({ status: 'Resolved' })
+          .in('id', incidentIds)
+          .eq('status', 'Under Investigation');
+      }
+      
+      await supabase
+        .from('student_flags')
+        .update({ is_flagged: false, review_status: 'Resolved', last_calculated_at: new Date().toISOString() })
+        .eq('student_id', studentId);
+    }
 
     // --- NOTIFICATIONS DISPATCH ---
     try {
@@ -519,6 +519,37 @@ export async function updateCaseStatus(
       .eq('id', interventionId);
 
     if (updateError) throw new Error(updateError.message);
+
+    // If case is resolved, also resolve underlying incidents and unflag student
+    if (newStatus === 'Resolved') {
+      const { data: interventionData } = await supabase
+        .from('support_interventions')
+        .select('student_id')
+        .eq('id', interventionId)
+        .single();
+
+      if (interventionData?.student_id) {
+        const studentId = interventionData.student_id;
+        const { data: involvements } = await supabase
+          .from('incident_involvements')
+          .select('incident_id')
+          .eq('student_id', studentId);
+          
+        if (involvements && involvements.length > 0) {
+          const incidentIds = involvements.map((inv: any) => inv.incident_id);
+          await supabase
+            .from('incident_reports')
+            .update({ status: 'Resolved' })
+            .in('id', incidentIds)
+            .eq('status', 'Under Investigation');
+        }
+        
+        await supabase
+          .from('student_flags')
+          .update({ is_flagged: false, review_status: 'Resolved', last_calculated_at: new Date().toISOString() })
+          .eq('student_id', studentId);
+      }
+    }
 
     // --- NOTIFICATIONS DISPATCH ---
     try {
