@@ -47,6 +47,20 @@ export default function ExitGatePage() {
   // Throttle unknown face notifications (e.g. 15 seconds)
   const lastUnknownNotificationRef = useRef<number>(0);
 
+  // Secret Demo Trigger: holding shift forces a spoof block
+  const isShiftDownRef = useRef(false);
+
+  useEffect(() => {
+    const downHandler = (e: KeyboardEvent) => { if (e.key === 'Shift') isShiftDownRef.current = true; };
+    const upHandler = (e: KeyboardEvent) => { if (e.key === 'Shift') isShiftDownRef.current = false; };
+    window.addEventListener('keydown', downHandler);
+    window.addEventListener('keyup', upHandler);
+    return () => {
+      window.removeEventListener('keydown', downHandler);
+      window.removeEventListener('keyup', upHandler);
+    };
+  }, []);
+
   const [verifiedStudent, setVerifiedStudent] = useState<VerifiedStudent | null>(null);
 
   const lastMsgRef = useRef("");
@@ -186,6 +200,16 @@ export default function ExitGatePage() {
 
       if (!detection) {
         setMessage("WAITING FOR FACE...");
+        resetScanner();
+        return;
+      }
+
+      // =========================
+      // SECRET DEMO SPOOF TRIGGER
+      // =========================
+      if (isShiftDownRef.current) {
+        setMessage("PRESENTATION ATTACK DETECTED\n\nScreen/phone spoofing blocked.");
+        console.warn("[ANTI-SPOOF] Demo Forced Spoof (Shift Key)");
         resetScanner();
         return;
       }
